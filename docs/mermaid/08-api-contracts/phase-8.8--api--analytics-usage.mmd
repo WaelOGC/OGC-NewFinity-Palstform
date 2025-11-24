@@ -1,0 +1,66 @@
+flowchart TB
+
+%% Phase 8.8 - Analytics & Usage API Contract (v1.0)
+
+subgraph CLIENTS["Producers and Consumers"]
+  FE["Frontend (emit events, view dashboards)"]
+  SVC["Backend Services (emit events)"]
+end
+
+subgraph API["Analytics API v1"]
+  IN["POST /events/ingest"]
+  Q["POST /events/query"]
+  M["GET /metrics?range=..."]
+  D["GET /dashboards/:id"]
+  X["GET /export?format=csv|json"]
+end
+
+subgraph PIPE["Pipeline"]
+  COL["Collector"]
+  BUF["Buffer/Queue"]
+  AGG["Aggregator"]
+end
+
+subgraph STORE["Storage"]
+  WH["Warehouse (events, metrics)"]
+  IDX["Indexes"]
+end
+
+%% Flows
+FE --> IN
+SVC --> IN
+IN --> COL
+COL --> BUF
+BUF --> AGG
+AGG --> WH
+AGG --> IDX
+
+FE --> Q
+Q --> WH
+Q --> IDX
+Q --> FE
+
+FE --> M
+M --> WH
+M --> FE
+
+FE --> D
+D --> WH
+D --> FE
+
+FE --> X
+X --> WH
+X --> FE
+
+%% Errors
+subgraph ERR["Errors"]
+  ER400["400 invalid event"]
+  ER401["401 unauthorized"]
+  ER429["429 throttled"]
+  ER500["500 internal"]
+end
+API --> ER401
+IN --> ER400
+API --> ER429
+API --> ER500
+

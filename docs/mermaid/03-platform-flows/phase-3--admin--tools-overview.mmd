@@ -1,0 +1,97 @@
+flowchart TB
+
+%% Phase 3 - Admin Tools Overview
+%% Admin-entry flows
+
+START([Admin Access])
+ADMIN_LOGIN[Admin Login]
+
+subgraph AUTH_2FA["2FA Authentication"]
+  CREDENTIALS[Enter Credentials]
+  TWO_FA[2FA Verification]
+  AUTH_VALIDATE{Validate}
+end
+
+ADMIN_DASHBOARD[Admin Dashboard]
+
+subgraph ADMIN_MODULES["Admin Modules"]
+  USER_MGMT[User Management]
+  CHALL_MOD[Challenge Moderation]
+  BADGE_ASSIGN[Badge Assignment]
+  ANALYTICS[Analytics & Reports]
+  NOTIF_SYS[Notifications & System Tools]
+end
+
+subgraph USER_MGMT_DETAIL["User Management"]
+  USER_LIST[View Users]
+  USER_EDIT[Edit User]
+  USER_STATUS[Change Status]
+  USER_PERMS[Manage Permissions]
+end
+
+subgraph CHALL_MOD_DETAIL["Challenge Moderation"]
+  CHALL_REVIEW[Review Submissions]
+  CHALL_APPROVE[Approve/Reject]
+  CHALL_EDIT[Edit Challenges]
+end
+
+subgraph BADGE_DETAIL["Badge Assignment"]
+  BADGE_LIST[View Badges]
+  BADGE_ASSIGN_ACTION[Assign Badge]
+  BADGE_REVOKE[Revoke Badge]
+end
+
+subgraph ANALYTICS_DETAIL["Analytics & Reports"]
+  DASHBOARD_METRICS[Dashboard Metrics]
+  USER_REPORTS[User Reports]
+  SYSTEM_REPORTS[System Reports]
+  EXPORT_DATA[Export Data]
+end
+
+subgraph NOTIF_SYS_DETAIL["Notifications & System Tools"]
+  SEND_NOTIF[Send Notifications]
+  SYSTEM_CONFIG[System Configuration]
+  MAINTENANCE[Maintenance Tools]
+end
+
+START --> ADMIN_LOGIN
+ADMIN_LOGIN --> CREDENTIALS
+CREDENTIALS --> TWO_FA
+TWO_FA --> AUTH_VALIDATE
+AUTH_VALIDATE -->|Valid| ADMIN_DASHBOARD
+AUTH_VALIDATE -->|Invalid| ADMIN_LOGIN
+
+ADMIN_DASHBOARD --> USER_MGMT
+ADMIN_DASHBOARD --> CHALL_MOD
+ADMIN_DASHBOARD --> BADGE_ASSIGN
+ADMIN_DASHBOARD --> ANALYTICS
+ADMIN_DASHBOARD --> NOTIF_SYS
+
+USER_MGMT --> USER_MGMT_DETAIL
+CHALL_MOD --> CHALL_MOD_DETAIL
+BADGE_ASSIGN --> BADGE_DETAIL
+ANALYTICS --> ANALYTICS_DETAIL
+NOTIF_SYS --> NOTIF_SYS_DETAIL
+
+USER_MGMT_DETAIL --> USER_LIST
+USER_LIST --> USER_EDIT
+USER_LIST --> USER_STATUS
+USER_LIST --> USER_PERMS
+
+CHALL_MOD_DETAIL --> CHALL_REVIEW
+CHALL_REVIEW --> CHALL_APPROVE
+CHALL_MOD_DETAIL --> CHALL_EDIT
+
+BADGE_DETAIL --> BADGE_LIST
+BADGE_LIST --> BADGE_ASSIGN_ACTION
+BADGE_LIST --> BADGE_REVOKE
+
+ANALYTICS_DETAIL --> DASHBOARD_METRICS
+ANALYTICS_DETAIL --> USER_REPORTS
+ANALYTICS_DETAIL --> SYSTEM_REPORTS
+ANALYTICS_DETAIL --> EXPORT_DATA
+
+NOTIF_SYS_DETAIL --> SEND_NOTIF
+NOTIF_SYS_DETAIL --> SYSTEM_CONFIG
+NOTIF_SYS_DETAIL --> MAINTENANCE
+

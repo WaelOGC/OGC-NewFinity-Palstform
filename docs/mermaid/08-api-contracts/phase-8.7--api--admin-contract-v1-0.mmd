@@ -1,0 +1,49 @@
+sequenceDiagram
+
+%% Phase 8.7 - Admin API Contract (v1.0)
+
+autonumber
+
+participant A as Admin User
+participant FE as Admin Panel
+participant ADM as Admin API
+participant AUTH as Auth Service
+participant GOV as RBAC/Policy
+participant DB as Database
+
+A->>FE: Sign in (admin)
+FE->>AUTH: POST /auth/login
+AUTH-->>FE: 200 {access}
+
+Note over FE,ADM: Every admin call is scope-checked
+FE->>ADM: GET /admin/users?page=1
+ADM->>GOV: check scope: admin.read
+GOV-->>ADM: allow
+ADM->>DB: SELECT users
+DB-->>ADM: rows
+ADM-->>FE: 200 users
+
+A->>FE: POST /admin/challenges {title,...}
+FE->>ADM: create challenge
+ADM->>GOV: check scope: challenge.write
+GOV-->>ADM: allow
+ADM->>DB: INSERT challenge
+DB-->>ADM: ok
+ADM-->>FE: 201 created
+
+A->>FE: POST /admin/badges {name,level}
+FE->>ADM: create badge
+ADM->>GOV: check scope: badge.write
+GOV-->>ADM: allow
+ADM->>DB: INSERT badge
+DB-->>ADM: ok
+ADM-->>FE: 201 created
+
+A->>FE: GET /admin/audit?from&to
+FE->>ADM: fetch audit logs
+ADM->>GOV: check scope: audit.read
+GOV-->>ADM: allow
+ADM->>DB: SELECT audit_logs
+DB-->>ADM: rows
+ADM-->>FE: 200 logs
+

@@ -1,0 +1,139 @@
+flowchart TB
+
+%% ===============================================
+%% Phase 8.5 - Transactions and Blockchain Events API Contract (v1.0)
+%% Single, safe Mermaid chart (ASCII only, no emojis)
+%% ===============================================
+
+%% Actors
+FE["Client / Frontend"]
+TX["Transactions API"]
+WL["Wallet API"]
+IDX["Indexer Service"]
+Q["Queue / Worker"]
+DB["Database"]
+BC["Blockchain Node"]
+WH["Webhook Consumer"]
+
+%% High level wiring
+FE --> TX
+TX --- DB
+IDX --- DB
+Q --- DB
+BC --- IDX
+WH --- TX
+
+%% API Surface
+subgraph API["Transactions API v1 - Endpoints"]
+  direction TB
+  E1["GET /tx?id= | get by id | auth: required"]
+  E2["GET /tx/list?walletId&type&status&from&to&page&pageSize | list | auth: required"]
+  E3["POST /tx/register-deposit | idempotent | auth: system"]
+  E4["POST /tx/register-withdrawal | create pending | auth: required"]
+  E5["POST /tx/broadcast | submit raw tx | auth: system"]
+  E6["POST /tx/retry | retry failed or stuck | auth: system"]
+  E7["GET /events?type&fromBlock&toBlock&page | event feed | auth: system"]
+  E8["POST /webhook/confirmation | onchain confirm | auth: webhook"]
+  E9["POST /webhook/reorg | chain reorg notice | auth: webhook"]
+  E10["GET /healthz | service health | auth: optional"]
+end
+
+%% Indexer responsibilities
+subgraph INDEXER["Indexer and Workers"]
+  direction TB
+  I1["scan blocks"]
+  I2["parse logs"]
+  I3["match transfers to wallets"]
+  I4["emit events to queue"]
+  I5["confirmations tracker"]
+end
+IDX --> I1 --> I2 --> I3 --> I4 --> Q
+IDX --> I5
+
+%% Data model sketch
+subgraph DATA["Data store tables"]
+  direction TB
+  T1["transactions: id, walletId, type, amount, token, txHash, chainId, status, nonce, meta, createdAt, updatedAt"]
+  T2["events: id, type, txHash, blockNumber, confirmations, payload, createdAt"]
+  T3["idempotency: key, scope, requestHash, responseHash, createdAt, ttl"]
+end
+DB --- DATA
+
+%% Scopes
+subgraph SCOPES["Scopes"]
+  direction LR
+  S_user["user"]
+  S_sys["system"]
+  S_wh["webhook"]
+end
+E1 --> S_user
+E2 --> S_user
+E3 --> S_sys
+E4 --> S_user
+E5 --> S_sys
+E6 --> S_sys
+E7 --> S_sys
+E8 --> S_wh
+E9 --> S_wh
+
+%% Errors
+subgraph ERR["Canonical errors"]
+  direction TB
+  ER400["400 invalid request"]
+  ER401["401 unauthorized"]
+  ER404["404 not found"]
+  ER409["409 conflict or duplicate"]
+  ER422["422 idempotency violation"]
+  ER500["500 internal error"]
+end
+TX --> ER401
+TX --> ER400
+TX --> ER500
+E1 --> ER404
+E3 --> ER422
+
+%% Happy path flows (condensed)
+%% Register deposit (idempotent)
+FE -->|notify deposit| E3
+E3 --> DB
+DB --> E3
+E3 --> FE
+
+%% Withdrawal request
+FE -->|create withdrawal| E4
+E4 --> DB
+DB --> E4
+E4 --> FE
+
+%% Broadcast by system after checks
+WL -->|submit signed tx| E5
+E5 --> DB
+E5 --> BC
+BC --> E5
+E5 --> FE
+
+%% Indexer detects confirmations
+BC --> IDX
+IDX --> Q
+Q --> WH
+WH -->|confirmation payload| E8
+E8 --> DB
+E8 --> WL
+
+%% Reorg handling
+BC -->|reorg detected| IDX
+IDX --> WH
+WH -->|reorg notice| E9
+E9 --> DB
+E9 --> WL
+
+%% List and query
+FE -->|list transactions with filters| E2
+E2 --> DB
+DB --> E2
+E2 --> FE
+
+%% Health
+FE --> E10
+E10 --> FE
+

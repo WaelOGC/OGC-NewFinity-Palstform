@@ -1,0 +1,122 @@
+classDiagram
+
+%% Phase 7.1 - Core Data ERD (high level, ASCII-safe)
+
+class User {
+  +id: Int
+  +email: String
+  +passwordHash: String
+  +role: String
+  +createdAt: DateTime
+  +updatedAt: DateTime
+}
+
+class Wallet {
+  +id: Int
+  +userId: Int
+  +address: String
+  +balance: Decimal
+  +staked: Decimal
+  +rewards: Decimal
+  +createdAt: DateTime
+  +updatedAt: DateTime
+}
+
+class Transaction {
+  +id: Int
+  +walletId: Int
+  +userId: Int
+  +type: String   %% deposit | withdrawal | transfer | stake | reward
+  +token: String  %% OGC or other
+  +amount: Decimal
+  +txHash: String
+  +chainId: Int
+  +status: String %% pending | completed | failed
+  +createdAt: DateTime
+  +updatedAt: DateTime
+}
+
+class Subscription {
+  +id: Int
+  +userId: Int
+  +plan: String   %% Free | Pro | Enterprise
+  +status: String %% active | past_due | canceled
+  +expiresAt: DateTime
+  +createdAt: DateTime
+  +updatedAt: DateTime
+}
+
+class Challenge {
+  +id: Int
+  +title: String
+  +status: String %% draft | published | open | reviewing | finalized
+  +createdAt: DateTime
+  +updatedAt: DateTime
+}
+
+class Submission {
+  +id: Int
+  +challengeId: Int
+  +userId: Int
+  +url: String
+  +score: Int
+  +status: String %% pending | accepted | rejected
+  +createdAt: DateTime
+  +updatedAt: DateTime
+}
+
+class Badge {
+  +id: Int
+  +slug: String
+  +name: String
+  +level: Int
+  +createdAt: DateTime
+  +updatedAt: DateTime
+}
+
+class UserBadge {
+  +id: Int
+  +userId: Int
+  +badgeId: Int
+  +awardedAt: DateTime
+}
+
+class Notification {
+  +id: Int
+  +userId: Int
+  +type: String
+  +payload: Json
+  +status: String %% queued | sent | read
+  +createdAt: DateTime
+}
+
+class AuditLog {
+  +id: Int
+  +actorId: Int   %% admin or system id
+  +action: String
+  +resource: String
+  +meta: Json
+  +createdAt: DateTime
+}
+
+class Admin {
+  +id: Int
+  +email: String
+  +passwordHash: String
+  +role: String   %% admin | super_admin
+  +createdAt: DateTime
+  +updatedAt: DateTime
+}
+
+%% Relationships
+User "1" --> "1" Wallet : owns
+User "1" --> "0..*" Transaction : initiates
+Wallet "1" --> "0..*" Transaction : records
+User "1" --> "0..1" Subscription : has
+Challenge "1" --> "0..*" Submission : collects
+User "1" --> "0..*" Submission : submits
+User "1" --> "0..*" UserBadge : earns
+Badge "1" --> "0..*" UserBadge : assigned
+User "1" --> "0..*" Notification : receives
+Admin "1" --> "0..*" AuditLog : writes
+

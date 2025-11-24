@@ -1,0 +1,61 @@
+flowchart TB
+
+%% Phase 1 - Platform Flow Diagram
+%% High-level user navigation and platform entry points
+
+START([Start])
+LANDING[Landing Page]
+
+subgraph AUTH_FLOW["Authentication Flow"]
+  LOGIN[Login Page]
+  SIGNUP[Signup Page]
+  VERIFY[Email Verification]
+  AUTH_CHECK{Auth Check}
+end
+
+subgraph DASHBOARD["Dashboard"]
+  DASH_MAIN[Dashboard Main]
+  SIDEBAR[Sidebar Navigation]
+end
+
+subgraph NAV_OPTIONS["Navigation Options"]
+  WALLET[Wallet]
+  CHALLENGES[Challenges]
+  AMY_AGENT[Amy Agent]
+  SUBSCRIPTIONS[Subscriptions]
+end
+
+subgraph GUEST_FLOW["Guest Flow"]
+  GUEST_VIEW[Guest View]
+  GUEST_REDIRECT[Redirect to Login]
+end
+
+START --> LANDING
+LANDING --> AUTH_CHECK
+
+AUTH_CHECK -->|Not Authenticated| GUEST_FLOW
+AUTH_CHECK -->|Authenticated| DASH_MAIN
+
+GUEST_FLOW --> GUEST_VIEW
+GUEST_VIEW --> GUEST_REDIRECT
+GUEST_REDIRECT --> LOGIN
+
+LANDING --> LOGIN
+LANDING --> SIGNUP
+SIGNUP --> VERIFY
+VERIFY --> LOGIN
+LOGIN --> AUTH_CHECK
+
+DASH_MAIN --> SIDEBAR
+SIDEBAR --> WALLET
+SIDEBAR --> CHALLENGES
+SIDEBAR --> AMY_AGENT
+SIDEBAR --> SUBSCRIPTIONS
+
+WALLET --> AUTH_CHECK
+CHALLENGES --> AUTH_CHECK
+AMY_AGENT --> AUTH_CHECK
+SUBSCRIPTIONS --> AUTH_CHECK
+
+AUTH_CHECK -->|Protected Page| GUEST_REDIRECT
+

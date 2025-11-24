@@ -1,0 +1,12 @@
+flowchart TB
+
+%% Phase 7.2 - Prisma Integration Flow
+
+DEV["Developer edits schema.prisma"] --> MIG1["npx prisma migrate dev"]
+MIG1 --> DB["MySQL Database"]
+MIG1 --> GEN["npx prisma generate (Type-safe Client)"]
+GEN --> SVC["Backend Services use Prisma Client"]
+SVC --> CI["CI: test, lint, build"]
+CI --> MIG2["Prod deploy: prisma migrate deploy"]
+MIG2 --> PDB["Production DB"]
+

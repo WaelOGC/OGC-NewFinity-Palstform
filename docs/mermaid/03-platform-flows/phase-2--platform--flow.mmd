@@ -1,0 +1,73 @@
+flowchart TB
+
+%% Phase 2 - Platform Flow Diagram
+%% Platform functional branches
+
+USER([User])
+
+subgraph AI_TOOLS["AI Tools Flow"]
+  AI_ACCESS[Access AI Tools]
+  AI_INPUT[Input/Query]
+  AI_PROCESS[Process Request]
+  AI_RESULTS[Results Display]
+  AI_SAVE[Save Results]
+  AI_EXPORT[Export Results]
+end
+
+subgraph CHALLENGE_FLOW["Challenge Program Flow"]
+  CHALL_VIEW[View Challenges]
+  CHALL_SELECT[Select Challenge]
+  CHALL_SUBMIT[Submit Solution]
+  CHALL_VERIFY[Verify Submission]
+  CHALL_REWARD[Reward Distribution]
+end
+
+subgraph SUBSCRIPTION_FLOW["Subscription Flow"]
+  SUBS_VIEW[View Plans]
+  SUBS_SELECT[Select Plan]
+  SUBS_CHECKOUT[Checkout Process]
+  SUBS_PAYMENT[Payment Processing]
+  SUBS_ACTIVATE[Activate Subscription]
+end
+
+subgraph WALLET_FLOW["Wallet Flow"]
+  WALLET_VIEW[View Wallet]
+  TOKEN_BALANCE[Token Balance]
+  REWARDS_VIEW[View Rewards]
+  REWARDS_CLAIM[Claim Rewards]
+  ONCHAIN_INTERACT[On-chain Interaction]
+  TX_HISTORY[Transaction History]
+end
+
+USER --> AI_TOOLS
+USER --> CHALLENGE_FLOW
+USER --> SUBSCRIPTION_FLOW
+USER --> WALLET_FLOW
+
+AI_TOOLS --> AI_ACCESS
+AI_ACCESS --> AI_INPUT
+AI_INPUT --> AI_PROCESS
+AI_PROCESS --> AI_RESULTS
+AI_RESULTS --> AI_SAVE
+AI_RESULTS --> AI_EXPORT
+
+CHALLENGE_FLOW --> CHALL_VIEW
+CHALL_VIEW --> CHALL_SELECT
+CHALL_SELECT --> CHALL_SUBMIT
+CHALL_SUBMIT --> CHALL_VERIFY
+CHALL_VERIFY --> CHALL_REWARD
+CHALL_REWARD --> WALLET_FLOW
+
+SUBSCRIPTION_FLOW --> SUBS_VIEW
+SUBS_VIEW --> SUBS_SELECT
+SUBS_SELECT --> SUBS_CHECKOUT
+SUBS_CHECKOUT --> SUBS_PAYMENT
+SUBS_PAYMENT --> SUBS_ACTIVATE
+
+WALLET_FLOW --> WALLET_VIEW
+WALLET_VIEW --> TOKEN_BALANCE
+WALLET_VIEW --> REWARDS_VIEW
+REWARDS_VIEW --> REWARDS_CLAIM
+WALLET_VIEW --> ONCHAIN_INTERACT
+WALLET_VIEW --> TX_HISTORY
+

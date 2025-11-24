@@ -1,0 +1,23 @@
+{
+  "id": "tests/api-tests",
+  "title": "API Tests — OGC NewFinity Platform",
+  "description": "API tests validate HTTP endpoints for correctness, validation, and security.",
+  "source": "@site/../docs/tests/api-tests.md",
+  "sourceDirName": "tests",
+  "slug": "/tests/api-tests",
+  "permalink": "/tests/api-tests",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Naming Rule Validation",
+    "permalink": "/ci/naming-checks"
+  },
+  "next": {
+    "title": "Integration Tests — OGC NewFinity Platform",
+    "permalink": "/tests/integration-tests"
+  }
+}

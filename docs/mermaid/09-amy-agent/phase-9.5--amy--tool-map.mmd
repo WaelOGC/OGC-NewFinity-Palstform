@@ -1,0 +1,88 @@
+flowchart TB
+
+%% Phase 9.5 - Amy AI Agent Unified Platform Tool Map
+%% Master map of all tools across phases 1-3
+
+subgraph TEXT_WRITING["Text & Writing"]
+  TEXT_WRITER[Text Writer]
+  CONTENT_IMPROVER[Content Improver]
+  AUTO_SUMMARIZER[Auto-Summarizer]
+  DOC_BUILDER[Document Builder]
+  AUTO_DOC_GEN[Auto-Document Generator]
+end
+
+subgraph CODE_DEV["Code & Development"]
+  CODE_HELPER[Code Helper]
+  API_BLUEPRINT[API Blueprint Generator]
+  DB_SCHEMA[Database Schema Designer]
+end
+
+subgraph DESIGN_CREATIVE["Design & Creative"]
+  DESIGN_PROMPT[Design Prompt Generator]
+  UIUX_DRAFT[UI/UX Drafting Engine]
+end
+
+subgraph BUSINESS_STRATEGY["Business & Strategy"]
+  BUSINESS_PLAN[Business Plan Generator]
+  STRATEGY_ANALYTICS[Strategy & Analytics Generator]
+  SEO_ASSISTANT[SEO Assistant]
+end
+
+subgraph AUTOMATION_WORKFLOW["Automation & Workflow"]
+  AUTO_RESEARCH[Auto-Research]
+  WORKFLOW_AUTO[Workflow Automator]
+  AUTO_REPLY[Auto-Reply /<br/>Communication Engine]
+end
+
+subgraph SHARED_ENGINES["Shared Engines"]
+  GPT_ENGINE[GPT Engine]
+  CODE_ENGINE[Code Engine]
+  BUSINESS_ENGINE[Business Engine]
+  IMAGE_ENGINE[Image Engine]
+end
+
+subgraph COMMON_PATTERNS["Common Input/Output Patterns"]
+  INPUT_LAYER[Input Layer]
+  PROCESSING[Processing Layer]
+  OUTPUT_LAYER[Output Layer]
+  EXPORT_LAYER[Export Layer]
+end
+
+TEXT_WRITING --> SHARED_ENGINES
+CODE_DEV --> SHARED_ENGINES
+DESIGN_CREATIVE --> SHARED_ENGINES
+BUSINESS_STRATEGY --> SHARED_ENGINES
+AUTOMATION_WORKFLOW --> SHARED_ENGINES
+
+TEXT_WRITER --> COMMON_PATTERNS
+CONTENT_IMPROVER --> COMMON_PATTERNS
+AUTO_SUMMARIZER --> COMMON_PATTERNS
+DOC_BUILDER --> COMMON_PATTERNS
+AUTO_DOC_GEN --> COMMON_PATTERNS
+CODE_HELPER --> COMMON_PATTERNS
+API_BLUEPRINT --> COMMON_PATTERNS
+DB_SCHEMA --> COMMON_PATTERNS
+DESIGN_PROMPT --> COMMON_PATTERNS
+UIUX_DRAFT --> COMMON_PATTERNS
+BUSINESS_PLAN --> COMMON_PATTERNS
+STRATEGY_ANALYTICS --> COMMON_PATTERNS
+SEO_ASSISTANT --> COMMON_PATTERNS
+AUTO_RESEARCH --> COMMON_PATTERNS
+WORKFLOW_AUTO --> COMMON_PATTERNS
+AUTO_REPLY --> COMMON_PATTERNS
+
+COMMON_PATTERNS --> INPUT_LAYER
+INPUT_LAYER --> PROCESSING
+PROCESSING --> OUTPUT_LAYER
+OUTPUT_LAYER --> EXPORT_LAYER
+
+TEXT_WRITING -.->|Uses| GPT_ENGINE
+CODE_DEV -.->|Uses| CODE_ENGINE
+BUSINESS_STRATEGY -.->|Uses| BUSINESS_ENGINE
+DESIGN_CREATIVE -.->|Uses| IMAGE_ENGINE
+
+AUTO_RESEARCH -.->|Depends on| TEXT_WRITER
+AUTO_DOC_GEN -.->|Depends on| DOC_BUILDER
+WORKFLOW_AUTO -.->|Orchestrates| TEXT_WRITING
+WORKFLOW_AUTO -.->|Orchestrates| CODE_DEV
+

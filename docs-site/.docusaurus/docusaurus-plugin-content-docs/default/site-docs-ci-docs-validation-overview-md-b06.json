@@ -1,0 +1,23 @@
+{
+  "id": "ci/docs-validation-overview",
+  "title": "Documentation Validation Overview — OGC NewFinity Platform",
+  "description": "This folder defines the rules and structures required for validating documentation inside future CI/CD pipelines.",
+  "source": "@site/../docs/ci/docs-validation-overview.md",
+  "sourceDirName": "ci",
+  "slug": "/ci/docs-validation-overview",
+  "permalink": "/ci/docs-validation-overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Diagram Generator Rules — OGC NewFinity Platform",
+    "permalink": "/automation/generator-rules"
+  },
+  "next": {
+    "title": "Link Checking Rules",
+    "permalink": "/ci/link-checking"
+  }
+}

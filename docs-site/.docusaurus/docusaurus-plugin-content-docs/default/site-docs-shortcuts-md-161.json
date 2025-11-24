@@ -1,0 +1,23 @@
+{
+  "id": "shortcuts",
+  "title": "OGC NewFinity — Documentation Shortcuts",
+  "description": "Quick links to the most commonly used documentation pages.",
+  "source": "@site/../docs/shortcuts.md",
+  "sourceDirName": ".",
+  "slug": "/shortcuts",
+  "permalink": "/shortcuts",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "shortcuts",
+    "title": "OGC NewFinity — Documentation Shortcuts",
+    "sidebar_label": "Shortcuts"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Manifest",
+    "permalink": "/manifest"
+  }
+}

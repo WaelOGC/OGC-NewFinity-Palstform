@@ -1,0 +1,84 @@
+flowchart TB
+
+%% Phase 6.3 - Escalation & Moderation Flow
+%% How incidents and violations move through moderation
+
+subgraph ENTRY["Entry Points"]
+  USER_REPORT[User Report<br/>Report Content/User]
+  AUTO_FLAG[Automatic Flag<br/>AI / Rule-based]
+  MANUAL_FLAG[Admin/Moderator<br/>Manual Flag]
+end
+
+subgraph MODERATION["Moderation Pipeline"]
+  INCIDENT_CREATE[Incident Created]
+  QUEUE[Queued for Review]
+  ASSIGN[Assigned to Moderator]
+  REVIEW[Review Actions]
+end
+
+subgraph ACTIONS["Review Actions"]
+  NO_ACTION[No Action]
+  SOFT_WARNING[Soft Warning]
+  CONTENT_REMOVE[Content Removal]
+  TEMP_SUSPEND[Temporary Suspension]
+  PERM_BAN[Permanent Ban]
+end
+
+subgraph NOTIFICATION["User Notification"]
+  NOTIFY[User Notified of Decision]
+  NOTIFY_DETAIL[Notification Details]
+end
+
+subgraph APPEAL["Appeal Process"]
+  USER_APPEAL[User Appeals Decision]
+  APPEAL_REVIEW[Appeal Review]
+  APPEAL_DECISION{Appeal Decision}
+  OVERRIDE[Override Original Decision]
+  CONFIRM[Confirm Original Decision]
+end
+
+subgraph AUDIT["Audit & Compliance"]
+  LOG_OUTCOME[Log Final Outcome]
+  AUDIT_RECORDS[Audit & Compliance Records]
+end
+
+ENTRY --> INCIDENT_CREATE
+USER_REPORT --> INCIDENT_CREATE
+AUTO_FLAG --> INCIDENT_CREATE
+MANUAL_FLAG --> INCIDENT_CREATE
+
+INCIDENT_CREATE --> QUEUE
+QUEUE --> ASSIGN
+ASSIGN --> REVIEW
+
+REVIEW --> ACTIONS
+ACTIONS --> NO_ACTION
+ACTIONS --> SOFT_WARNING
+ACTIONS --> CONTENT_REMOVE
+ACTIONS --> TEMP_SUSPEND
+ACTIONS --> PERM_BAN
+
+NO_ACTION --> NOTIFY
+SOFT_WARNING --> NOTIFY
+CONTENT_REMOVE --> NOTIFY
+TEMP_SUSPEND --> NOTIFY
+PERM_BAN --> NOTIFY
+
+NOTIFY --> NOTIFY_DETAIL
+NOTIFY_DETAIL --> USER_APPEAL
+
+USER_APPEAL --> APPEAL_REVIEW
+APPEAL_REVIEW --> APPEAL_DECISION
+APPEAL_DECISION -->|Appeal Granted| OVERRIDE
+APPEAL_DECISION -->|Appeal Denied| CONFIRM
+
+OVERRIDE --> LOG_OUTCOME
+CONFIRM --> LOG_OUTCOME
+NO_ACTION --> LOG_OUTCOME
+SOFT_WARNING --> LOG_OUTCOME
+CONTENT_REMOVE --> LOG_OUTCOME
+TEMP_SUSPEND --> LOG_OUTCOME
+PERM_BAN --> LOG_OUTCOME
+
+LOG_OUTCOME --> AUDIT_RECORDS
+

@@ -1,0 +1,70 @@
+flowchart TB
+
+%% Phase 7.10 - OGC Wallet On-Chain + Off-Chain Reconciliation
+%% How system keeps on-chain and off-chain data consistent
+
+subgraph INPUTS["Inputs"]
+  LOCAL_SNAPSHOT[Local DB Snapshot]
+  ONCHAIN_BALANCE[On-chain Wallet Balance]
+  ONCHAIN_TX_LOGS[On-chain Transaction Logs]
+  PENDING_INTERNAL[Pending Internal Transactions]
+end
+
+subgraph RECONCILIATION["Reconciliation Logic"]
+  START_RECON[Start Reconciliation]
+  COMPARE[Compare Internal Pending<br/>vs On-chain Confirmed]
+  RESOLVE_MISMATCH[Resolve Mismatches]
+  UPDATE_DB[Update DB with<br/>Authoritative On-chain Data]
+  FLAG_SUSPICIOUS[Flag Suspicious Differences]
+  WRITE_AUDIT[Write Audit Entries]
+end
+
+subgraph COMPARISON["Comparison Process"]
+  CHECK_PENDING[Check Pending Events]
+  CHECK_ONCHAIN[Check On-chain Events]
+  COMPARE_BALANCE[Compare Balances]
+  COMPARE_TX[Compare Transactions]
+  DIFF_DETECTED{Differences<br/>Detected?}
+end
+
+subgraph OUTPUTS["Outputs"]
+  UPDATED_STATE[Updated Wallet State]
+  RECON_REPORT[Reconciliation Report]
+  ALERTS[Alerts if Needed]
+end
+
+INPUTS --> START_RECON
+LOCAL_SNAPSHOT --> START_RECON
+ONCHAIN_BALANCE --> START_RECON
+ONCHAIN_TX_LOGS --> START_RECON
+PENDING_INTERNAL --> START_RECON
+
+START_RECON --> RECONCILIATION
+RECONCILIATION --> COMPARISON
+
+COMPARISON --> CHECK_PENDING
+COMPARISON --> CHECK_ONCHAIN
+CHECK_PENDING --> COMPARE
+CHECK_ONCHAIN --> COMPARE
+
+COMPARE --> COMPARE_BALANCE
+COMPARE --> COMPARE_TX
+COMPARE_BALANCE --> DIFF_DETECTED
+COMPARE_TX --> DIFF_DETECTED
+
+DIFF_DETECTED -->|Yes| RESOLVE_MISMATCH
+DIFF_DETECTED -->|No| UPDATE_DB
+
+RESOLVE_MISMATCH --> UPDATE_DB
+RESOLVE_MISMATCH --> FLAG_SUSPICIOUS
+FLAG_SUSPICIOUS --> WRITE_AUDIT
+
+UPDATE_DB --> WRITE_AUDIT
+WRITE_AUDIT --> OUTPUTS
+
+OUTPUTS --> UPDATED_STATE
+OUTPUTS --> RECON_REPORT
+OUTPUTS --> ALERTS
+
+FLAG_SUSPICIOUS --> ALERTS
+

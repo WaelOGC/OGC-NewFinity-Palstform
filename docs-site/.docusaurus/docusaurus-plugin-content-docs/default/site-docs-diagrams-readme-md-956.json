@@ -1,0 +1,14 @@
+{
+  "id": "diagrams/README",
+  "title": "Diagrams — OGC NewFinity Platform",
+  "description": "This folder organizes the source diagrams used across the documentation.",
+  "source": "@site/../docs/diagrams/README.md",
+  "sourceDirName": "diagrams",
+  "slug": "/diagrams/",
+  "permalink": "/diagrams/",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

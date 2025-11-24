@@ -1,0 +1,27 @@
+{
+  "id": "manifest",
+  "title": "OGC NewFinity Platform — Documentation Manifest",
+  "description": "This manifest provides a complete list of all documentation files in the OGC NewFinity Platform repository.",
+  "source": "@site/../docs/manifest.md",
+  "sourceDirName": ".",
+  "slug": "/manifest",
+  "permalink": "/manifest",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "manifest",
+    "title": "OGC NewFinity Platform — Documentation Manifest",
+    "sidebar_label": "Manifest"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Changelog",
+    "permalink": "/changelog"
+  },
+  "next": {
+    "title": "Shortcuts",
+    "permalink": "/shortcuts"
+  }
+}

@@ -1,0 +1,31 @@
+sequenceDiagram
+
+%% Phase 8.2 – Auth API Contract (v1.0)
+
+autonumber
+
+participant U as User
+participant FE as Frontend
+participant AUTH as Auth API
+participant DB as Database
+
+U->>FE: POST /register
+FE->>AUTH: /auth/register
+AUTH->>DB: insert new user
+DB-->>AUTH: ok
+AUTH-->>FE: 201 user created
+
+U->>FE: POST /login
+FE->>AUTH: /auth/login
+AUTH->>DB: validate credentials
+DB-->>AUTH: ok
+AUTH-->>FE: 200 {access, refresh tokens}
+
+FE->>AUTH: POST /refresh
+AUTH-->>FE: 200 new access token
+
+U->>FE: POST /logout
+FE->>AUTH: /auth/logout
+AUTH->>DB: revoke refresh token
+AUTH-->>FE: 204 logout success
+

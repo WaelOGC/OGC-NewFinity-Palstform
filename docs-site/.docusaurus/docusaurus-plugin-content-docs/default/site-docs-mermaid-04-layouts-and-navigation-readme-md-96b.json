@@ -1,0 +1,14 @@
+{
+  "id": "mermaid/layouts-and-navigation/README",
+  "title": "📁 Phase 4 — Layouts & Navigation",
+  "description": "UI layout structure, navigation hierarchy, and component tree diagrams.",
+  "source": "@site/../docs/mermaid/04-layouts-and-navigation/README.md",
+  "sourceDirName": "mermaid/04-layouts-and-navigation",
+  "slug": "/mermaid/layouts-and-navigation/",
+  "permalink": "/mermaid/layouts-and-navigation/",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

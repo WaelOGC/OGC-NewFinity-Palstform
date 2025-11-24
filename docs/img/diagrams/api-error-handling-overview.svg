@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <style>
+      .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+      .label { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+      .box { fill: #ffebee; stroke: #c62828; stroke-width: 2; }
+      .error { fill: #fff3e0; stroke: #ef6c00; stroke-width: 2; }
+      .success { fill: #e8f5e9; stroke: #2e7d32; stroke-width: 2; }
+      .arrow { stroke: #c62828; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#c62828" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="400" y="30" text-anchor="middle" class="title">API Error Handling Overview</text>
+  
+  <!-- Service Error -->
+  <rect x="50" y="80" width="140" height="60" rx="5" class="box"/>
+  <text x="120" y="110" text-anchor="middle" class="label">Service Error</text>
+  
+  <!-- Error Envelope -->
+  <rect x="250" y="80" width="200" height="100" rx="5" class="error"/>
+  <text x="350" y="110" text-anchor="middle" class="label">Standard Error Envelope</text>
+  <text x="350" y="135" text-anchor="middle" class="label" font-size="12" fill="#666">code, message, details</text>
+  
+  <!-- Error Classification -->
+  <rect x="500" y="80" width="140" height="60" rx="5" class="error"/>
+  <text x="570" y="110" text-anchor="middle" class="label">Classify</text>
+  
+  <!-- Error Types -->
+  <rect x="50" y="240" width="120" height="60" rx="5" class="box"/>
+  <text x="110" y="270" text-anchor="middle" class="label" font-size="12">400 Validation</text>
+  
+  <rect x="200" y="240" width="120" height="60" rx="5" class="box"/>
+  <text x="260" y="270" text-anchor="middle" class="label" font-size="12">401/403 Auth</text>
+  
+  <rect x="350" y="240" width="120" height="60" rx="5" class="box"/>
+  <text x="410" y="270" text-anchor="middle" class="label" font-size="12">404 Not Found</text>
+  
+  <rect x="500" y="240" width="120" height="60" rx="5" class="box"/>
+  <text x="560" y="270" text-anchor="middle" class="label" font-size="12">5xx Server</text>
+  
+  <!-- UI Mapping -->
+  <rect x="200" y="360" width="140" height="60" rx="5" class="success"/>
+  <text x="270" y="390" text-anchor="middle" class="label">Inline Messages</text>
+  
+  <rect x="380" y="360" width="140" height="60" rx="5" class="success"/>
+  <text x="450" y="390" text-anchor="middle" class="label">Toasts/Banners</text>
+  
+  <rect x="560" y="360" width="140" height="60" rx="5" class="success"/>
+  <text x="630" y="390" text-anchor="middle" class="label">Modals</text>
+  
+  <!-- Arrows -->
+  <path d="M 190 110 L 250 110" class="arrow"/>
+  <path d="M 450 110 L 500 110" class="arrow"/>
+  <path d="M 570 140 L 570 240" class="arrow"/>
+  <path d="M 110 300 L 270 360" class="arrow"/>
+  <path d="M 260 300 L 380 360" class="arrow"/>
+  <path d="M 410 300 L 450 360" class="arrow"/>
+  <path d="M 560 300 L 630 360" class="arrow"/>
+  
+  <!-- Labels -->
+  <text x="220" y="105" class="label" fill="#666">Wrap</text>
+  <text x="480" y="105" class="label" fill="#666">Categorize</text>
+  <text x="200" y="330" class="label" fill="#666">Map</text>
+  <text x="350" y="330" class="label" fill="#666">Display</text>
+</svg>
+

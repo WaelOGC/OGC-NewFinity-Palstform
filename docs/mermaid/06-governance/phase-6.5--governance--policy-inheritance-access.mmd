@@ -1,0 +1,73 @@
+flowchart TB
+
+%% Phase 6.5 - Policy Inheritance & Feature Access
+%% How policies and feature access cascade
+
+USER_ATTEMPT([User Attempts Feature X])
+
+subgraph HIERARCHY["Policy Hierarchy"]
+  GLOBAL[Global Platform Policies]
+  REGIONAL[Regional / Jurisdictional Policies<br/>Future]
+  ACCOUNT[Account-Level Rules<br/>Warnings, Flags]
+  PLAN[Plan-Level Rules<br/>Free / Pro / Enterprise]
+  FEATURE[Feature-Level Toggles<br/>Beta Features,<br/>Admin-Only Tools]
+end
+
+subgraph RESOLUTION["Policy Resolution"]
+  RESOLVE[Resolve Applicable Policies]
+  RESOLVE_GLOBAL[Apply Global Policies]
+  RESOLVE_REGIONAL[Apply Regional Policies]
+  RESOLVE_ACCOUNT[Apply Account Rules]
+  RESOLVE_PLAN[Apply Plan Rules]
+  RESOLVE_FEATURE[Apply Feature Toggles]
+end
+
+subgraph EVALUATION["Policy Evaluation"]
+  EVAL_CONFLICTS[Evaluate Conflicts]
+  CONFLICT_CHECK{Conflict Detected?}
+  REGION_FORBIDS[Region Forbids]
+  PLAN_ALLOWS[Plan Allows]
+  RESOLVE_CONFLICT[Resolve Conflict<br/>Priority: Region > Plan]
+end
+
+subgraph OUTCOME["Final Access Outcome"]
+  FINAL_DECISION{Access Decision}
+  ALLOW_ACCESS[ALLOW]
+  BLOCK_ACCESS[BLOCK]
+  REQUIRE_CONSENT[REQUIRE EXTRA CONSENT]
+end
+
+USER_ATTEMPT --> RESOLVE
+
+RESOLVE --> HIERARCHY
+HIERARCHY --> GLOBAL
+HIERARCHY --> REGIONAL
+HIERARCHY --> ACCOUNT
+HIERARCHY --> PLAN
+HIERARCHY --> FEATURE
+
+GLOBAL --> RESOLVE_GLOBAL
+REGIONAL --> RESOLVE_REGIONAL
+ACCOUNT --> RESOLVE_ACCOUNT
+PLAN --> RESOLVE_PLAN
+FEATURE --> RESOLVE_FEATURE
+
+RESOLVE_GLOBAL --> EVAL_CONFLICTS
+RESOLVE_REGIONAL --> EVAL_CONFLICTS
+RESOLVE_ACCOUNT --> EVAL_CONFLICTS
+RESOLVE_PLAN --> EVAL_CONFLICTS
+RESOLVE_FEATURE --> EVAL_CONFLICTS
+
+EVAL_CONFLICTS --> CONFLICT_CHECK
+CONFLICT_CHECK -->|Yes| REGION_FORBIDS
+CONFLICT_CHECK -->|Yes| PLAN_ALLOWS
+REGION_FORBIDS --> RESOLVE_CONFLICT
+PLAN_ALLOWS --> RESOLVE_CONFLICT
+RESOLVE_CONFLICT --> FINAL_DECISION
+
+CONFLICT_CHECK -->|No| FINAL_DECISION
+
+FINAL_DECISION -->|Access Granted| ALLOW_ACCESS
+FINAL_DECISION -->|Access Denied| BLOCK_ACCESS
+FINAL_DECISION -->|Needs Consent| REQUIRE_CONSENT
+

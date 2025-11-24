@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="700" viewBox="0 0 1000 700">
+  <defs>
+    <style>
+      .title { font-family: Arial, sans-serif; font-size: 28px; font-weight: bold; fill: #1a1a1a; }
+      .subtitle { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #333; }
+      .label { font-family: Arial, sans-serif; font-size: 13px; fill: #333; text-anchor: middle; }
+      .small-label { font-family: Arial, sans-serif; font-size: 11px; fill: #555; text-anchor: middle; }
+      .user-box { fill: #e8f5e9; stroke: #4caf50; stroke-width: 2; }
+      .admin-box { fill: #fff3e0; stroke: #ff9800; stroke-width: 2; }
+      .core-box { fill: #e3f2fd; stroke: #2196f3; stroke-width: 2; }
+      .data-box { fill: #f3e5f5; stroke: #9c27b0; stroke-width: 2; }
+      .arrow { stroke: #666; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .arrow-dashed { stroke: #999; stroke-width: 1.5; fill: none; stroke-dasharray: 5,5; marker-end: url(#arrowhead-dashed); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#666" />
+    </marker>
+    <marker id="arrowhead-dashed" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#999" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="500" y="35" text-anchor="middle" class="title">OGC NewFinity — System Overview</text>
+  
+  <!-- Users & Creators Section -->
+  <rect x="50" y="80" width="180" height="120" rx="8" class="user-box"/>
+  <text x="140" y="105" text-anchor="middle" class="subtitle">Users &amp; Creators</text>
+  <text x="140" y="130" text-anchor="middle" class="small-label">• Tools &amp; Challenges</text>
+  <text x="140" y="150" text-anchor="middle" class="small-label">• Submit Work</text>
+  <text x="140" y="170" text-anchor="middle" class="small-label">• Earn Rewards</text>
+  <text x="140" y="190" text-anchor="middle" class="small-label">• View Dashboards</text>
+  
+  <!-- Admins & Operators Section -->
+  <rect x="770" y="80" width="180" height="120" rx="8" class="admin-box"/>
+  <text x="860" y="105" text-anchor="middle" class="subtitle">Admins &amp; Operators</text>
+  <text x="860" y="130" text-anchor="middle" class="small-label">• Governance</text>
+  <text x="860" y="150" text-anchor="middle" class="small-label">• Moderation</text>
+  <text x="860" y="170" text-anchor="middle" class="small-label">• Policy Management</text>
+  <text x="860" y="190" text-anchor="middle" class="small-label">• Audits</text>
+  
+  <!-- Core Services Section -->
+  <rect x="300" y="250" width="400" height="280" rx="8" class="core-box"/>
+  <text x="500" y="280" text-anchor="middle" class="subtitle">Core Services</text>
+  
+  <!-- Auth Service -->
+  <rect x="320" y="300" width="160" height="80" rx="5" class="core-box"/>
+  <text x="400" y="325" text-anchor="middle" class="label" font-weight="bold">Auth Service</text>
+  <text x="400" y="345" text-anchor="middle" class="small-label">Authentication</text>
+  <text x="400" y="360" text-anchor="middle" class="small-label">Authorization</text>
+  <text x="400" y="375" text-anchor="middle" class="small-label">SSO Integration</text>
+  
+  <!-- Wallet & Rewards -->
+  <rect x="520" y="300" width="160" height="80" rx="5" class="core-box"/>
+  <text x="600" y="325" text-anchor="middle" class="label" font-weight="bold">Wallet &amp; Rewards</text>
+  <text x="600" y="345" text-anchor="middle" class="small-label">Balance Management</text>
+  <text x="600" y="360" text-anchor="middle" class="small-label">Token Logic</text>
+  <text x="600" y="375" text-anchor="middle" class="small-label">On-Chain Ready</text>
+  
+  <!-- Amy AI Router -->
+  <rect x="320" y="400" width="160" height="80" rx="5" class="core-box"/>
+  <text x="400" y="425" text-anchor="middle" class="label" font-weight="bold">Amy AI Router</text>
+  <text x="400" y="445" text-anchor="middle" class="small-label">Intelligent Assistance</text>
+  <text x="400" y="460" text-anchor="middle" class="small-label">Automation</text>
+  <text x="400" y="475" text-anchor="middle" class="small-label">Tool Routing</text>
+  
+  <!-- Governance -->
+  <rect x="520" y="400" width="160" height="80" rx="5" class="core-box"/>
+  <text x="600" y="425" text-anchor="middle" class="label" font-weight="bold">Governance</text>
+  <text x="600" y="445" text-anchor="middle" class="small-label">Policy Engine</text>
+  <text x="600" y="460" text-anchor="middle" class="small-label">Permissions</text>
+  <text x="600" y="475" text-anchor="middle" class="small-label">Compliance</text>
+  
+  <!-- Data & Integrations Section -->
+  <rect x="50" y="580" width="900" height="90" rx="8" class="data-box"/>
+  <text x="500" y="605" text-anchor="middle" class="subtitle">Data &amp; Integrations</text>
+  
+  <!-- Internal Database -->
+  <rect x="100" y="620" width="140" height="40" rx="5" class="data-box"/>
+  <text x="170" y="640" text-anchor="middle" class="label">Internal Database</text>
+  <text x="170" y="655" text-anchor="middle" class="small-label">MySQL / Prisma</text>
+  
+  <!-- External AI Providers -->
+  <rect x="300" y="620" width="140" height="40" rx="5" class="data-box"/>
+  <text x="370" y="640" text-anchor="middle" class="label">External AI Providers</text>
+  <text x="370" y="655" text-anchor="middle" class="small-label">OpenAI / Others</text>
+  
+  <!-- Payment Providers -->
+  <rect x="500" y="620" width="140" height="40" rx="5" class="data-box"/>
+  <text x="570" y="640" text-anchor="middle" class="label">Payment Providers</text>
+  <text x="570" y="655" text-anchor="middle" class="small-label">Stripe / Crypto</text>
+  
+  <!-- Blockchain Network -->
+  <rect x="700" y="620" width="140" height="40" rx="5" class="data-box"/>
+  <text x="770" y="640" text-anchor="middle" class="label">Blockchain Network</text>
+  <text x="770" y="655" text-anchor="middle" class="small-label">Polygon / Future</text>
+  
+  <!-- Arrows: Users to Core Services -->
+  <path d="M 230 140 L 300 390" class="arrow"/>
+  <path d="M 230 140 L 400 300" class="arrow"/>
+  <path d="M 230 140 L 600 300" class="arrow-dashed"/>
+  
+  <!-- Arrows: Admins to Core Services -->
+  <path d="M 770 140 L 700 390" class="arrow"/>
+  <path d="M 770 140 L 600 400" class="arrow"/>
+  <path d="M 770 140 L 520 400" class="arrow-dashed"/>
+  
+  <!-- Arrows: Core Services to Data & Integrations -->
+  <path d="M 400 380 L 170 620" class="arrow"/>
+  <path d="M 600 380 L 370 620" class="arrow-dashed"/>
+  <path d="M 400 480 L 370 620" class="arrow"/>
+  <path d="M 600 480 L 570 620" class="arrow-dashed"/>
+  <path d="M 600 480 L 770 620" class="arrow-dashed"/>
+  
+  <!-- Legend -->
+  <rect x="50" y="250" width="200" height="100" rx="5" fill="white" stroke="#ccc" stroke-width="1"/>
+  <text x="150" y="270" text-anchor="middle" class="subtitle" font-size="14">Legend</text>
+  <line x1="70" y1="285" x2="90" y2="285" class="arrow"/>
+  <text x="95" y="290" class="small-label" text-anchor="start" font-size="10">Primary Flow</text>
+  <line x1="70" y1="305" x2="90" y2="305" class="arrow-dashed"/>
+  <text x="95" y="310" class="small-label" text-anchor="start" font-size="10">Secondary Flow</text>
+</svg>
+

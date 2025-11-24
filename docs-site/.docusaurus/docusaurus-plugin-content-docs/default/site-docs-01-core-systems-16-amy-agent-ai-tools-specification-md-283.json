@@ -1,0 +1,15 @@
+{
+  "id": "core-systems/amy-agent-ai-tools-specification",
+  "title": "OGC NewFinity — Amy Agent AI Tools Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/01-core-systems/16-amy-agent-ai-tools-specification.md",
+  "sourceDirName": "01-core-systems",
+  "slug": "/core-systems/amy-agent-ai-tools-specification",
+  "permalink": "/core-systems/amy-agent-ai-tools-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 16,
+  "frontMatter": {}
+}

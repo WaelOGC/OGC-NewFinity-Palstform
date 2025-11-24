@@ -1,0 +1,15 @@
+{
+  "id": "api-contracts/submission-api-contract",
+  "title": "OGC NewFinity — Submission API Contract (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/02-api-contracts/25-submission-api-contract.md",
+  "sourceDirName": "02-api-contracts",
+  "slug": "/api-contracts/submission-api-contract",
+  "permalink": "/api-contracts/submission-api-contract",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 25,
+  "frontMatter": {}
+}

@@ -1,0 +1,15 @@
+{
+  "id": "wallet-and-token-system-specification",
+  "title": "OGC NewFinity — Wallet & Token System Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/15-wallet-and-token-system-specification.md",
+  "sourceDirName": ".",
+  "slug": "/wallet-and-token-system-specification",
+  "permalink": "/wallet-and-token-system-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 15,
+  "frontMatter": {}
+}

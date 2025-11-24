@@ -1,0 +1,34 @@
+flowchart TB
+
+%% Phase 8.4 – Wallet API Contract (v1.0)
+
+subgraph ENDPOINTS["Wallet Endpoints"]
+  E1["GET /wallet – get summary"]
+  E2["POST /wallet/transfer – send tokens"]
+  E3["POST /wallet/stake – stake tokens"]
+  E4["POST /wallet/unstake – unstake tokens"]
+  E5["GET /wallet/transactions – history"]
+  E6["GET /wallet/rewards – earned rewards"]
+end
+
+subgraph COMPONENTS["Internal Components"]
+  WA["Wallet Service"]
+  TX["Transaction Service"]
+  IDX["Indexer"]
+  DB["Database"]
+  BC["Blockchain Node (Polygon)"]
+end
+
+E1 --> WA
+E2 --> WA
+E3 --> WA
+E4 --> WA
+E5 --> WA
+E6 --> WA
+
+WA --> DB
+WA --> TX
+TX --> BC
+BC --> IDX
+IDX --> DB
+

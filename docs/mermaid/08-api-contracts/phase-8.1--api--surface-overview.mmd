@@ -1,0 +1,41 @@
+flowchart TB
+
+%% Phase 8.1 – API Surface Overview
+
+subgraph CLIENTS["Clients"]
+  WEB["Web App"]
+  MOB["Mobile App"]
+  ADMIN["Admin Panel"]
+end
+
+subgraph APIS["API Gateway v1"]
+  AUTH["Auth API"]
+  SUBS["Subscription API"]
+  WAL["Wallet API"]
+  TX["Transactions API"]
+  NOTIF["Notifications API"]
+  ADMINAPI["Admin API"]
+  ANALYT["Analytics API"]
+end
+
+WEB --> AUTH
+WEB --> SUBS
+WEB --> WAL
+WEB --> NOTIF
+MOB --> AUTH
+MOB --> WAL
+ADMIN --> ADMINAPI
+ADMIN --> ANALYT
+ADMIN --> GOV
+
+subgraph DATA["Data Layer"]
+  DB["MySQL (Prisma)"]
+end
+AUTH --- DB
+SUBS --- DB
+WAL --- DB
+TX --- DB
+NOTIF --- DB
+ADMINAPI --- DB
+ANALYT --- DB
+

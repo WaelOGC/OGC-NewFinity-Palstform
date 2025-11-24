@@ -1,0 +1,56 @@
+sequenceDiagram
+
+%% Phase 7.8 - OGC Wallet Blockchain Integration Flow
+%% Full sequence of wallet interacting with Polygon
+
+autonumber
+
+participant U as User
+participant WS as Platform Wallet Service
+participant SE as Blockchain Sync Engine
+participant PN as Polygon Node /<br/>RPC Provider
+participant SC as Smart Contract<br/>(OGC Token)
+participant DB as Database
+participant AUDIT as Audit System
+
+U->>WS: Initiate wallet view or<br/>token request
+WS->>DB: Fetch local balance
+DB-->>WS: Local balance data
+
+WS->>SE: Request sync
+SE->>PN: Query balanceOf(address)
+PN->>SC: Call balanceOf
+SC-->>PN: Balance result
+PN-->>SE: On-chain balance
+
+SE->>PN: Query transaction history
+PN-->>SE: Transaction logs
+
+SE->>SE: Reconcile differences<br/>(Local vs On-chain)
+
+alt Differences found
+    SE->>SE: Apply pending on-chain events
+    SE->>DB: Update wallet balance
+    SE->>DB: Update transaction records
+end
+
+SE-->>WS: Updated wallet data
+WS-->>U: Return updated wallet
+
+WS->>AUDIT: Log sync event
+AUDIT->>DB: Store audit entry
+
+alt Failed RPC call
+    SE->>SE: Handle failed RPC
+    SE->>SE: Add to retry queue
+    SE->>SE: Check rate limits
+    SE->>PN: Retry with backoff
+end
+
+alt On-chain vs off-chain conflict
+    SE->>SE: Detect conflict
+    SE->>SE: Resolve conflict<br/>(On-chain authoritative)
+    SE->>DB: Update with on-chain data
+    SE->>AUDIT: Flag conflict resolution
+end
+

@@ -1,0 +1,13 @@
+stateDiagram-v2
+
+%% Phase 5.4 - Challenge and Badge Lifecycle
+
+[*] --> Draft
+Draft --> Published: admin publish
+Published --> OpenForSubmissions: open window
+OpenForSubmissions --> Reviewing: submissions closed
+Reviewing --> Finalized: winners selected
+Finalized --> RewardsDistributed: rewards minted or credited
+RewardsDistributed --> BadgesAssigned: badges granted
+BadgesAssigned --> [*]
+

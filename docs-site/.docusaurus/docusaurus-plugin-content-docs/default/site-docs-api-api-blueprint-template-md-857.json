@@ -1,0 +1,23 @@
+{
+  "id": "api/api-blueprint-template",
+  "title": "API Blueprint Template — OGC NewFinity Platform",
+  "description": "Use this template for documenting any API in the OGC NewFinity Platform.",
+  "source": "@site/../docs/api/api-blueprint-template.md",
+  "sourceDirName": "api",
+  "slug": "/api/api-blueprint-template",
+  "permalink": "/api/api-blueprint-template",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Amy Router API Blueprint — OGC NewFinity Platform",
+    "permalink": "/api/amy-router-api-blueprint"
+  },
+  "next": {
+    "title": "OGC NewFinity Platform — API Documentation Index",
+    "permalink": "/api/api-index"
+  }
+}

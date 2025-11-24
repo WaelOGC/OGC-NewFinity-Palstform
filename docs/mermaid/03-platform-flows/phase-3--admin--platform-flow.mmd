@@ -1,0 +1,91 @@
+flowchart TB
+
+%% Phase 3 - Admin Tools Platform Flow
+%% Platform interactions for admins
+
+ADMIN([Admin User])
+PERM_CHECK{Permission Check}
+
+subgraph BOOKING_FLOW["Challenge Booking Flow"]
+  BOOK_VIEW[View Challenge Bookings]
+  BOOK_APPROVE[Approve Booking]
+  BOOK_REJECT[Reject Booking]
+  BOOK_UPDATE[Update Booking Status]
+end
+
+subgraph REPORT_FLOW["Report Review Flow"]
+  REPORT_LIST[View Reports]
+  REPORT_DETAIL[Review Report Details]
+  REPORT_ACTION[Take Action on Report]
+  REPORT_RESOLVE[Resolve Report]
+end
+
+subgraph USER_STATUS_FLOW["User Status Changes"]
+  USER_SELECT[Select User]
+  STATUS_CHANGE[Change User Status]
+  STATUS_OPTIONS{Status Options}
+  SUSPEND[Suspend User]
+  ACTIVATE[Activate User]
+  DELETE[Delete User]
+end
+
+subgraph TOKEN_ISSUANCE["Token Issuance"]
+  TOKEN_VIEW[View Token Balances]
+  TOKEN_ADJUST[Manual Token Adjustment]
+  TOKEN_ISSUE[Issue Tokens]
+  TOKEN_DEDUCT[Deduct Tokens]
+  TOKEN_AUDIT[Audit Token Changes]
+end
+
+subgraph AUDIT_LOG["Audit Logs"]
+  LOG_VIEW[View Audit Logs]
+  LOG_FILTER[Filter Logs]
+  LOG_EXPORT[Export Logs]
+  LOG_DETAIL[View Log Details]
+end
+
+ADMIN --> PERM_CHECK
+PERM_CHECK -->|Has Permission| BOOKING_FLOW
+PERM_CHECK -->|Has Permission| REPORT_FLOW
+PERM_CHECK -->|Has Permission| USER_STATUS_FLOW
+PERM_CHECK -->|Has Permission| TOKEN_ISSUANCE
+PERM_CHECK -->|Has Permission| AUDIT_LOG
+PERM_CHECK -->|No Permission| DENIED[Access Denied]
+
+BOOKING_FLOW --> BOOK_VIEW
+BOOK_VIEW --> BOOK_APPROVE
+BOOK_VIEW --> BOOK_REJECT
+BOOK_VIEW --> BOOK_UPDATE
+BOOK_APPROVE --> PERM_CHECK
+BOOK_REJECT --> PERM_CHECK
+BOOK_UPDATE --> PERM_CHECK
+
+REPORT_FLOW --> REPORT_LIST
+REPORT_LIST --> REPORT_DETAIL
+REPORT_DETAIL --> REPORT_ACTION
+REPORT_ACTION --> REPORT_RESOLVE
+REPORT_RESOLVE --> PERM_CHECK
+
+USER_STATUS_FLOW --> USER_SELECT
+USER_SELECT --> STATUS_CHANGE
+STATUS_CHANGE --> STATUS_OPTIONS
+STATUS_OPTIONS --> SUSPEND
+STATUS_OPTIONS --> ACTIVATE
+STATUS_OPTIONS --> DELETE
+SUSPEND --> PERM_CHECK
+ACTIVATE --> PERM_CHECK
+DELETE --> PERM_CHECK
+
+TOKEN_ISSUANCE --> TOKEN_VIEW
+TOKEN_VIEW --> TOKEN_ADJUST
+TOKEN_ADJUST --> TOKEN_ISSUE
+TOKEN_ADJUST --> TOKEN_DEDUCT
+TOKEN_ISSUE --> TOKEN_AUDIT
+TOKEN_DEDUCT --> TOKEN_AUDIT
+TOKEN_AUDIT --> AUDIT_LOG
+
+AUDIT_LOG --> LOG_VIEW
+LOG_VIEW --> LOG_FILTER
+LOG_VIEW --> LOG_EXPORT
+LOG_VIEW --> LOG_DETAIL
+

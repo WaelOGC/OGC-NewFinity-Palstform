@@ -1,0 +1,15 @@
+{
+  "id": "challenge-program-specification",
+  "title": "OGC NewFinity — Challenge Program Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/13-challenge-program-specification.md",
+  "sourceDirName": ".",
+  "slug": "/challenge-program-specification",
+  "permalink": "/challenge-program-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 13,
+  "frontMatter": {}
+}

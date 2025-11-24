@@ -1,0 +1,15 @@
+{
+  "id": "admin-panel-specification-and-operational-workflows",
+  "title": "OGC NewFinity — Admin Panel Specification & Operational Workflows (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/11-admin-panel-specification-and-operational-workflows.md",
+  "sourceDirName": ".",
+  "slug": "/admin-panel-specification-and-operational-workflows",
+  "permalink": "/admin-panel-specification-and-operational-workflows",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 11,
+  "frontMatter": {}
+}

@@ -1,0 +1,15 @@
+{
+  "id": "foundations/platform-sitemap-information-architecture",
+  "title": "OGC NewFinity — Platform Sitemap & Information Architecture (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/00-foundations/03-platform-sitemap-information-architecture.md",
+  "sourceDirName": "00-foundations",
+  "slug": "/foundations/platform-sitemap-information-architecture",
+  "permalink": "/foundations/platform-sitemap-information-architecture",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 3,
+  "frontMatter": {}
+}

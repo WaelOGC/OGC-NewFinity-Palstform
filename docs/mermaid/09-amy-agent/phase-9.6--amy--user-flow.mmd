@@ -1,0 +1,88 @@
+flowchart TB
+
+%% Phase 9.6 - Amy AI Agent User Flow & Interaction Flow
+%% Full end-to-end user journey
+
+START([User Starts])
+
+subgraph DASHBOARD["Dashboard"]
+  DASH_VIEW[Dashboard View]
+  SELECT_TOOL[Select Tool]
+end
+
+subgraph INPUT_PROCESSING["Input & Processing"]
+  TOOL_INPUT[Enter Input]
+  AI_PROCESSING[AI Processing]
+  PROCESSING_STATUS[Processing Status]
+end
+
+subgraph OUTPUT_SCREEN["Output Screen"]
+  OUTPUT_DISPLAY[Display Output]
+  OUTPUT_OPTIONS[Output Options]
+end
+
+subgraph OUTPUT_ACTIONS["Output Actions"]
+  REGENERATE[Regenerate]
+  REFINE[Refine]
+  EXPORT[Export]
+  SAVE[Save]
+end
+
+subgraph HISTORY["History Management"]
+  VIEW_HISTORY[View History]
+  MANAGE_OUTPUTS[Manage Outputs]
+  DELETE_OUTPUT[Delete Output]
+  RESTORE_OUTPUT[Restore Output]
+end
+
+subgraph SUBSCRIPTION["Subscription Enforcement"]
+  CHECK_SUB[Check Subscription]
+  SUB_VALID{Valid<br/>Subscription?}
+  BLOCK_ACCESS[Block Access]
+end
+
+subgraph CREDITS["Credits/Usage Warnings"]
+  CHECK_CREDITS[Check Credits]
+  CREDITS_LOW{Low<br/>Credits?}
+  WARNING[Show Warning]
+  INSUFFICIENT[Insufficient Credits]
+end
+
+START --> DASH_VIEW
+DASH_VIEW --> SELECT_TOOL
+SELECT_TOOL --> CHECK_SUB
+CHECK_SUB --> SUB_VALID
+
+SUB_VALID -->|Yes| TOOL_INPUT
+SUB_VALID -->|No| BLOCK_ACCESS
+BLOCK_ACCESS --> DASH_VIEW
+
+TOOL_INPUT --> CHECK_CREDITS
+CHECK_CREDITS --> CREDITS_LOW
+CREDITS_LOW -->|Sufficient| AI_PROCESSING
+CREDITS_LOW -->|Low| WARNING
+CREDITS_LOW -->|None| INSUFFICIENT
+WARNING --> AI_PROCESSING
+INSUFFICIENT --> DASH_VIEW
+
+AI_PROCESSING --> PROCESSING_STATUS
+PROCESSING_STATUS --> OUTPUT_DISPLAY
+OUTPUT_DISPLAY --> OUTPUT_OPTIONS
+
+OUTPUT_OPTIONS --> REGENERATE
+OUTPUT_OPTIONS --> REFINE
+OUTPUT_OPTIONS --> EXPORT
+OUTPUT_OPTIONS --> SAVE
+OUTPUT_OPTIONS --> VIEW_HISTORY
+
+REGENERATE --> AI_PROCESSING
+REFINE --> TOOL_INPUT
+EXPORT --> USER([User Receives Export])
+SAVE --> VIEW_HISTORY
+
+VIEW_HISTORY --> MANAGE_OUTPUTS
+MANAGE_OUTPUTS --> DELETE_OUTPUT
+MANAGE_OUTPUTS --> RESTORE_OUTPUT
+DELETE_OUTPUT --> VIEW_HISTORY
+RESTORE_OUTPUT --> OUTPUT_DISPLAY
+

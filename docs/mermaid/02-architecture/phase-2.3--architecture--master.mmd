@@ -1,0 +1,98 @@
+flowchart TB
+
+%% Phase 2.3 - OGC NewFinity Platform Master Architecture Diagram
+%% Large, layered structure showing complete platform architecture
+
+subgraph LAYER1["Layer 1 - Frontend"]
+  MAIN_PLATFORM[Main Platform<br/>React + Vite]
+  WALLET_DASH[Wallet Dashboard<br/>Subdomain]
+  AMY_DASH[Amy Agent Dashboard<br/>Subdomain]
+  ADMIN_DASH[Admin Dashboard]
+end
+
+subgraph LAYER2["Layer 2 - API Gateway"]
+  API_GATEWAY[Unified API Layer]
+  USER_API[User API]
+  WALLET_API[Wallet API]
+  SUBS_API[Subscription API]
+  CHALLENGE_API[Challenge API]
+  BADGE_API[Badge API]
+end
+
+subgraph LAYER3["Layer 3 - Service Layer"]
+  AUTH_SERVICE[Auth Service]
+  WALLET_SERVICE[Wallet Service]
+  SUBS_SERVICE[Subscription Service]
+  CHALLENGE_SERVICE[Challenge Service]
+  BADGE_ENGINE[Badge Engine]
+  NOTIF_SERVICE[Notification Service]
+  ANALYTICS_SERVICE[Analytics Service]
+  AMY_ROUTER[Amy AI Router]
+end
+
+subgraph LAYER4["Layer 4 - Database Layer"]
+  PRISMA_ORM[Prisma ORM]
+  MYSQL_DB[(MySQL Database)]
+  
+  subgraph TABLES["Database Tables"]
+    USERS_TBL[users]
+    WALLETS_TBL[wallets]
+    TX_TBL[transactions]
+    SUBS_TBL[subscriptions]
+    BADGES_TBL[badges]
+    CONTRIB_TBL[contributions]
+    CHALLENGES_TBL[challenges]
+    SUBMISSIONS_TBL[submissions]
+    NOTIF_TBL[notifications]
+    AI_LOGS_TBL[ai_logs]
+  end
+end
+
+subgraph LAYER5["Layer 5 - External Integrations"]
+  POLYGON[Polygon Blockchain]
+  EMAIL_SMS[Email/SMS]
+  AI_PROVIDERS[AI Model Providers<br/>OpenAI, Others]
+  PAYMENT[Payment Processors<br/>Stripe / CoinPayments]
+end
+
+LAYER1 --> LAYER2
+MAIN_PLATFORM --> API_GATEWAY
+WALLET_DASH --> API_GATEWAY
+AMY_DASH --> API_GATEWAY
+ADMIN_DASH --> API_GATEWAY
+
+LAYER2 --> LAYER3
+API_GATEWAY --> USER_API
+API_GATEWAY --> WALLET_API
+API_GATEWAY --> SUBS_API
+API_GATEWAY --> CHALLENGE_API
+API_GATEWAY --> BADGE_API
+
+USER_API --> AUTH_SERVICE
+WALLET_API --> WALLET_SERVICE
+SUBS_API --> SUBS_SERVICE
+CHALLENGE_API --> CHALLENGE_SERVICE
+BADGE_API --> BADGE_ENGINE
+API_GATEWAY --> NOTIF_SERVICE
+API_GATEWAY --> ANALYTICS_SERVICE
+API_GATEWAY --> AMY_ROUTER
+
+LAYER3 --> LAYER4
+AUTH_SERVICE --> PRISMA_ORM
+WALLET_SERVICE --> PRISMA_ORM
+SUBS_SERVICE --> PRISMA_ORM
+CHALLENGE_SERVICE --> PRISMA_ORM
+BADGE_ENGINE --> PRISMA_ORM
+NOTIF_SERVICE --> PRISMA_ORM
+ANALYTICS_SERVICE --> PRISMA_ORM
+AMY_ROUTER --> PRISMA_ORM
+
+PRISMA_ORM --> MYSQL_DB
+MYSQL_DB --> TABLES
+
+LAYER3 --> LAYER5
+WALLET_SERVICE --> POLYGON
+NOTIF_SERVICE --> EMAIL_SMS
+AMY_ROUTER --> AI_PROVIDERS
+SUBS_SERVICE --> PAYMENT
+

@@ -1,0 +1,27 @@
+{
+  "id": "architecture-principles",
+  "title": "OGC NewFinity Platform — Documentation Architecture Principles",
+  "description": "These principles define how documentation must be designed, structured, and maintained across the OGC NewFinity Platform.",
+  "source": "@site/../docs/architecture-principles.md",
+  "sourceDirName": ".",
+  "slug": "/architecture-principles",
+  "permalink": "/architecture-principles",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "architecture-principles",
+    "title": "OGC NewFinity Platform — Documentation Architecture Principles",
+    "sidebar_label": "Architecture Principles"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Diagram Index",
+    "permalink": "/mermaid/"
+  },
+  "next": {
+    "title": "📁 Phase 2 — Architecture Diagrams",
+    "permalink": "/mermaid/architecture/"
+  }
+}

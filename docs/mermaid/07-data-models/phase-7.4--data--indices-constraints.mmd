@@ -1,0 +1,67 @@
+flowchart TB
+
+%% Phase 7.4 - Indices and Constraints (overview)
+
+subgraph USERS["users"]
+  U1["PK id"]
+  U2["UK email"]
+  U3["IDX role"]
+end
+
+subgraph WALLETS["wallets"]
+  W1["PK id"]
+  W2["UK address"]
+  W3["FK userId -> users.id"]
+  W4["IDX balance"]
+end
+
+subgraph TXNS["transactions"]
+  T1["PK id"]
+  T2["FK walletId -> wallets.id"]
+  T3["FK userId -> users.id"]
+  T4["UK txHash, chainId"]
+  T5["IDX type, status, createdAt"]
+end
+
+subgraph SUBS["subscriptions"]
+  S1["PK id"]
+  S2["FK userId -> users.id"]
+  S3["IDX status, expiresAt"]
+end
+
+subgraph CHALS["challenges"]
+  C1["PK id"]
+  C2["IDX status"]
+end
+
+subgraph SUBMS["submissions"]
+  SB1["PK id"]
+  SB2["FK challengeId -> challenges.id"]
+  SB3["FK userId -> users.id"]
+  SB4["IDX status, score"]
+end
+
+subgraph BADGES["badges"]
+  B1["PK id"]
+  B2["UK slug"]
+  B3["IDX level"]
+end
+
+subgraph UB["user_badges"]
+  UB1["PK id"]
+  UB2["FK userId -> users.id"]
+  UB3["FK badgeId -> badges.id"]
+  UB4["UK userId, badgeId"]
+end
+
+subgraph NOTIFS["notifications"]
+  N1["PK id"]
+  N2["FK userId -> users.id"]
+  N3["IDX status, createdAt"]
+end
+
+subgraph AUDIT["audit_logs"]
+  A1["PK id"]
+  A2["IDX actorId, createdAt"]
+end
+

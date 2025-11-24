@@ -1,0 +1,23 @@
+{
+  "id": "ci/link-checking",
+  "title": "Link Checking Rules",
+  "description": "Future CI/CD will run automatic link validation.",
+  "source": "@site/../docs/ci/link-checking.md",
+  "sourceDirName": "ci",
+  "slug": "/ci/link-checking",
+  "permalink": "/ci/link-checking",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Documentation Validation Overview — OGC NewFinity Platform",
+    "permalink": "/ci/docs-validation-overview"
+  },
+  "next": {
+    "title": "Markdown Validation Rules",
+    "permalink": "/ci/markdown-rules"
+  }
+}

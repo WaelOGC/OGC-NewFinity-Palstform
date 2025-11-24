@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <style>
+      .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+      .label { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+      .box { fill: #fff3e0; stroke: #f57c00; stroke-width: 2; }
+      .secure { fill: #e8f5e9; stroke: #388e3c; stroke-width: 2; }
+      .arrow { stroke: #f57c00; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#f57c00" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="400" y="30" text-anchor="middle" class="title">API Security &amp; Routing Flow</text>
+  
+  <!-- Request -->
+  <rect x="50" y="80" width="140" height="60" rx="5" class="box"/>
+  <text x="120" y="110" text-anchor="middle" class="label">API Request</text>
+  
+  <!-- Token Validation -->
+  <rect x="250" y="80" width="140" height="60" rx="5" class="secure"/>
+  <text x="320" y="110" text-anchor="middle" class="label">Token Validation</text>
+  
+  <!-- Identity Check -->
+  <rect x="450" y="80" width="140" height="60" rx="5" class="secure"/>
+  <text x="520" y="110" text-anchor="middle" class="label">Identity Check</text>
+  
+  <!-- Plan/Subscription -->
+  <rect x="250" y="200" width="140" height="60" rx="5" class="secure"/>
+  <text x="320" y="230" text-anchor="middle" class="label">Plan Check</text>
+  
+  <!-- Role Check -->
+  <rect x="450" y="200" width="140" height="60" rx="5" class="secure"/>
+  <text x="520" y="230" text-anchor="middle" class="label">Role Check</text>
+  
+  <!-- Endpoint Access -->
+  <rect x="350" y="320" width="140" height="60" rx="5" class="box"/>
+  <text x="420" y="350" text-anchor="middle" class="label">Endpoint Access</text>
+  
+  <!-- Error Response -->
+  <rect x="50" y="440" width="140" height="60" rx="5" class="box"/>
+  <text x="120" y="470" text-anchor="middle" class="label">Error (401/403)</text>
+  
+  <!-- Success -->
+  <rect x="650" y="440" width="140" height="60" rx="5" class="secure"/>
+  <text x="720" y="470" text-anchor="middle" class="label">Authorized</text>
+  
+  <!-- Arrows -->
+  <path d="M 190 110 L 250 110" class="arrow"/>
+  <path d="M 390 110 L 450 110" class="arrow"/>
+  <path d="M 520 140 L 320 200" class="arrow"/>
+  <path d="M 450 200 L 450 200" class="arrow"/>
+  <path d="M 520 200 L 520 200" class="arrow"/>
+  <path d="M 320 260 L 350 320" class="arrow"/>
+  <path d="M 520 260 L 420 320" class="arrow"/>
+  <path d="M 350 380 L 120 440" class="arrow"/>
+  <path d="M 420 380 L 650 440" class="arrow"/>
+  
+  <!-- Labels -->
+  <text x="220" y="105" class="label" fill="#666">Validate</text>
+  <text x="400" y="105" class="label" fill="#666">Verify</text>
+  <text x="420" y="175" class="label" fill="#666">Check</text>
+  <text x="300" y="295" class="label" fill="#666">Determine</text>
+  <text x="240" y="410" class="label" fill="#666">Reject</text>
+  <text x="540" y="410" class="label" fill="#666">Allow</text>
+</svg>
+

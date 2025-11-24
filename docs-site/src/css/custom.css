@@ -1,0 +1,185 @@
+/* OGC NewFinity – Docs visual refresh */
+
+/* Base typography + primary color */
+:root {
+  --ifm-font-family-base: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ifm-color-primary: #00ffc6; /* Neon teal */
+  --ifm-color-primary-dark: #00d9a7;
+  --ifm-color-primary-darker: #00b38a;
+  --ifm-color-primary-light: #5bffd8;
+  --ifm-color-primary-lighter: #8bffe3;
+
+  --ogc-surface: #020617;
+  --ogc-surface-soft: #02081f;
+  --ogc-border-subtle: #1f2937;
+  --ogc-accent-1: #00ffc6;
+  --ogc-accent-2: #ffbc25;
+  --ogc-accent-3: #5864ff;
+  --ogc-accent-4: #ff3cac;
+}
+
+/* Dark mode adjustments */
+html[data-theme="dark"] body {
+  background: radial-gradient(circle at top, #020617 0%, #020617 35%, #020617 100%);
+  color: #e5e7eb;
+}
+
+/* Constrain content width and make it feel like a card on dark background */
+.main-wrapper .container {
+  max-width: 1100px;
+}
+
+/* Docs pages main surface */
+.theme-doc-markdown {
+  background: radial-gradient(circle at top left, rgba(0, 255, 198, 0.06), transparent 55%),
+              radial-gradient(circle at bottom right, rgba(88, 100, 255, 0.08), transparent 60%),
+              #020617;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  padding: 2.5rem 2.75rem;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.9);
+}
+
+/* Headings styling */
+.theme-doc-markdown h1 {
+  font-size: 2.15rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  margin-bottom: 1.25rem;
+  color: #f9fafb;
+}
+
+.theme-doc-markdown h2 {
+  font-size: 1.4rem;
+  font-weight: 650;
+  margin-top: 2.2rem;
+  margin-bottom: 0.9rem;
+  color: var(--ogc-accent-1);
+}
+
+.theme-doc-markdown h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-top: 1.6rem;
+  margin-bottom: 0.5rem;
+  color: #e5e7eb;
+}
+
+/* Paragraphs and lists */
+.theme-doc-markdown p {
+  line-height: 1.7;
+  font-size: 0.98rem;
+  color: #e5e7eb;
+}
+
+.theme-doc-markdown ul,
+.theme-doc-markdown ol {
+  margin-left: 1.1rem;
+  padding-left: 0.9rem;
+}
+
+.theme-doc-markdown li {
+  margin-bottom: 0.25rem;
+}
+
+/* Inline code */
+.theme-doc-markdown code {
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 6px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.86rem;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+/* Code blocks */
+.theme-code-block {
+  background: #020617 !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.9);
+}
+
+/* Tables */
+.table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table table {
+  border-collapse: collapse;
+}
+
+.table th {
+  background: rgba(15, 23, 42, 0.95);
+  color: #e5e7eb;
+}
+
+.table td,
+.table th {
+  border: 1px solid rgba(55, 65, 81, 0.9);
+}
+
+/* Right-side TOC styling */
+.table-of-contents {
+  font-size: 0.8rem;
+}
+
+.table-of-contents__link {
+  color: #9ca3af;
+}
+
+.table-of-contents__link--active {
+  color: var(--ogc-accent-1);
+}
+
+/* Admonitions (notes, tips, warnings) */
+.alert {
+  border-radius: 14px;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.alert--info {
+  border-color: var(--ogc-accent-3);
+  background: rgba(88, 100, 255, 0.09);
+}
+
+.alert--tip {
+  border-color: var(--ogc-accent-1);
+  background: rgba(0, 255, 198, 0.08);
+}
+
+.alert--warning {
+  border-color: var(--ogc-accent-2);
+  background: rgba(255, 188, 37, 0.09);
+}
+
+.alert--danger {
+  border-color: var(--ogc-accent-4);
+  background: rgba(255, 60, 172, 0.11);
+}
+
+/* Links */
+.theme-doc-markdown a {
+  color: var(--ogc-accent-1);
+  text-decoration: none;
+}
+
+.theme-doc-markdown a:hover {
+  text-decoration: underline;
+}
+
+/* Images / diagrams */
+.theme-doc-markdown img {
+  border-radius: 14px;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.9);
+  margin: 1.4rem auto;
+  display: block;
+}
+
+/* Navbar slight tweak for dark mode */
+.navbar {
+  background-color: #020617;
+  border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+}

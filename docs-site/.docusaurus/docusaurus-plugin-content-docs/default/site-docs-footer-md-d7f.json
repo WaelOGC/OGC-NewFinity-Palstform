@@ -1,0 +1,14 @@
+{
+  "id": "footer",
+  "title": "Documentation Footer — OGC NewFinity Platform",
+  "description": "This footer is used across documentation pages to maintain consistency and clarity.",
+  "source": "@site/../docs/footer.md",
+  "sourceDirName": ".",
+  "slug": "/footer",
+  "permalink": "/footer",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

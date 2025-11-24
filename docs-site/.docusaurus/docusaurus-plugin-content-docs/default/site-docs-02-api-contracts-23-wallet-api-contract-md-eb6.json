@@ -1,0 +1,15 @@
+{
+  "id": "api-contracts/wallet-api-contract",
+  "title": "OGC NewFinity — Wallet API Contract (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/02-api-contracts/23-wallet-api-contract.md",
+  "sourceDirName": "02-api-contracts",
+  "slug": "/api-contracts/wallet-api-contract",
+  "permalink": "/api-contracts/wallet-api-contract",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 23,
+  "frontMatter": {}
+}

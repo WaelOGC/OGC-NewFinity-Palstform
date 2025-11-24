@@ -1,0 +1,23 @@
+sequenceDiagram
+
+%% Phase 8.3 – Subscription API Contract (v1.0)
+
+autonumber
+
+participant U as User
+participant FE as Frontend
+participant SUBS as Subscription API
+participant PAY as Payment Gateway
+participant DB as Database
+
+U->>FE: choose plan
+FE->>SUBS: POST /subscriptions/checkout
+SUBS->>PAY: create session
+PAY-->>SUBS: session url
+SUBS-->>FE: redirect to payment
+
+U->>PAY: complete checkout
+PAY-->>SUBS: webhook payment_succeeded
+SUBS->>DB: update subscription (active)
+SUBS-->>FE: notify success
+

@@ -1,0 +1,58 @@
+flowchart TB
+
+%% Phase 9.3 - Amy AI Agent Phase 2 Tool Set (Automation Tools)
+%% Automation tools included in Phase 2
+
+USER([User])
+
+subgraph AUTOMATION_TOOLS["Phase 2 Automation Tools"]
+  AUTO_RESEARCH[Auto-Research]
+  AUTO_DOC_GEN[Auto-Document Generator]
+  AUTO_SUMMARIZER[Auto-Summarizer]
+  WORKFLOW_AUTO[Workflow Automator]
+  AUTO_REPLY[Auto-Reply /<br/>Communication Engine]
+end
+
+subgraph AUTOMATION_FLOW["Automation Flow"]
+  USER_REQUEST[User Request]
+  TASK_DECOMPOSE[Task Decomposition]
+  MULTI_MODEL[Multiple Model Calls]
+  AGGREGATOR[Aggregator]
+  FINAL_OUTPUT[Final Output]
+end
+
+subgraph LONG_RUNNING["Long-Running Process"]
+  QUEUE_SYSTEM[Queue System<br/>Future]
+  ASYNC_PROCESS[Async Process]
+  STATUS_CHECK[Status Check]
+  NOTIFY_COMPLETE[Notify Completion]
+end
+
+USER --> USER_REQUEST
+USER_REQUEST --> AUTOMATION_TOOLS
+
+AUTOMATION_TOOLS --> AUTO_RESEARCH
+AUTOMATION_TOOLS --> AUTO_DOC_GEN
+AUTOMATION_TOOLS --> AUTO_SUMMARIZER
+AUTOMATION_TOOLS --> WORKFLOW_AUTO
+AUTOMATION_TOOLS --> AUTO_REPLY
+
+AUTO_RESEARCH --> TASK_DECOMPOSE
+AUTO_DOC_GEN --> TASK_DECOMPOSE
+AUTO_SUMMARIZER --> TASK_DECOMPOSE
+WORKFLOW_AUTO --> TASK_DECOMPOSE
+AUTO_REPLY --> TASK_DECOMPOSE
+
+TASK_DECOMPOSE --> MULTI_MODEL
+MULTI_MODEL --> AGGREGATOR
+AGGREGATOR --> FINAL_OUTPUT
+
+FINAL_OUTPUT -->|Quick Result| USER
+FINAL_OUTPUT -->|Long Process| QUEUE_SYSTEM
+
+QUEUE_SYSTEM --> ASYNC_PROCESS
+ASYNC_PROCESS --> STATUS_CHECK
+STATUS_CHECK -->|In Progress| ASYNC_PROCESS
+STATUS_CHECK -->|Complete| NOTIFY_COMPLETE
+NOTIFY_COMPLETE --> USER
+

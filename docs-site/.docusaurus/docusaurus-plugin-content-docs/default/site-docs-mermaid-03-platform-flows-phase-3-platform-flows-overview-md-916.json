@@ -1,0 +1,23 @@
+{
+  "id": "mermaid/platform-flows/phase-3-platform-flows-overview",
+  "title": "Phase 03 – Platform Flows Overview (OGC NewFinity Platform)",
+  "description": "Objective",
+  "source": "@site/../docs/mermaid/03-platform-flows/phase-3-platform-flows-overview.md",
+  "sourceDirName": "mermaid/03-platform-flows",
+  "slug": "/mermaid/platform-flows/phase-3-platform-flows-overview",
+  "permalink": "/mermaid/platform-flows/phase-3-platform-flows-overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "📁 Phase 1–3 — Platform Flows",
+    "permalink": "/mermaid/platform-flows/"
+  },
+  "next": {
+    "title": "📁 Phase 4 — Unified Master Flow",
+    "permalink": "/mermaid/unified-master-flow/"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "mermaid/governance/phase-6-governance-and-permissions-overview",
+  "title": "Phase 06 – Governance & Permissions Overview (OGC NewFinity Platform)",
+  "description": "Objective",
+  "source": "@site/../docs/mermaid/06-governance/phase-6-governance-and-permissions-overview.md",
+  "sourceDirName": "mermaid/06-governance",
+  "slug": "/mermaid/governance/phase-6-governance-and-permissions-overview",
+  "permalink": "/mermaid/governance/phase-6-governance-and-permissions-overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "📁 Phase 6 — Governance & Compliance",
+    "permalink": "/mermaid/governance/"
+  },
+  "next": {
+    "title": "RFC Guidelines",
+    "permalink": "/rfc/rfc-guidelines"
+  }
+}

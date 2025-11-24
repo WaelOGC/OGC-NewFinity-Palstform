@@ -1,0 +1,43 @@
+sequenceDiagram
+
+%% Phase 7.5 - Data Lifecycle CRUD via Prisma
+
+autonumber
+
+participant FE as Frontend
+participant API as Service API
+participant PR as Prisma Client
+participant DB as Database
+participant CACHE as Cache (optional)
+
+FE->>API: Create entity (POST)
+API->>PR: prisma.model.create(...)
+PR->>DB: INSERT
+DB-->>PR: row
+PR-->>API: entity
+API-->>FE: 201 created
+
+FE->>API: Read entity (GET)
+API->>CACHE: get key (miss)
+CACHE-->>API: null
+API->>PR: prisma.model.findUnique(...)
+PR->>DB: SELECT
+DB-->>PR: row
+PR-->>API: entity
+API->>CACHE: set key ttl
+API-->>FE: 200 entity
+
+FE->>API: Update entity (PATCH)
+API->>PR: prisma.model.update(...)
+PR->>DB: UPDATE
+DB-->>PR: row
+PR-->>API: entity
+API-->>FE: 200 updated
+
+FE->>API: Delete entity (DELETE)
+API->>PR: prisma.model.delete(...)
+PR->>DB: DELETE
+DB-->>PR: ok
+PR-->>API: success
+API-->>FE: 204 no content
+

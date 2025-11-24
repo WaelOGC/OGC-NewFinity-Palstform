@@ -1,0 +1,61 @@
+flowchart TB
+
+%% Phase 8.6 - Notifications & Webhooks API Contract (v1.0)
+
+subgraph CLIENT["Clients and Providers"]
+  FE["Frontend Client"]
+  EXT["External Provider (Email/Push/SMS)"]
+end
+
+subgraph API["Notifications API v1"]
+  E1["GET /notifications - list"]
+  E2["POST /notifications/send - create job"]
+  E3["POST /webhook/:provider - inbound webhooks"]
+  E4["GET /channels - discover"]
+  E5["POST /subscriptions - subscribe/unsubscribe"]
+end
+
+subgraph SVC["Notification Services"]
+  DIS["Dispatcher"]
+  QUE["Queue/Worker"]
+  TMP["Template Engine"]
+end
+
+subgraph DATA["Data Layer"]
+  DB["DB: notifications, deliveries, subscriptions"]
+  LOGS["Delivery Logs"]
+end
+
+%% Wiring
+FE --> E1
+FE --> E2
+FE --> E4
+FE --> E5
+EXT --> E3
+
+E1 --> DB
+E4 --> DB
+E5 --> DB
+
+E2 --> DIS
+DIS --> TMP
+TMP --> DIS
+DIS --> QUE
+QUE --> EXT
+EXT --> E3
+E3 --> LOGS
+QUE --> DB
+DIS --> DB
+
+%% Error surfaces
+subgraph ERR["Errors"]
+  ER401["401 unauthorized"]
+  ER400["400 invalid payload"]
+  ER429["429 rate limited"]
+  ER500["500 internal"]
+end
+API --> ER401
+E2 --> ER400
+E2 --> ER429
+API --> ER500
+

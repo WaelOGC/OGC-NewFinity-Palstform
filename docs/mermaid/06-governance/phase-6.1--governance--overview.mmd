@@ -1,0 +1,87 @@
+flowchart TB
+
+%% Phase 6.1 - Governance Overview Diagram
+%% High-level governance model
+
+subgraph ACTORS["Actors / Roles"]
+  PLATFORM_ADMIN[Platform Admin]
+  GOV_COMMITTEE[Governance Committee<br/>Future/Optional]
+  REGULAR_USER[Regular User]
+  PARTNER_ORG[Partner / Organization]
+end
+
+subgraph DOMAINS["Key Domains"]
+  POLICIES[Policies & Terms]
+  CONTENT_RULES[Content & Submission Rules]
+  REWARD_RULES[Reward & Token Rules]
+  ESCALATION[Escalation & Appeals]
+end
+
+subgraph POLICY_FLOW["Policy Creation Flow"]
+  POLICY_CREATE[Policy Creation / Update]
+  POLICY_PUBLISH[Publication]
+  POLICY_ENFORCE[Enforcement]
+end
+
+subgraph USER_ACTION_FLOW["User Action Flow"]
+  USER_ACTION[User Action<br/>Submission/Behavior]
+  POLICY_CHECK[Policy Check]
+  ACTION_DECISION{Decision}
+  ALLOWED[Allowed]
+  BLOCKED[Blocked]
+  FLAGGED[Flagged]
+end
+
+subgraph DISPUTE_FLOW["Dispute Flow"]
+  DISPUTE[Disputes]
+  ESCALATE[Escalation]
+  RESOLUTION[Resolution]
+  OUTCOME_LOG[Outcome Logged]
+end
+
+subgraph INTEGRATIONS["Governance Integrations"]
+  CHALLENGES_INT[Challenges]
+  BADGES_INT[Badges]
+  WALLET_INT[Wallet/Rewards]
+  ACCOUNT_STATUS[Account Status]
+end
+
+PLATFORM_ADMIN --> POLICY_CREATE
+GOV_COMMITTEE -.->|Future| POLICY_CREATE
+REGULAR_USER --> USER_ACTION
+PARTNER_ORG --> USER_ACTION
+
+POLICY_CREATE --> POLICY_PUBLISH
+POLICY_PUBLISH --> POLICY_ENFORCE
+POLICY_ENFORCE --> POLICY_CHECK
+
+POLICIES --> POLICY_FLOW
+CONTENT_RULES --> POLICY_FLOW
+REWARD_RULES --> POLICY_FLOW
+
+USER_ACTION --> POLICY_CHECK
+POLICY_CHECK --> ACTION_DECISION
+ACTION_DECISION -->|Pass| ALLOWED
+ACTION_DECISION -->|Fail| BLOCKED
+ACTION_DECISION -->|Review| FLAGGED
+
+FLAGGED --> DISPUTE
+DISPUTE --> ESCALATE
+ESCALATE --> RESOLUTION
+RESOLUTION --> OUTCOME_LOG
+
+POLICY_ENFORCE --> CHALLENGES_INT
+POLICY_ENFORCE --> BADGES_INT
+POLICY_ENFORCE --> WALLET_INT
+POLICY_ENFORCE --> ACCOUNT_STATUS
+
+ACTION_DECISION --> CHALLENGES_INT
+ACTION_DECISION --> BADGES_INT
+ACTION_DECISION --> WALLET_INT
+ACTION_DECISION --> ACCOUNT_STATUS
+
+OUTCOME_LOG --> CHALLENGES_INT
+OUTCOME_LOG --> BADGES_INT
+OUTCOME_LOG --> WALLET_INT
+OUTCOME_LOG --> ACCOUNT_STATUS
+

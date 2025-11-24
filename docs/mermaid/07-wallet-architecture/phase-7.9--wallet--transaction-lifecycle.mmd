@@ -1,0 +1,81 @@
+sequenceDiagram
+
+%% Phase 7.9 - OGC Blockchain Transaction Lifecycle
+%% OGC token transaction lifecycle
+
+autonumber
+
+participant U as User
+participant FE as Frontend
+participant WS as Wallet Service
+participant VAL as Validation Layer
+participant PN as Polygon RPC
+participant SC as Smart Contract
+participant DB as Database
+participant IDX as Indexer
+participant AUDIT as Audit System
+
+U->>FE: User Action<br/>(Transfer/Stake/etc.)
+FE->>WS: POST /wallet/transaction<br/>(Transaction Intent)
+
+WS->>VAL: Validate transaction
+VAL->>VAL: Check auth & signature
+VAL->>VAL: Check limits & balance
+VAL->>VAL: Validate format
+
+alt Validation failed
+    VAL-->>WS: Validation error
+    WS-->>FE: Error response
+    FE-->>U: Show error
+else Validation passed
+    VAL-->>WS: Validation OK
+    WS->>PN: Estimate gas fee
+    PN-->>WS: Gas estimate
+    
+    WS->>PN: Send raw transaction
+    PN->>SC: Execute transaction
+    SC-->>PN: Transaction receipt
+    PN-->>WS: Transaction hash (txHash)
+    
+    WS->>DB: Save transaction<br/>status: pending
+    WS-->>FE: 200 tx accepted<br/>(txHash)
+    FE-->>U: Transaction pending
+    
+    Note over WS,DB: Pending State
+    
+    loop Confirmation monitoring (1-5 blocks)
+        IDX->>PN: Monitor new blocks
+        PN-->>IDX: New block event
+        IDX->>PN: Get transaction receipt
+        PN-->>IDX: Receipt data
+        
+        alt Transaction confirmed
+            IDX->>DB: Update confirmations
+            IDX->>DB: Mark transaction completed
+            IDX->>WS: Confirmation event
+            WS->>DB: Finalize transaction
+            WS->>AUDIT: Log finalization
+            WS-->>FE: Push status update
+            FE-->>U: Transaction confirmed
+        end
+    end
+    
+    alt Transaction failed
+        PN-->>WS: Transaction reverted
+        WS->>DB: Mark transaction failed
+        WS->>DB: Revert balance changes
+        WS->>AUDIT: Log failure
+        WS-->>FE: Transaction failed
+        FE-->>U: Show failure message
+    end
+end
+
+Note over WS,PN: Retry Logic
+WS->>WS: Check retry queue
+WS->>PN: Retry failed transactions<br/>(with exponential backoff)
+
+Note over IDX,DB: Post-transaction Indexing
+IDX->>DB: Index transaction details
+IDX->>DB: Update wallet balances
+IDX->>AUDIT: Log indexing event
+

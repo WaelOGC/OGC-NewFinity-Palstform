@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <style>
+      .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+      .label { font-family: Arial, sans-serif; font-size: 14px; fill: #333; }
+      .box { fill: #e3f2fd; stroke: #1976d2; stroke-width: 2; }
+      .arrow { stroke: #1976d2; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#1976d2" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="400" y="30" text-anchor="middle" class="title">API Request Lifecycle</text>
+  
+  <!-- User/UI -->
+  <rect x="50" y="80" width="120" height="60" rx="5" class="box"/>
+  <text x="110" y="110" text-anchor="middle" class="label">User / UI</text>
+  
+  <!-- API Gateway -->
+  <rect x="250" y="80" width="120" height="60" rx="5" class="box"/>
+  <text x="310" y="110" text-anchor="middle" class="label">API Gateway</text>
+  
+  <!-- Auth Service -->
+  <rect x="450" y="80" width="120" height="60" rx="5" class="box"/>
+  <text x="510" y="110" text-anchor="middle" class="label">Auth Service</text>
+  
+  <!-- Domain Services -->
+  <rect x="250" y="200" width="120" height="60" rx="5" class="box"/>
+  <text x="310" y="230" text-anchor="middle" class="label">Domain Services</text>
+  
+  <!-- Internal DB -->
+  <rect x="50" y="320" width="120" height="60" rx="5" class="box"/>
+  <text x="110" y="350" text-anchor="middle" class="label">Internal DB</text>
+  
+  <!-- External APIs -->
+  <rect x="450" y="320" width="120" height="60" rx="5" class="box"/>
+  <text x="510" y="350" text-anchor="middle" class="label">External APIs</text>
+  
+  <!-- Response -->
+  <rect x="250" y="440" width="120" height="60" rx="5" class="box"/>
+  <text x="310" y="470" text-anchor="middle" class="label">JSON Response</text>
+  
+  <!-- Arrows -->
+  <path d="M 170 110 L 250 110" class="arrow"/>
+  <path d="M 370 110 L 450 110" class="arrow"/>
+  <path d="M 310 140 L 310 200" class="arrow"/>
+  <path d="M 250 230 L 110 350" class="arrow"/>
+  <path d="M 370 230 L 510 350" class="arrow"/>
+  <path d="M 110 380 L 310 440" class="arrow"/>
+  <path d="M 510 380 L 310 440" class="arrow"/>
+  
+  <!-- Flow labels -->
+  <text x="210" y="105" class="label" fill="#666">Request</text>
+  <text x="410" y="105" class="label" fill="#666">Auth Check</text>
+  <text x="320" y="175" class="label" fill="#666">Route</text>
+  <text x="170" y="300" class="label" fill="#666">Read/Write</text>
+  <text x="410" y="300" class="label" fill="#666">External</text>
+  <text x="210" y="420" class="label" fill="#666">Response</text>
+</svg>
+

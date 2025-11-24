@@ -1,0 +1,54 @@
+flowchart TB
+
+%% Phase 7.7 - OGC Wallet Rewards Data Flow
+%% How rewards are generated, calculated, and delivered
+
+subgraph REWARD_SOURCES["Reward Sources"]
+  CHALLENGE_REWARD[Challenge Rewards]
+  BADGE_MILESTONE[Badge Milestones]
+  CONTRIBUTION_MINING[Contribution Mining]
+  SPECIAL_EVENTS[Special Events /<br/>Seasonal Bonuses]
+end
+
+subgraph REWARD_FLOW["Reward Flow"]
+  EVENT_TRIGGER[Event Trigger]
+  REWARD_ENGINE[Reward Engine]
+  REWARD_CALC[Reward Calculation<br/>Token Amount]
+  STORE_PENDING[Store Pending Reward]
+  USER_APPROVAL{User Approval<br/>Required?}
+  ADD_BALANCE[Add to Token Balance]
+  LOG_TX[Log as Transaction]
+end
+
+subgraph OUTPUTS["Outputs"]
+  UPDATED_BALANCE[Updated Wallet Balance]
+  TX_RECORD[Transaction Record]
+  USER_NOTIFICATION[Notification to User]
+end
+
+REWARD_SOURCES --> EVENT_TRIGGER
+CHALLENGE_REWARD --> EVENT_TRIGGER
+BADGE_MILESTONE --> EVENT_TRIGGER
+CONTRIBUTION_MINING --> EVENT_TRIGGER
+SPECIAL_EVENTS --> EVENT_TRIGGER
+
+EVENT_TRIGGER --> REWARD_ENGINE
+REWARD_ENGINE --> REWARD_CALC
+REWARD_CALC --> STORE_PENDING
+STORE_PENDING --> USER_APPROVAL
+
+USER_APPROVAL -->|Yes| USER_APPROVAL_WAIT[Wait for Approval]
+USER_APPROVAL -->|No| ADD_BALANCE
+USER_APPROVAL_WAIT -->|Approved| ADD_BALANCE
+USER_APPROVAL_WAIT -->|Rejected| REWARD_CANCELLED[Reward Cancelled]
+
+ADD_BALANCE --> LOG_TX
+LOG_TX --> OUTPUTS
+
+OUTPUTS --> UPDATED_BALANCE
+OUTPUTS --> TX_RECORD
+OUTPUTS --> USER_NOTIFICATION
+
+UPDATED_BALANCE --> USER_NOTIFICATION
+TX_RECORD --> USER_NOTIFICATION
+

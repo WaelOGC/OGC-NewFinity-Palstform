@@ -1,0 +1,75 @@
+flowchart TB
+
+%% Phase 7.6 - OGC Wallet Platform Architecture
+%% Complete internal structure of the OGC platform wallet system
+
+USER([User])
+
+subgraph CORE_COMPONENTS["Core Components"]
+  WALLET_SERVICE[Wallet Service<br/>Platform-Level Controller]
+  TOKEN_BALANCE[Token Balance Store]
+  REWARDS_ENGINE[Rewards Engine]
+  STAKING_LOGIC[Staking Logic<br/>Future]
+  SYNC_ENGINE[On-chain Sync Engine]
+  TX_PROCESSOR[Transaction Processor]
+  SECURITY_LAYER[Security & Anti-Fraud Layer]
+end
+
+subgraph FLOWS["Wallet Flows"]
+  LOGIN_FLOW[User Login]
+  WALLET_FETCH[Wallet Fetch]
+  BALANCE_LOAD[Balance + Rewards Load]
+  WALLET_ACTION[Wallet Actions]
+  INTERNAL_VALID[Internal Validation]
+  COMMIT_STORE[Commit to Store]
+end
+
+subgraph FAILURE_PATHS["Failure Paths"]
+  INSUFFICIENT[Insufficient Balance]
+  INVALID_SIG[Invalid Signature]
+  VALIDATION_FAIL[Validation Failed]
+end
+
+subgraph INTEGRATIONS["Integrations"]
+  PRISMA_ORM[Prisma ORM]
+  MYSQL_DB[(MySQL DB)]
+  POLYGON[External Blockchain<br/>Polygon]
+end
+
+USER --> LOGIN_FLOW
+LOGIN_FLOW --> WALLET_FETCH
+WALLET_FETCH --> WALLET_SERVICE
+WALLET_SERVICE --> TOKEN_BALANCE
+WALLET_SERVICE --> REWARDS_ENGINE
+TOKEN_BALANCE --> BALANCE_LOAD
+REWARDS_ENGINE --> BALANCE_LOAD
+BALANCE_LOAD --> USER
+
+USER --> WALLET_ACTION
+WALLET_ACTION --> WALLET_SERVICE
+WALLET_SERVICE --> SECURITY_LAYER
+SECURITY_LAYER --> INTERNAL_VALID
+INTERNAL_VALID -->|Valid| COMMIT_STORE
+INTERNAL_VALID -->|Invalid| VALIDATION_FAIL
+
+VALIDATION_FAIL --> INSUFFICIENT
+VALIDATION_FAIL --> INVALID_SIG
+INSUFFICIENT --> USER
+INVALID_SIG --> USER
+
+COMMIT_STORE --> TX_PROCESSOR
+TX_PROCESSOR --> TOKEN_BALANCE
+TX_PROCESSOR --> SYNC_ENGINE
+SYNC_ENGINE --> POLYGON
+
+WALLET_SERVICE --> PRISMA_ORM
+TOKEN_BALANCE --> PRISMA_ORM
+REWARDS_ENGINE --> PRISMA_ORM
+TX_PROCESSOR --> PRISMA_ORM
+STAKING_LOGIC --> PRISMA_ORM
+
+PRISMA_ORM --> MYSQL_DB
+
+SYNC_ENGINE <--> POLYGON
+TX_PROCESSOR <--> POLYGON
+

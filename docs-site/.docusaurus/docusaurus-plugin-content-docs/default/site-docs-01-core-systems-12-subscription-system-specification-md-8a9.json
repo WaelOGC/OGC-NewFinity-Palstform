@@ -1,0 +1,15 @@
+{
+  "id": "core-systems/subscription-system-specification",
+  "title": "OGC NewFinity — Subscription System Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/01-core-systems/12-subscription-system-specification.md",
+  "sourceDirName": "01-core-systems",
+  "slug": "/core-systems/subscription-system-specification",
+  "permalink": "/core-systems/subscription-system-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 12,
+  "frontMatter": {}
+}

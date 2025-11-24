@@ -1,0 +1,15 @@
+{
+  "id": "navigation-flow-and-user-journey-maps",
+  "title": "OGC NewFinity — Navigation Flow & User Journey Maps (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/10-navigation-flow-and-user-journey-maps.md",
+  "sourceDirName": ".",
+  "slug": "/navigation-flow-and-user-journey-maps",
+  "permalink": "/navigation-flow-and-user-journey-maps",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 10,
+  "frontMatter": {}
+}

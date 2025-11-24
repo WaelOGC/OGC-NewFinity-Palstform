@@ -1,0 +1,55 @@
+sequenceDiagram
+
+%% Phase 9.7 - Amy AI Agent System Interaction Flow
+%% System interaction sequence
+
+autonumber
+
+participant U as User
+participant FE as Frontend
+participant AH as Amy Request Handler
+participant TR as Tool Router
+participant MS as Model Service
+participant TC as Tokens/Credits Service
+participant AL as Audit Logger
+participant NS as Notification Service
+
+U->>FE: Select tool
+FE->>AH: Send structured request<br/>(tool, input, metadata)
+
+AH->>AH: Validate metadata<br/>(auth, format, limits)
+
+alt Validation failed
+    AH-->>FE: Validation error
+    FE-->>U: Show error message
+else Validation passed
+    AH->>TR: Route request
+    TR->>TR: Select AI model<br/>(based on tool type)
+    TR->>MS: Execute model request
+    
+    MS->>MS: Process AI request
+    MS->>TC: Check credits/tokens
+    TC-->>MS: Credits available
+    
+    MS->>MS: Execute AI model call
+    MS-->>TR: AI results
+    
+    TR->>TC: Deduct tokens/credits
+    TC->>TC: Update usage records
+    TC-->>TR: Tokens deducted
+    
+    TR->>AH: Processed results
+    AH->>AH: Store results<br/>(history, saved outputs)
+    AH->>AL: Log audit entry
+    AL->>AL: Store audit record
+    
+    AH-->>FE: Response with results
+    FE-->>U: Display output
+    
+    opt Optional notification
+        AH->>NS: Trigger notification
+        NS->>NS: Prepare notification
+        NS-->>U: Send notification<br/>(email/push/in-app)
+    end
+end
+

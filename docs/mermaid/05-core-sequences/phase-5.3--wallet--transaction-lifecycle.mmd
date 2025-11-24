@@ -1,0 +1,30 @@
+sequenceDiagram
+
+%% Phase 5.3 - Wallet Transaction Lifecycle
+
+autonumber
+
+participant U as User
+participant FE as Frontend
+participant WAL as Wallet API
+participant TX as Transactions API
+participant IDX as Indexer
+participant DB as Database
+participant CHAIN as Polygon Node
+
+U->>FE: Transfer request (to, amount)
+FE->>WAL: POST /wallet/transfer
+WAL->>DB: Check balance
+DB-->>WAL: ok
+WAL->>TX: POST /tx/broadcast (signed tx)
+TX->>CHAIN: send raw tx
+CHAIN-->>TX: txHash
+TX->>DB: save transaction pending
+TX-->>FE: 200 tx accepted
+
+CHAIN-->>IDX: new block
+IDX->>DB: update confirmations
+IDX-->>TX: confirmation event
+TX->>DB: mark completed
+TX-->>FE: push status update
+

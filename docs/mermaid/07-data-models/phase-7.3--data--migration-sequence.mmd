@@ -1,0 +1,21 @@
+sequenceDiagram
+
+%% Phase 7.3 - Migration Sequence (Dev -> Staging -> Prod)
+
+autonumber
+
+participant Dev as Developer
+participant Repo as Git Repo
+participant CI as CI Pipeline
+participant DBd as Dev DB
+participant DBs as Staging DB
+participant DBp as Prod DB
+
+Dev->>Repo: Commit schema changes
+CI->>DBd: prisma migrate dev (create migration)
+CI-->>Repo: push migration folder
+CI->>DBs: prisma migrate deploy (staging)
+CI-->>Repo: tag release
+CI->>DBp: prisma migrate deploy (prod)
+Note over CI,DBp: Rollback plan kept via prior migration snapshots
+

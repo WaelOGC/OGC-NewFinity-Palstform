@@ -1,0 +1,80 @@
+flowchart TB
+
+%% Phase 6.4 - Audit & Compliance Flow
+%% How actions are tracked for audit and compliance
+
+subgraph SOURCES["Sources of Events"]
+  AUTH_EVENTS[Auth Actions<br/>Login, 2FA Changes,<br/>Password Reset]
+  GOV_EVENTS[Governance Actions<br/>Moderation Decisions,<br/>Policy Updates]
+  WALLET_EVENTS[Wallet & Rewards Events<br/>Manual Adjustments,<br/>Suspicious Activity Flags]
+  ADMIN_EVENTS[Admin Panel Actions<br/>Role Changes,<br/>Feature Toggles]
+end
+
+subgraph PROCESSING["Event Processing"]
+  EVENT_OCCURS[Event Occurs]
+  EVENT_NORMALIZE[Event Normalized]
+  EVENT_TAG[Tag Event]
+end
+
+subgraph TAGS["Event Tags"]
+  ACTOR_TAG[Actor]
+  TIMESTAMP_TAG[Timestamp]
+  ENTITY_TAG[Affected Entities<br/>User, Challenge,<br/>Wallet, etc.]
+  SEVERITY_TAG[Severity]
+end
+
+subgraph STORAGE["Audit Store"]
+  AUDIT_DB[Logged to Audit Store<br/>DB / Log System]
+  IMMUTABLE[Immutable Log Entry]
+end
+
+subgraph COMPLIANCE["Compliance Views"]
+  ADMIN_VIEW[Admin / Compliance Officer<br/>Runs Reports]
+  FILTER[Filter Logs]
+  FILTER_DATE[By Date Range]
+  FILTER_ACTOR[By Actor]
+  FILTER_TYPE[By Event Type]
+  FILTER_SEVERITY[By Severity]
+  EXPORT[Export Logs]
+  EXPORT_CSV[CSV Export]
+  EXPORT_SIEM[External SIEM Integration<br/>Future]
+end
+
+SOURCES --> EVENT_OCCURS
+AUTH_EVENTS --> EVENT_OCCURS
+GOV_EVENTS --> EVENT_OCCURS
+WALLET_EVENTS --> EVENT_OCCURS
+ADMIN_EVENTS --> EVENT_OCCURS
+
+EVENT_OCCURS --> EVENT_NORMALIZE
+EVENT_NORMALIZE --> EVENT_TAG
+
+EVENT_TAG --> TAGS
+TAGS --> ACTOR_TAG
+TAGS --> TIMESTAMP_TAG
+TAGS --> ENTITY_TAG
+TAGS --> SEVERITY_TAG
+
+ACTOR_TAG --> AUDIT_DB
+TIMESTAMP_TAG --> AUDIT_DB
+ENTITY_TAG --> AUDIT_DB
+SEVERITY_TAG --> AUDIT_DB
+
+AUDIT_DB --> IMMUTABLE
+IMMUTABLE --> COMPLIANCE
+
+COMPLIANCE --> ADMIN_VIEW
+ADMIN_VIEW --> FILTER
+FILTER --> FILTER_DATE
+FILTER --> FILTER_ACTOR
+FILTER --> FILTER_TYPE
+FILTER --> FILTER_SEVERITY
+
+FILTER_DATE --> EXPORT
+FILTER_ACTOR --> EXPORT
+FILTER_TYPE --> EXPORT
+FILTER_SEVERITY --> EXPORT
+
+EXPORT --> EXPORT_CSV
+EXPORT --> EXPORT_SIEM
+

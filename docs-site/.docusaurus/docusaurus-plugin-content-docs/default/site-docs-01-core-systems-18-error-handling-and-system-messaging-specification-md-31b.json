@@ -1,0 +1,15 @@
+{
+  "id": "core-systems/error-handling-and-system-messaging-specification",
+  "title": "OGC NewFinity — Error Handling & System Messaging Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/01-core-systems/18-error-handling-and-system-messaging-specification.md",
+  "sourceDirName": "01-core-systems",
+  "slug": "/core-systems/error-handling-and-system-messaging-specification",
+  "permalink": "/core-systems/error-handling-and-system-messaging-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 18,
+  "frontMatter": {}
+}

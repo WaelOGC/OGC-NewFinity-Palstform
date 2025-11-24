@@ -1,0 +1,23 @@
+{
+  "id": "tests/unit-tests",
+  "title": "Unit Tests — OGC NewFinity Platform",
+  "description": "Unit tests validate individual functions or modules in isolation.",
+  "source": "@site/../docs/tests/unit-tests.md",
+  "sourceDirName": "tests",
+  "slug": "/tests/unit-tests",
+  "permalink": "/tests/unit-tests",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Testing Overview — OGC NewFinity Platform",
+    "permalink": "/tests/testing-overview"
+  },
+  "next": {
+    "title": "📁 Phase 8 — API Contracts",
+    "permalink": "/mermaid/api-contracts/"
+  }
+}

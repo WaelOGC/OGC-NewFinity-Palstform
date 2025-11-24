@@ -1,0 +1,76 @@
+flowchart TB
+
+%% Phase 6.2 - Permissions Matrix Flow
+%% How permissions are evaluated
+
+REQUEST([Request])
+
+subgraph IDENTIFY["Identify User & Context"]
+  USER_ID[Identify User]
+  ROLE_ID[Identify Role]
+  SUBSCRIPTION[Check Subscription / Plan]
+end
+
+subgraph ROLES["Roles"]
+  ANON[Anonymous User]
+  AUTH_USER[Authenticated User]
+  PRO_SUB[Pro / Enterprise Subscriber]
+  MODERATOR[Moderator]
+  ADMIN[Admin]
+end
+
+subgraph RESOURCES["Resource Types"]
+  CHALL_SUB[Challenges & Submissions]
+  BADGE_REW[Badges & Rewards]
+  WALLET_TX[Wallet / Transactions]
+  ADMIN_TOOLS[Admin Tools]
+end
+
+subgraph EVALUATION["Permission Evaluation"]
+  ROLE_POLICY[Check Role-Based Policy]
+  PLAN_CHECK[Check Plan Permissions]
+  FEATURE_FLAG[Check Feature Flags<br/>Experimental Features]
+  COMBINE[Combine: Role + Plan + Feature Flag]
+end
+
+subgraph DECISION["Decision Logic"]
+  DECISION_NODE{Evaluate}
+  ALLOW[ALLOW]
+  READ_ONLY[READ-ONLY]
+  DENY[DENY]
+  REQUIRE_ESCALATION[REQUIRE-ESCALATION]
+end
+
+REQUEST --> USER_ID
+USER_ID --> ROLE_ID
+ROLE_ID --> ROLES
+ROLE_ID --> SUBSCRIPTION
+
+ROLES --> ANON
+ROLES --> AUTH_USER
+ROLES --> PRO_SUB
+ROLES --> MODERATOR
+ROLES --> ADMIN
+
+REQUEST --> RESOURCES
+RESOURCES --> CHALL_SUB
+RESOURCES --> BADGE_REW
+RESOURCES --> WALLET_TX
+RESOURCES --> ADMIN_TOOLS
+
+ROLE_ID --> ROLE_POLICY
+SUBSCRIPTION --> PLAN_CHECK
+REQUEST --> FEATURE_FLAG
+
+ROLE_POLICY --> COMBINE
+PLAN_CHECK --> COMBINE
+FEATURE_FLAG --> COMBINE
+
+COMBINE --> DECISION_NODE
+RESOURCES --> DECISION_NODE
+
+DECISION_NODE -->|Full Access| ALLOW
+DECISION_NODE -->|View Only| READ_ONLY
+DECISION_NODE -->|No Access| DENY
+DECISION_NODE -->|Needs Review| REQUIRE_ESCALATION
+

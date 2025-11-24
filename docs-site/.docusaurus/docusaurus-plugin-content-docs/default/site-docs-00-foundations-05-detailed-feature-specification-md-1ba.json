@@ -1,0 +1,15 @@
+{
+  "id": "foundations/detailed-feature-specification",
+  "title": "OGC NewFinity — Detailed Feature Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/00-foundations/05-detailed-feature-specification.md",
+  "sourceDirName": "00-foundations",
+  "slug": "/foundations/detailed-feature-specification",
+  "permalink": "/foundations/detailed-feature-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 5,
+  "frontMatter": {}
+}

@@ -1,0 +1,23 @@
+{
+  "id": "mermaid/data-models/README",
+  "title": "📁 Phase 7 — Data Models",
+  "description": "ERD, migration sequence, indexes, and CRUD lifecycle diagrams.",
+  "source": "@site/../docs/mermaid/07-data-models/README.md",
+  "sourceDirName": "mermaid/07-data-models",
+  "slug": "/mermaid/data-models/",
+  "permalink": "/mermaid/data-models/",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "📁 Phase 7 — Wallet Architecture",
+    "permalink": "/mermaid/wallet-architecture/"
+  },
+  "next": {
+    "title": "Phase 07 – Data Models & Prisma Layer Overview (OGC NewFinity Platform)",
+    "permalink": "/mermaid/data-models/phase-7-data-models-and-prisma-layer-overview"
+  }
+}

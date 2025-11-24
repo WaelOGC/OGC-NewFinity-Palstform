@@ -1,0 +1,23 @@
+sequenceDiagram
+
+%% Phase 5.2 - Subscription and Checkout Sequence
+
+autonumber
+
+participant U as User
+participant FE as Frontend
+participant SUBS as Subscription API
+participant PAY as Payment Provider
+participant DB as Database
+
+U->>FE: Select plan (Pro)
+FE->>SUBS: POST /subscriptions/checkout
+SUBS->>PAY: Create session
+PAY-->>SUBS: session url
+SUBS-->>FE: 200 redirect url
+
+U->>PAY: Complete payment
+PAY-->>SUBS: Webhook payment_succeeded
+SUBS->>DB: Update subscription status=active
+SUBS-->>FE: Notify client (in-app event)
+

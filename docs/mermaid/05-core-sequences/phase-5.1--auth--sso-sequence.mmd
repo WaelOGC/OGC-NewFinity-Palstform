@@ -1,0 +1,25 @@
+sequenceDiagram
+
+%% Phase 5.1 - Auth and SSO Sequence
+
+autonumber
+
+participant U as User
+participant FE as Frontend
+participant AUTH as Auth API
+participant DB as Database
+
+U->>FE: Submit credentials
+FE->>AUTH: POST /auth/login
+AUTH->>DB: Validate user and password
+DB-->>AUTH: User ok
+AUTH-->>FE: 200 tokens (access, refresh)
+
+U->>FE: Access protected page
+FE->>AUTH: GET /auth/verify (Bearer access)
+AUTH-->>FE: 200 valid
+
+Note over FE,AUTH: Refresh flow
+FE->>AUTH: POST /auth/refresh (refresh token)
+AUTH-->>FE: 200 new access token
+

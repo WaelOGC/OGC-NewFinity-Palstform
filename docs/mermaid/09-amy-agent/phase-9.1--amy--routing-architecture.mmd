@@ -1,0 +1,78 @@
+flowchart TB
+
+%% Phase 9.1 - Amy AI Agent Dynamic Backend Routing Architecture
+%% How Amy routes user requests dynamically
+
+USER([User])
+
+subgraph MAIN_COMPONENTS["Main Components"]
+  FRONTEND_UI[Frontend UI<br/>Tool Interface]
+  AMY_HANDLER[Amy Request Handler]
+  TOOL_ROUTER[Tool Router]
+  MODEL_SELECTOR[Model Selector<br/>GPT, Image Engine,<br/>Code Engine, Business Engine]
+  CREDITS_MGR[Credits/Usage Manager]
+  SAFETY_LAYER[Safety & Validation Layer]
+  RESPONSE_FORMATTER[Response Formatter]
+end
+
+subgraph MODELS["AI Models"]
+  GPT_MODEL[GPT Model]
+  IMAGE_ENGINE[Image Engine]
+  CODE_ENGINE[Code Engine]
+  BUSINESS_ENGINE[Business Engine]
+end
+
+subgraph FLOWS["Request Flows"]
+  USER_REQUEST[User Request]
+  HANDLER_PROCESS[Handler Processing]
+  ROUTER_SELECT[Router Selection]
+  MODEL_EXECUTE[Model Execution]
+  OUTPUT_GENERATE[Output Generation]
+  FORMAT_RESPONSE[Format Response]
+end
+
+subgraph ERROR_FLOWS["Error Flows"]
+  INVALID_TOOL[Invalid Tool]
+  SAFETY_BLOCK[Safety Block]
+  MODEL_TIMEOUT[Model Timeout]
+  ERROR_RESPONSE[Error Response]
+end
+
+USER --> USER_REQUEST
+USER_REQUEST --> FRONTEND_UI
+FRONTEND_UI --> AMY_HANDLER
+
+AMY_HANDLER --> HANDLER_PROCESS
+HANDLER_PROCESS --> SAFETY_LAYER
+SAFETY_LAYER -->|Valid| TOOL_ROUTER
+SAFETY_LAYER -->|Invalid| SAFETY_BLOCK
+
+TOOL_ROUTER --> ROUTER_SELECT
+ROUTER_SELECT --> MODEL_SELECTOR
+MODEL_SELECTOR --> CREDITS_MGR
+CREDITS_MGR -->|Credits Available| MODEL_EXECUTE
+CREDITS_MGR -->|Insufficient Credits| ERROR_RESPONSE
+
+MODEL_SELECTOR --> MODELS
+MODELS --> GPT_MODEL
+MODELS --> IMAGE_ENGINE
+MODELS --> CODE_ENGINE
+MODELS --> BUSINESS_ENGINE
+
+GPT_MODEL --> MODEL_EXECUTE
+IMAGE_ENGINE --> MODEL_EXECUTE
+CODE_ENGINE --> MODEL_EXECUTE
+BUSINESS_ENGINE --> MODEL_EXECUTE
+
+MODEL_EXECUTE --> OUTPUT_GENERATE
+OUTPUT_GENERATE --> RESPONSE_FORMATTER
+RESPONSE_FORMATTER --> FORMAT_RESPONSE
+FORMAT_RESPONSE --> USER
+
+ROUTER_SELECT -->|Invalid Tool| INVALID_TOOL
+MODEL_EXECUTE -->|Timeout| MODEL_TIMEOUT
+INVALID_TOOL --> ERROR_RESPONSE
+SAFETY_BLOCK --> ERROR_RESPONSE
+MODEL_TIMEOUT --> ERROR_RESPONSE
+ERROR_RESPONSE --> USER
+

@@ -1,0 +1,23 @@
+{
+  "id": "tests/test-standards",
+  "title": "Test Standards — OGC NewFinity Platform",
+  "description": "All tests must follow these standards:",
+  "source": "@site/../docs/tests/test-standards.md",
+  "sourceDirName": "tests",
+  "slug": "/tests/test-standards",
+  "permalink": "/tests/test-standards",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Integration Tests — OGC NewFinity Platform",
+    "permalink": "/tests/integration-tests"
+  },
+  "next": {
+    "title": "Testing Overview — OGC NewFinity Platform",
+    "permalink": "/tests/testing-overview"
+  }
+}

@@ -1,0 +1,71 @@
+flowchart TB
+
+%% Phase 4 - Unified Master Flow
+
+subgraph CLIENTS["Clients"]
+  WEB["Web App"]
+  MOB["Mobile App"]
+  ADMIN["Admin Panel"]
+end
+
+subgraph APIS["APIs v1"]
+  AUTH["Auth API"]
+  SUBS["Subscription API"]
+  WAL["Wallet API"]
+  TX["Transactions and Events API"]
+  NOTIF["Notifications API"]
+  ADMINAPI["Admin API"]
+  ANALYT["Analytics API"]
+end
+
+subgraph CORE["Core Modules"]
+  USERMOD["User System"]
+  AMY["Amy AI Agent"]
+  CHALL["Challenges"]
+  BADGE["Badges"]
+  GOV["Governance and Permissions"]
+end
+
+subgraph DATA["Data Layer"]
+  DB["MySQL via Prisma"]
+  STORAGE["Object Storage"]
+end
+
+subgraph CHAIN["Blockchain"]
+  POLY["Polygon Node"]
+end
+
+WEB --> AUTH
+WEB --> SUBS
+WEB --> WAL
+WEB --> NOTIF
+WEB --> AMY
+WEB --> CHALL
+
+MOB --> AUTH
+MOB --> WAL
+MOB --> NOTIF
+
+ADMIN --> AUTH
+ADMIN --> ADMINAPI
+ADMIN --> ANALYT
+ADMIN --> GOV
+
+AUTH --- DB
+SUBS --- DB
+WAL --- DB
+TX --- DB
+NOTIF --- DB
+ADMINAPI --- DB
+ANALYT --- DB
+
+WAL --> POLY
+TX <--> POLY
+
+AMY --> NOTIF
+CHALL --> BADGE
+BADGE --- DB
+GOV --- DB
+
+APIS --> DATA
+

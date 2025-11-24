@@ -1,0 +1,23 @@
+{
+  "id": "rfc/rfc-examples",
+  "title": "RFC Examples — OGC NewFinity Platform",
+  "description": "This file contains example RFCs to help contributors understand how to structure proposals.",
+  "source": "@site/../docs/rfc/rfc-examples.md",
+  "sourceDirName": "rfc",
+  "slug": "/rfc/rfc-examples",
+  "permalink": "/rfc/rfc-examples",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "RFC Guidelines",
+    "permalink": "/rfc/rfc-guidelines"
+  },
+  "next": {
+    "title": "RFC Guidelines",
+    "permalink": "/rfc/rfc-guidelines"
+  }
+}
