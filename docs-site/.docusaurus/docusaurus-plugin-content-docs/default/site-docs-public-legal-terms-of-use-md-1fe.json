@@ -1,0 +1,26 @@
+{
+  "id": "public/legal/terms-of-use",
+  "title": "Terms of Use",
+  "description": "Public-friendly terms of use outlining user responsibilities, acceptable behavior, platform rules, and general guidance for using OGC NewFinity services.",
+  "source": "@site/../docs/public/legal/terms-of-use.md",
+  "sourceDirName": "public/legal",
+  "slug": "/public/legal/terms-of-use",
+  "permalink": "/public/legal/terms-of-use",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Terms of Use",
+    "description": "Public-friendly terms of use outlining user responsibilities, acceptable behavior, platform rules, and general guidance for using OGC NewFinity services."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "OGC Public Roadmap",
+    "permalink": "/public/investors/public-roadmap"
+  },
+  "next": {
+    "title": "Privacy Policy",
+    "permalink": "/public/legal/privacy-policy"
+  }
+}

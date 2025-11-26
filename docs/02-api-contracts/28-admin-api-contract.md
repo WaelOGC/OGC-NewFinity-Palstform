@@ -128,27 +128,19 @@ Returns paginated list of all users.
 
 ### Success Response
 
+```json
 {
-
-"success": true,
-
-"users": [
-
-{
-
-"id": "string",
-
-"email": "string",
-
-"role": "standard",
-
-"created_at": "ISO"
-
+  "success": true,
+  "users": [
+    {
+      "id": "string",
+      "email": "string",
+      "role": "standard",
+      "created_at": "ISO"
+    }
+  ]
 }
-
-]
-
-}
+```
 
 
 

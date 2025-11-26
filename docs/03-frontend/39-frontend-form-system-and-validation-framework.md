@@ -318,7 +318,7 @@ Two-column or card-based forms
 
 11. Accessibility Requirements
 
-Every input must have a <label>
+Every input must have a `<label>`
 
 Error text announced via screen reader
 

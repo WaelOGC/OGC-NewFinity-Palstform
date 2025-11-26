@@ -182,33 +182,21 @@ No component shares its CSS file.
 
 Example structure:
 
+```css
 html {
-
-box-sizing: border-box;
-
+  box-sizing: border-box;
 }
 
 *, *::before, *::after {
-
-box-sizing: inherit;
-
+  box-sizing: inherit;
 }
 
 body {
-
-background: var(--color-dark-200);
-
-color: var(--color-white);
-
-font-family: var(--font-primary);
-
+  background: var(--color-dark-200);
+  color: var(--color-white);
+  font-family: var(--font-primary);
 }
-
-
-
-yaml
-
-Copy code
+```
 
 
 

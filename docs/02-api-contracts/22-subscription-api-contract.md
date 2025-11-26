@@ -116,51 +116,28 @@ Returns the list of available subscription plans.
 
 ### Success Response
 
+```json
 {
-
-"success": true,
-
-"plans": [
-
-{
-
-"id": "free",
-
-"price": 0,
-
-"features": [...]
-
-},
-
-{
-
-"id": "pro",
-
-"price": 9.99,
-
-"features": [...]
-
-},
-
-{
-
-"id": "enterprise",
-
-"price": 49.99,
-
-"features": [...]
-
+  "success": true,
+  "plans": [
+    {
+      "id": "free",
+      "price": 0,
+      "features": []
+    },
+    {
+      "id": "pro",
+      "price": 9.99,
+      "features": []
+    },
+    {
+      "id": "enterprise",
+      "price": 49.99,
+      "features": []
+    }
+  ]
 }
-
-]
-
-}
-
-
-
-yaml
-
-Copy code
+```
 
 
 

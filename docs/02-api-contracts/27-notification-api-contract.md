@@ -134,41 +134,26 @@ Returns all notifications for the authenticated user (paginated).
 
 ### Success Response
 
+```json
 {
-
-"success": true,
-
-"notifications": [
-
-{
-
-"id": "string",
-
-"title": "string",
-
-"message": "string",
-
-"type": "challenge",
-
-"is_read": false,
-
-"created_at": "ISO"
-
+  "success": true,
+  "notifications": [
+    {
+      "id": "string",
+      "title": "string",
+      "message": "string",
+      "type": "challenge",
+      "is_read": false,
+      "created_at": "ISO"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 145
+  }
 }
-
-],
-
-"pagination": {
-
-"page": 1,
-
-"limit": 20,
-
-"total": 145
-
-}
-
-}
+```
 
 
 

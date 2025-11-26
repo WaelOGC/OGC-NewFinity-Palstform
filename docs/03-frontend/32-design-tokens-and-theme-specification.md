@@ -354,15 +354,22 @@ Copy code
 
 Animation Keyframes:
 
-@keyframes fade-in { from {opacity:0;} to {opacity:1;} }
+```css
+@keyframes fade-in { 
+  from { opacity: 0; } 
+  to { opacity: 1; } 
+}
 
-@keyframes fade-up { from {opacity:0;transform:translateY(10px);} to {opacity:1;transform:translateY(0);} }
+@keyframes fade-up { 
+  from { opacity: 0; transform: translateY(10px); } 
+  to { opacity: 1; transform: translateY(0); } 
+}
 
-@keyframes scale-in { from {transform:scale(0.95);} to {transform:scale(1);} }
-
-
-
-yaml
+@keyframes scale-in { 
+  from { transform: scale(0.95); } 
+  to { transform: scale(1); } 
+}
+```
 
 Copy code
 

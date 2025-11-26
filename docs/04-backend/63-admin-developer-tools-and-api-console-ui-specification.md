@@ -190,7 +190,7 @@ Default headers prepopulated:
 
 Content-Type: application/json
 
-Authorization: Bearer <admin-token>
+Authorization: Bearer `<admin-token>`
 
 
 

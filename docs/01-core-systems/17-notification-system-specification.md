@@ -204,27 +204,18 @@ This document defines:
 
 Every notification must follow this schema:
 
-
-
+```json
 {
-
-id: string,
-
-user_id: string,
-
-title: string,
-
-message: string,
-
-type: string,
-
-metadata: JSON,
-
-is_read: boolean,
-
-created_at: datetime
-
+  "id": "string",
+  "user_id": "string",
+  "title": "string",
+  "message": "string",
+  "type": "string",
+  "metadata": {},
+  "is_read": false,
+  "created_at": "datetime"
 }
+```
 
 
 

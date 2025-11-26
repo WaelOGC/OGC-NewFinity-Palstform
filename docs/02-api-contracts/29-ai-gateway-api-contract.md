@@ -135,27 +135,16 @@ Authorization: `Bearer ACCESS_TOKEN`
 
 ### Request Body
 
+```json
 {
-
-"tool": "string",
-
-"prompt": "string",
-
-"options": {
-
-"temperature": number,
-
-"max_tokens": number
-
+  "tool": "string",
+  "prompt": "string",
+  "options": {
+    "temperature": 0.7,
+    "max_tokens": 1000
+  }
 }
-
-}
-
-
-
-shell
-
-Copy code
+```
 
 
 

@@ -104,21 +104,13 @@ Create a new user account.
 
 ### Request Body
 
+```json
 {
-
-"email": "string",
-
-"password": "string",
-
-"name": "string"
-
+  "email": "string",
+  "password": "string",
+  "name": "string"
 }
-
-
-
-markdown
-
-Copy code
+```
 
 
 

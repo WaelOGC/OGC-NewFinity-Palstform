@@ -1,0 +1,26 @@
+{
+  "id": "public/legal/privacy-policy",
+  "title": "Privacy Policy",
+  "description": "A public-friendly overview of how OGC NewFinity collects, uses, and protects user data across its platform and services.",
+  "source": "@site/../docs/public/legal/privacy-policy.md",
+  "sourceDirName": "public/legal",
+  "slug": "/public/legal/privacy-policy",
+  "permalink": "/public/legal/privacy-policy",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Privacy Policy",
+    "description": "A public-friendly overview of how OGC NewFinity collects, uses, and protects user data across its platform and services."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Terms of Use",
+    "permalink": "/public/legal/terms-of-use"
+  },
+  "next": {
+    "title": "Cookies & Data Policy",
+    "permalink": "/public/legal/cookies-and-data-policy"
+  }
+}

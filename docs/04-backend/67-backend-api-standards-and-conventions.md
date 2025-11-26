@@ -252,21 +252,13 @@ Always use:
 
 Example:
 
+```json
 {
-
-"title": "AI Challenge",
-
-"category": "technology",
-
-"deadline": "2025-04-01T18:00:00Z"
-
+  "title": "AI Challenge",
+  "category": "technology",
+  "deadline": "2025-04-01T18:00:00Z"
 }
-
-
-
-yaml
-
-Copy code
+```
 
 
 
@@ -280,21 +272,13 @@ Copy code
 
 ## Success Response Format:
 
+```json
 {
-
-"success": true,
-
-"message": "Entity created successfully.",
-
-"data": { ... }
-
+  "success": true,
+  "message": "Entity created successfully.",
+  "data": {}
 }
-
-
-
-yaml
-
-Copy code
+```
 
 
 
@@ -314,27 +298,16 @@ Copy code
 
 ## Error Response Format:
 
+```json
 {
-
-"success": false,
-
-"error": {
-
-"code": "INVALID_INPUT",
-
-"message": "Email address is required.",
-
-"details": { ... }
-
+  "success": false,
+  "error": {
+    "code": "INVALID_INPUT",
+    "message": "Email address is required.",
+    "details": {}
+  }
 }
-
-}
-
-
-
-yaml
-
-Copy code
+```
 
 
 

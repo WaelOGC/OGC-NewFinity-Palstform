@@ -174,39 +174,22 @@ Returns contribution history of authenticated user.
 
 ### Response
 
+```json
 {
-
-"success": true,
-
-"contributions": [
-
-{
-
-"id": "string",
-
-"action_type": "submission",
-
-"points": 25,
-
-"multiplier": 1.5,
-
-"total": 37.5,
-
-"metadata": {},
-
-"created_at": "ISO"
-
+  "success": true,
+  "contributions": [
+    {
+      "id": "string",
+      "action_type": "submission",
+      "points": 25,
+      "multiplier": 1.5,
+      "total": 37.5,
+      "metadata": {},
+      "created_at": "ISO"
+    }
+  ]
 }
-
-]
-
-}
-
-
-
-yaml
-
-Copy code
+```
 
 
 

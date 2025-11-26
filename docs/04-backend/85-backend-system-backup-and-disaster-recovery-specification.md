@@ -98,7 +98,7 @@ Backups must be:
 
 Backups stored in a structure:
 
-/backups/<env>/<type>/<YYYY>/<MM>/<DD>/<timestamp>/
+`/backups/<env>/<type>/<YYYY>/<MM>/<DD>/<timestamp>/`
 
 yaml
 Copy code

@@ -130,41 +130,23 @@ Returns a list of all active challenges, optionally filtered.
 
 ### Success Response
 
+```json
 {
-
-"success": true,
-
-"challenges": [
-
-{
-
-"id": "string",
-
-"title": "string",
-
-"category": "string",
-
-"track": "students|groups|freelancers",
-
-"status": "open",
-
-"prize_pool": "string",
-
-"start_date": "ISO",
-
-"end_date": "ISO"
-
+  "success": true,
+  "challenges": [
+    {
+      "id": "string",
+      "title": "string",
+      "category": "string",
+      "track": "students|groups|freelancers",
+      "status": "open",
+      "prize_pool": "string",
+      "start_date": "ISO",
+      "end_date": "ISO"
+    }
+  ]
 }
-
-]
-
-}
-
-
-
-yaml
-
-Copy code
+```
 
 
 

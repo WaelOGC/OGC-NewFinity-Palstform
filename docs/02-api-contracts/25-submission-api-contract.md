@@ -130,21 +130,13 @@ Authorization: `Bearer ACCESS_TOKEN`
 
 ### Request Body
 
+```json
 {
-
-"challenge_id": "string",
-
-"content_url": "string",
-
-"text_content": "string|null"
-
+  "challenge_id": "string",
+  "content_url": "string",
+  "text_content": "string|null"
 }
-
-
-
-markdown
-
-Copy code
+```
 
 
 

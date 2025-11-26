@@ -124,31 +124,18 @@ Authorization: `Bearer ACCESS_TOKEN`
 
 ### Success Response
 
+```json
 {
-
-"success": true,
-
-"wallet": {
-
-"onchain_balance": "string",
-
-"offchain_balance": "string",
-
-"total_balance": "string",
-
-"pending_rewards": "string",
-
-"last_synced": "ISO"
-
+  "success": true,
+  "wallet": {
+    "onchain_balance": "string",
+    "offchain_balance": "string",
+    "total_balance": "string",
+    "pending_rewards": "string",
+    "last_synced": "ISO"
+  }
 }
-
-}
-
-
-
-yaml
-
-Copy code
+```
 
 
 

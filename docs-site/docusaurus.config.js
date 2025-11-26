@@ -27,7 +27,8 @@ const config = {
           path: '../docs',
           routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
-          editCurrentVersion: false
+          editCurrentVersion: false,
+          include: ['**/*.md', '**/*.mdx'],
         },
         blog: false,
         theme: {

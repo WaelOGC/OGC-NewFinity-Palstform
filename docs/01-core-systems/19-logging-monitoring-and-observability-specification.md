@@ -128,27 +128,16 @@ These logs are mandatory for governance.
 
 All logs follow a standardized JSON format:
 
-
-
+```json
 {
-
-"timestamp": "ISO8601",
-
-"level": "info|warning|error|critical",
-
-"service": "auth|wallet|ai|challenge|admin|subscription",
-
-"message": "Readable message",
-
-"user_id": "optional",
-
-"metadata": { ... }
-
+  "timestamp": "ISO8601",
+  "level": "info|warning|error|critical",
+  "service": "auth|wallet|ai|challenge|admin|subscription",
+  "message": "Readable message",
+  "user_id": "optional",
+  "metadata": {}
 }
-
-
-
-yaml
+```
 
 Copy code
 

@@ -92,6 +92,76 @@ const sidebars = {
         'shortcuts',
       ],
     },
+
+    // 7. Public Documentation
+    {
+      type: 'category',
+      label: '🌐 Public Documentation',
+      collapsed: false,
+      items: [
+        {
+          type: 'category',
+          label: 'Overview',
+          items: [
+            'public/overview/ogc-newfinity-overview',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Token',
+          items: [
+            'public/token/ogcfinity-token-summary',
+            'public/token/tokenomics-visual',
+            'public/token/ecosystem-economy',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Platform',
+          items: [
+            'public/platform/platform-user-guide',
+            'public/platform/wallet-feature-sheet',
+            'public/platform/subscriptions-overview',
+            'public/platform/ai-agent-amy-overview',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Challenge',
+          items: [
+            'public/challenge/challenge-program-overview',
+            'public/challenge/tracks-categories',
+            'public/challenge/judging-and-rules',
+            'public/challenge/challenge-faq',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Investors',
+          items: [
+            'public/investors/investor-information-pack',
+            'public/investors/market-positioning',
+            'public/investors/public-roadmap',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Legal',
+          items: [
+            'public/legal/terms-of-use',
+            'public/legal/privacy-policy',
+            'public/legal/cookies-and-data-policy',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Whitepaper',
+          items: [
+            'public/whitepaper/ogc-whitepaper-public',
+          ],
+        },
+      ],
+    },
   ],
 };
 

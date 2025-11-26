@@ -1,0 +1,22 @@
+{
+  "id": "public/whitepaper/ogc-whitepaper-public",
+  "title": "OGC NewFinity — Public Whitepaper",
+  "description": "The official public whitepaper introducing the OGC NewFinity ecosystem, OGC Token, AI tools, innovation programs, and long-term technology roadmap.",
+  "source": "@site/../docs/public/whitepaper/ogc-whitepaper-public.md",
+  "sourceDirName": "public/whitepaper",
+  "slug": "/public/whitepaper/ogc-whitepaper-public",
+  "permalink": "/public/whitepaper/ogc-whitepaper-public",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "OGC NewFinity — Public Whitepaper",
+    "description": "The official public whitepaper introducing the OGC NewFinity ecosystem, OGC Token, AI tools, innovation programs, and long-term technology roadmap."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Cookies & Data Policy",
+    "permalink": "/public/legal/cookies-and-data-policy"
+  }
+}

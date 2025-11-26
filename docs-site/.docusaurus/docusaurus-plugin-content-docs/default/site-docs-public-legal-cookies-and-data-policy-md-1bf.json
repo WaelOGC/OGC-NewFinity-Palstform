@@ -1,0 +1,26 @@
+{
+  "id": "public/legal/cookies-and-data-policy",
+  "title": "Cookies & Data Policy",
+  "description": "Learn how OGC NewFinity uses cookies, analytics tools, and session data to improve platform performance and user experience.",
+  "source": "@site/../docs/public/legal/cookies-and-data-policy.md",
+  "sourceDirName": "public/legal",
+  "slug": "/public/legal/cookies-and-data-policy",
+  "permalink": "/public/legal/cookies-and-data-policy",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Cookies & Data Policy",
+    "description": "Learn how OGC NewFinity uses cookies, analytics tools, and session data to improve platform performance and user experience."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Privacy Policy",
+    "permalink": "/public/legal/privacy-policy"
+  },
+  "next": {
+    "title": "OGC NewFinity — Public Whitepaper",
+    "permalink": "/public/whitepaper/ogc-whitepaper-public"
+  }
+}

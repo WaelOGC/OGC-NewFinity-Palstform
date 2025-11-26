@@ -136,31 +136,17 @@ Client-side internet or timeout problems.
 
 All backend errors must follow this structure:
 
-
-
+```json
 {
-
-"success": false,
-
-"error": {
-
-"code": "ERROR_CODE",
-
-"message": "Readable user-friendly message",
-
-"details": {},
-
-"timestamp": "ISO8601"
-
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Readable user-friendly message",
+    "details": {},
+    "timestamp": "ISO8601"
+  }
 }
-
-}
-
-
-
-markdown
-
-Copy code
+```
 
 
 

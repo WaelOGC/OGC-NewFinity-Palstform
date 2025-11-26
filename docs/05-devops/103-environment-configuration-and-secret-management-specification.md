@@ -223,7 +223,7 @@ Trigger alerts when:
 
 ## 9. Performance Considerations
 
-- Secret loading should add <1 ms overhead
+- Secret loading should add less than 1 ms overhead
 - Configuration caching allowed after initial load
 - Hot reload of config not permitted in production
 
