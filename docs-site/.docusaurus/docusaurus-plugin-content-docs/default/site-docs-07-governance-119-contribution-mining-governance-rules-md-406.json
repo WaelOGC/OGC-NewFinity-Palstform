@@ -1,0 +1,15 @@
+{
+  "id": "governance/contribution-mining-governance-rules",
+  "title": "OGC NewFinity — Contribution-Mining Governance Rules (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/07-governance/119-contribution-mining-governance-rules.md",
+  "sourceDirName": "07-governance",
+  "slug": "/governance/contribution-mining-governance-rules",
+  "permalink": "/governance/contribution-mining-governance-rules",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 119,
+  "frontMatter": {}
+}

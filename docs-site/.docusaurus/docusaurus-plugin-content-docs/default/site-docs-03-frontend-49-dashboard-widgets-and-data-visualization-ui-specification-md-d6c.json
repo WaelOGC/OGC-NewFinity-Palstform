@@ -1,0 +1,15 @@
+{
+  "id": "frontend/dashboard-widgets-and-data-visualization-ui-specification",
+  "title": "OGC NewFinity — Dashboard Widgets & Data Visualization UI Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/03-frontend/49-dashboard-widgets-and-data-visualization-ui-specification.md",
+  "sourceDirName": "03-frontend",
+  "slug": "/frontend/dashboard-widgets-and-data-visualization-ui-specification",
+  "permalink": "/frontend/dashboard-widgets-and-data-visualization-ui-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 49,
+  "frontMatter": {}
+}

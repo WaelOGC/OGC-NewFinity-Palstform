@@ -1,0 +1,15 @@
+{
+  "id": "frontend/submissions-ui-specification",
+  "title": "OGC NewFinity — Submissions UI Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/03-frontend/44-submissions-ui-specification.md",
+  "sourceDirName": "03-frontend",
+  "slug": "/frontend/submissions-ui-specification",
+  "permalink": "/frontend/submissions-ui-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 44,
+  "frontMatter": {}
+}

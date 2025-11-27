@@ -1,0 +1,15 @@
+{
+  "id": "backend/backend-internationalization-i18n-support-specification",
+  "title": "OGC NewFinity — Backend Internationalization (i18n) Support Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/98-backend-internationalization-i18n-support-specification.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/backend-internationalization-i18n-support-specification",
+  "permalink": "/backend/backend-internationalization-i18n-support-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 98,
+  "frontMatter": {}
+}

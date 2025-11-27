@@ -1,0 +1,23 @@
+{
+  "id": "api/api-index",
+  "title": "OGC NewFinity Platform — API Documentation Index",
+  "description": "List of all API blueprint documents.",
+  "source": "@site/../docs/api/api-index.md",
+  "sourceDirName": "api",
+  "slug": "/api/api-index",
+  "permalink": "/api/api-index",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "API Blueprint Template — OGC NewFinity Platform",
+    "permalink": "/api/api-blueprint-template"
+  },
+  "next": {
+    "title": "Auth API Blueprint — OGC NewFinity Platform",
+    "permalink": "/api/auth-api-blueprint"
+  }
+}

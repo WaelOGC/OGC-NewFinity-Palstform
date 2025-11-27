@@ -1,0 +1,27 @@
+{
+  "id": "structure-map",
+  "title": "OGC NewFinity Platform — Project Structure Map",
+  "description": "This document provides a high-level map of the OGC NewFinity Platform repository, focusing on architecture, documentation, and system diagrams.",
+  "source": "@site/../docs/structure-map.md",
+  "sourceDirName": ".",
+  "slug": "/structure-map",
+  "permalink": "/structure-map",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "structure-map",
+    "title": "OGC NewFinity Platform — Project Structure Map",
+    "sidebar_label": "Repo Structure Map"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Documentation Overview",
+    "permalink": "/documentation-overview"
+  },
+  "next": {
+    "title": "Diagram Index",
+    "permalink": "/mermaid/"
+  }
+}

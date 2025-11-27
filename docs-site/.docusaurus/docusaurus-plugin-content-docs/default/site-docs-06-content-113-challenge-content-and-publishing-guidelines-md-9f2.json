@@ -1,0 +1,15 @@
+{
+  "id": "content/challenge-content-and-publishing-guidelines",
+  "title": "OGC NewFinity — Challenge Content & Publishing Guidelines (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/06-content/113-challenge-content-and-publishing-guidelines.md",
+  "sourceDirName": "06-content",
+  "slug": "/content/challenge-content-and-publishing-guidelines",
+  "permalink": "/content/challenge-content-and-publishing-guidelines",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 113,
+  "frontMatter": {}
+}

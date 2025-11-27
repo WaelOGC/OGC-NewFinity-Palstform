@@ -1,0 +1,15 @@
+{
+  "id": "backend/backend-storage-management-and-bucket-lifecycle-rules",
+  "title": "OGC NewFinity — Backend Storage Management & Bucket Lifecycle Rules (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/91-backend-storage-management-and-bucket-lifecycle-rules.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/backend-storage-management-and-bucket-lifecycle-rules",
+  "permalink": "/backend/backend-storage-management-and-bucket-lifecycle-rules",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 91,
+  "frontMatter": {}
+}

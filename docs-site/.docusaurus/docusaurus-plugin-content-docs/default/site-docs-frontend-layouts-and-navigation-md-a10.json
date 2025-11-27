@@ -1,0 +1,14 @@
+{
+  "id": "frontend/layouts-and-navigation",
+  "title": "OGC NewFinity Platform — Frontend Layouts & Navigation",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/frontend/layouts-and-navigation.md",
+  "sourceDirName": "frontend",
+  "slug": "/frontend/layouts-and-navigation",
+  "permalink": "/frontend/layouts-and-navigation",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

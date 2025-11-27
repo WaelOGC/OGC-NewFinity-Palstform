@@ -1,0 +1,15 @@
+{
+  "id": "governance/governance-framework-overview",
+  "title": "OGC NewFinity — Governance Framework Overview (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/07-governance/118-governance-framework-overview.md",
+  "sourceDirName": "07-governance",
+  "slug": "/governance/governance-framework-overview",
+  "permalink": "/governance/governance-framework-overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 118,
+  "frontMatter": {}
+}

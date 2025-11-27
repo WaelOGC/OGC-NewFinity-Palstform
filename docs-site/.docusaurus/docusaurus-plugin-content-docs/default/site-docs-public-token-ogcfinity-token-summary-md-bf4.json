@@ -1,0 +1,27 @@
+{
+  "id": "public/token/ogcfinity-token-summary",
+  "title": "OGCFinity Token — Summary",
+  "description": "A simplified public overview of OGCFinity, its two-phase token model, mission, utility, and role in the OGC NewFinity Ecosystem.",
+  "source": "@site/../docs/public/token/ogcfinity-token-summary.md",
+  "sourceDirName": "public/token",
+  "slug": "/public/token/ogcfinity-token-summary",
+  "permalink": "/public/token/ogcfinity-token-summary",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "OGCFinity Token — Summary",
+    "sidebar_label": "Token Overview",
+    "description": "A simplified public overview of OGCFinity, its two-phase token model, mission, utility, and role in the OGC NewFinity Ecosystem."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "OGC NewFinity — Overview",
+    "permalink": "/public/overview/ogc-newfinity-overview"
+  },
+  "next": {
+    "title": "Tokenomics",
+    "permalink": "/public/token/tokenomics-visual"
+  }
+}

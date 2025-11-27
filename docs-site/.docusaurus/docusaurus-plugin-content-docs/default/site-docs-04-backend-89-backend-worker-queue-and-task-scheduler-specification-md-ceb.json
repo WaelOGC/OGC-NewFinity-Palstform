@@ -1,0 +1,15 @@
+{
+  "id": "backend/backend-worker-queue-and-task-scheduler-specification",
+  "title": "OGC NewFinity — Backend Worker Queue & Task Scheduler Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/89-backend-worker-queue-and-task-scheduler-specification.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/backend-worker-queue-and-task-scheduler-specification",
+  "permalink": "/backend/backend-worker-queue-and-task-scheduler-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 89,
+  "frontMatter": {}
+}

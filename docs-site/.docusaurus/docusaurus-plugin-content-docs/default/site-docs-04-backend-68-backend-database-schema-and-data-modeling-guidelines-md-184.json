@@ -1,0 +1,15 @@
+{
+  "id": "backend/backend-database-schema-and-data-modeling-guidelines",
+  "title": "OGC NewFinity — Backend Database Schema & Data Modeling Guidelines (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/68-backend-database-schema-and-data-modeling-guidelines.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/backend-database-schema-and-data-modeling-guidelines",
+  "permalink": "/backend/backend-database-schema-and-data-modeling-guidelines",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 68,
+  "frontMatter": {}
+}

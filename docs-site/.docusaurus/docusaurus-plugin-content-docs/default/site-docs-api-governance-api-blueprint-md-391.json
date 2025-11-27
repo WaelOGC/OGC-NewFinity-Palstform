@@ -1,0 +1,23 @@
+{
+  "id": "api/governance-api-blueprint",
+  "title": "OGC NewFinity Platform — Governance API Blueprint",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/api/governance-api-blueprint.md",
+  "sourceDirName": "api",
+  "slug": "/api/governance-api-blueprint",
+  "permalink": "/api/governance-api-blueprint",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "OGC NewFinity Platform — Challenge API Blueprint",
+    "permalink": "/api/challenge-api-blueprint"
+  },
+  "next": {
+    "title": "OGC NewFinity Platform — Notification System API Blueprint",
+    "permalink": "/api/notification-api-blueprint"
+  }
+}

@@ -102,13 +102,23 @@ These code areas are aligned with the documentation and diagrams:
 - Node.js + Express
 - Prisma ORM
 - MySQL database
-- Services: Auth, Wallet, Amy Router, Challenge, Governance
+- Services: Auth, OGC Wallet, Amy AI Agent, OGC NewFinity Challenge Program, Contribution-Based Mining, Governance
 
 **Frontend: frontend/**
 
 - React + Vite
-- Layouts for login, platform dashboards, wallet dashboard, Amy dashboard
+- Layouts for login, platform dashboards, OGC Wallet dashboard, Amy Agent dashboard
 - Shared components: header, sidebar, cards, forms
+
+**Token System: OGCFinity**
+
+- Phase 1: OGCFinity – Genesis Token (Polygon, ERC-20, Fixed Supply) - 500M fixed supply
+- Phase 2: OGCFinity – Native Ecosystem Token (OGC Chain, Governance-Based Supply) - Future
+
+**Challenge Program: OGC NewFinity Challenge Program**
+
+- Funded by Innovation & Sustainability Challenge Fund (20% – 100M OGCFinity)
+- Three tracks: School Students, Freelancers & Solo Innovators, Startup Teams & Groups
 
 The documentation always remains the reference for how these structures should evolve.
 

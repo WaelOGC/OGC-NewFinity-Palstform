@@ -24,7 +24,7 @@ These sequences show how user actions and system triggers evolve across APIs, da
 
    - Transaction initiated → validated → broadcast to blockchain.
    - Indexer tracks confirmations → updates DB record.
-   - Rewards, staking, and contribution mining tied to this flow.
+   - Rewards, staking, and Contribution-Based Mining tied to this flow.
 
 4. **Challenge & Badge Lifecycle**
 

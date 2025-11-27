@@ -83,7 +83,7 @@ Users must meet at least one of the following:
 - Verified platform account
 - Completed minimum onboarding
 - Participated in at least one challenge
-- Held OGC tokens (future)
+- Held OGCFinity (future)
 
 ### 4.2 Ineligible Participants
 

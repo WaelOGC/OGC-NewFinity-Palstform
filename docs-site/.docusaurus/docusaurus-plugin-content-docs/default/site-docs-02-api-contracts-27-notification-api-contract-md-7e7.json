@@ -1,0 +1,15 @@
+{
+  "id": "api-contracts/notification-api-contract",
+  "title": "OGC NewFinity — Notification API Contract (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/02-api-contracts/27-notification-api-contract.md",
+  "sourceDirName": "02-api-contracts",
+  "slug": "/api-contracts/notification-api-contract",
+  "permalink": "/api-contracts/notification-api-contract",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 27,
+  "frontMatter": {}
+}

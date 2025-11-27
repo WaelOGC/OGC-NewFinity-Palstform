@@ -1,0 +1,14 @@
+{
+  "id": "wallet/wallet-product-spec",
+  "title": "OGC NewFinity Platform — Wallet Product Specification",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/wallet/wallet-product-spec.md",
+  "sourceDirName": "wallet",
+  "slug": "/wallet/wallet-product-spec",
+  "permalink": "/wallet/wallet-product-spec",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

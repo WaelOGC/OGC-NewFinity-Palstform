@@ -1,0 +1,15 @@
+{
+  "id": "api-contracts/badge-contribution-api-contract",
+  "title": "OGC NewFinity — Badge & Contribution API Contract (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/02-api-contracts/26-badge-contribution-api-contract.md",
+  "sourceDirName": "02-api-contracts",
+  "slug": "/api-contracts/badge-contribution-api-contract",
+  "permalink": "/api-contracts/badge-contribution-api-contract",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 26,
+  "frontMatter": {}
+}

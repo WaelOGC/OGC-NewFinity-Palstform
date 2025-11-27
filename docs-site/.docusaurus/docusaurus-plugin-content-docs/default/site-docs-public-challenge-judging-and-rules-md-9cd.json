@@ -1,0 +1,27 @@
+{
+  "id": "public/challenge/judging-and-rules",
+  "title": "Judging & Evaluation Criteria",
+  "description": "Official scoring system, evaluation criteria, eligibility requirements, and challenge rules for the OGC NewFinity Challenge Program.",
+  "source": "@site/../docs/public/challenge/judging-and-rules.md",
+  "sourceDirName": "public/challenge",
+  "slug": "/public/challenge/judging-and-rules",
+  "permalink": "/public/challenge/judging-and-rules",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Judging & Evaluation Criteria",
+    "sidebar_label": "Judging Criteria",
+    "description": "Official scoring system, evaluation criteria, eligibility requirements, and challenge rules for the OGC NewFinity Challenge Program."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Tracks & Themes",
+    "permalink": "/public/challenge/tracks-categories"
+  },
+  "next": {
+    "title": "Challenge FAQ",
+    "permalink": "/public/challenge/challenge-faq"
+  }
+}

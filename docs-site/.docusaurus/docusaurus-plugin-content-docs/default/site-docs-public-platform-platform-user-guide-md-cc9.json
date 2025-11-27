@@ -1,0 +1,27 @@
+{
+  "id": "public/platform/platform-user-guide",
+  "title": "OGC NewFinity Platform — User Guide",
+  "description": "A clear, user-friendly introduction to navigating the OGC NewFinity Platform — dashboards, features, tools, and user flows.",
+  "source": "@site/../docs/public/platform/platform-user-guide.md",
+  "sourceDirName": "public/platform",
+  "slug": "/public/platform/platform-user-guide",
+  "permalink": "/public/platform/platform-user-guide",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "OGC NewFinity Platform — User Guide",
+    "sidebar_label": "Platform User Guide",
+    "description": "A clear, user-friendly introduction to navigating the OGC NewFinity Platform — dashboards, features, tools, and user flows."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Ecosystem Economy",
+    "permalink": "/public/token/ecosystem-economy"
+  },
+  "next": {
+    "title": "OGC Wallet",
+    "permalink": "/public/platform/wallet-feature-sheet"
+  }
+}

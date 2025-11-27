@@ -4,9 +4,9 @@
 
 ## 1. Introduction
 
-The Wallet & Token System is the financial backbone of the OGC NewFinity ecosystem.  
+The Wallet & Token System is the financial backbone of the OGC NewFinity Ecosystem.  
 
-It enables users to view token balances, track earnings, monitor contribution mining, and sync on-chain activity with off-chain platform logic.
+It enables users to view token balances, track earnings, monitor Contribution-Based Mining, and sync on-chain activity with off-chain platform logic.
 
 
 
@@ -18,7 +18,7 @@ This document defines:
 
 - Sync flow (Polygon ↔ Backend ↔ Dashboard)  
 
-- Contribution mining  
+- Contribution-Based Mining  
 
 - Reward distribution  
 
@@ -42,7 +42,7 @@ Each user has **one platform wallet**, containing:
 
 - Token balance  
 
-- Contribution mining statistics  
+- Contribution-Based Mining statistics  
 
 - Reward claim history  
 
@@ -52,7 +52,7 @@ Each user has **one platform wallet**, containing:
 
 The wallet is **not a custodial crypto wallet**, but a **platform-linked account** displaying:
 
-- On-chain OGC Token balance  
+- On-chain OGCFinity balance  
 
 - Off-chain activity (mining, rewards, platform earnings)  
 
@@ -72,21 +72,27 @@ The wallet dashboard is a **standalone interface** connected to core platform lo
 
 ### Current Token Version
 
-- **OGC Token (Genesis Version)**  
+- **OGCFinity – Genesis Token (Polygon, ERC-20, Fixed Supply)**  
 
 - Deployed on **Polygon**  
 
 - ERC-20 standard  
 
-- Fixed supply  
+- Fixed supply: 500,000,000 OGCFinity (will NEVER increase on Polygon)  
+
+- Acts as the foundational utility asset for the OGC NewFinity Ecosystem until the launch of the OGC Chain
 
 
 
 ### Future Token Version (Roadmap)
 
-- **OGC NewFinity Token (Flex Supply)**  
+- **OGCFinity – Native Ecosystem Token (OGC Chain, Governance-Based Supply)**  
 
-- Contribution-mining based  
+- Operates on the OGC NewFinity blockchain (OGC Chain)  
+
+- Supports flexible, governance-driven issuance model (only on OGC Chain)  
+
+- Contribution-Based Mining based  
 
 - Governance-enabled  
 
@@ -94,7 +100,15 @@ The wallet dashboard is a **standalone interface** connected to core platform lo
 
 
 
-Both versions will be integrated into the NewFinity ecosystem.
+**Migration Logic**
+
+A 1:1 migration mechanism will allow users to securely transfer OGCFinity (Polygon) to OGCFinity (Native) once the OGC Chain is launched. This migration:
+
+- Will be optional for users
+- Will be secured by a native bridge contract
+- Will not inflate supply on Polygon
+- Will not force conversion
+- Will preserve token balances 1:1
 
 
 
@@ -454,7 +468,7 @@ Copy code
 
 # 13. Conclusion
 
-The Wallet & Token System is essential to the NewFinity ecosystem.  
+The Wallet & Token System is essential to the OGC NewFinity Ecosystem.  
 
 This specification defines all behaviors, rules, interactions, and requirements for both the backend and the dashboard.
 

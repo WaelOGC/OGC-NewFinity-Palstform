@@ -30,7 +30,7 @@ Each Wallet page follows the same 3-region structure:
 
 Contains:
 
-- OGC Token Balance
+- OGCFinity Balance
 - Pending Rewards Indicator
 - "Last Sync" timestamp
 - Sync status icon (✔ synced | ● pending | ! error)
@@ -143,7 +143,7 @@ Displays the page-specific content:
 - Table must allow sorting
 - Types should use colored badges (Earned, Adjusted, Challenge, etc.)
 
-## 6. Wireframe – Contribution Mining
+## 6. Wireframe – Contribution-Based Mining
 
 **Route:**
 

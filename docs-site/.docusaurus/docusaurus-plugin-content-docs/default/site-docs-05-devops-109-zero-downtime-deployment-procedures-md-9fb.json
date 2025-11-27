@@ -1,0 +1,15 @@
+{
+  "id": "devops/zero-downtime-deployment-procedures",
+  "title": "OGC NewFinity — Zero-Downtime Deployment Procedures (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/05-devops/109-zero-downtime-deployment-procedures.md",
+  "sourceDirName": "05-devops",
+  "slug": "/devops/zero-downtime-deployment-procedures",
+  "permalink": "/devops/zero-downtime-deployment-procedures",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 109,
+  "frontMatter": {}
+}

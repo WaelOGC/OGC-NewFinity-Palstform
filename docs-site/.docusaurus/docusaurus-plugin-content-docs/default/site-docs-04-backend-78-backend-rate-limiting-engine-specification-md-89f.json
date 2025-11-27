@@ -1,0 +1,15 @@
+{
+  "id": "backend/backend-rate-limiting-engine-specification",
+  "title": "OGC NewFinity — Backend Rate Limiting Engine Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/78-backend-rate-limiting-engine-specification.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/backend-rate-limiting-engine-specification",
+  "permalink": "/backend/backend-rate-limiting-engine-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 78,
+  "frontMatter": {}
+}

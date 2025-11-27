@@ -1,0 +1,15 @@
+{
+  "id": "devops/devops-infrastructure-overview",
+  "title": "OGC NewFinity — DevOps Infrastructure Overview (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/05-devops/101-devops-infrastructure-overview.md",
+  "sourceDirName": "05-devops",
+  "slug": "/devops/devops-infrastructure-overview",
+  "permalink": "/devops/devops-infrastructure-overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 101,
+  "frontMatter": {}
+}

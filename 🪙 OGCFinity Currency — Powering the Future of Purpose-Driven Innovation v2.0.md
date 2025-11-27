@@ -7,13 +7,13 @@
 
 ## 1. Executive Overview
 
-OGCFinity Currency (OGC Token) is the native utility token powering the OGC NewFinity ecosystem—a next-generation platform that unifies AI productivity, blockchain-driven participation, creative empowerment, and enterprise-grade service delivery.
+OGCFinity is the native utility token powering the OGC NewFinity Ecosystem—a next-generation platform that unifies AI productivity, blockchain-driven participation, creative empowerment, and enterprise-grade service delivery.
 
-This document outlines the complete economic framework, token evolution roadmap, utility integration, and governance philosophy that positions OGC Token as the foundational currency for purpose-driven innovation in the digital age.
+This document outlines the complete economic framework, token evolution roadmap, utility integration, and governance philosophy that positions OGCFinity as the foundational currency for purpose-driven innovation in the digital age.
 
 **Key Highlights:**
-- **Dual-Phase Evolution**: Genesis ERC-20 token on Polygon (500M fixed supply) → Future OGC Ecosystem Chain with governance-based flexible issuance
-- **Multi-Utility Integration**: Seamlessly embedded across AI tools, wallet systems, contribution mining, challenges, subscriptions, and future governance
+- **Two-Phase Token Evolution**: OGCFinity – Genesis Token (Polygon, ERC-20, Fixed Supply) → OGCFinity – Native Ecosystem Token (OGC Chain, Governance-Based Supply)
+- **Multi-Utility Integration**: Seamlessly embedded across AI tools, wallet systems, Contribution-Based Mining, challenges, subscriptions, and future governance
 - **Contribution-Based Economics**: Rewards meaningful participation, quality submissions, and community growth
 - **Sustainable Tokenomics**: Balanced allocation, vesting schedules, and anti-inflation mechanisms
 - **Transparent Governance**: Progressive decentralization from off-chain to on-chain DAO structure
@@ -24,7 +24,7 @@ This document outlines the complete economic framework, token evolution roadmap,
 
 ### 2.1 Core Vision
 
-OGCFinity Currency exists to bridge the gap between value creation and value recognition. In a world where digital contributions often go unrewarded, OGC Token creates a transparent, fair, and sustainable economic system that incentivizes innovation, collaboration, and meaningful participation.
+OGCFinity exists to bridge the gap between value creation and value recognition. In a world where digital contributions often go unrewarded, OGCFinity creates a transparent, fair, and sustainable economic system that incentivizes innovation, collaboration, and meaningful participation.
 
 We envision a future where:
 - Every contribution has measurable value
@@ -36,9 +36,9 @@ We envision a future where:
 
 **Purpose-Driven Value Creation**
 
-Unlike purely speculative tokens, OGC Token derives its value from:
+Unlike purely speculative tokens, OGCFinity derives its value from:
 1. **Active Utility**: Direct integration with platform features and services
-2. **Contribution Mining**: Rewards for quality participation and community support
+2. **Contribution-Based Mining**: Rewards for quality participation and community support
 3. **Governance Rights**: Future voting power on platform decisions
 4. **Ecosystem Growth**: Value appreciation tied to platform adoption and expansion
 
@@ -52,7 +52,7 @@ Our tokenomics model prioritizes:
 
 **Inclusive Participation**
 
-OGC Token is designed to be accessible:
+OGCFinity is designed to be accessible:
 - No minimum barriers to entry
 - Multiple earning pathways (challenges, contributions, mining)
 - Tiered access based on subscription, not wealth
@@ -60,24 +60,22 @@ OGC Token is designed to be accessible:
 
 ---
 
-## 3. Dual-Phase Token Evolution
+## 3. Two-Phase Token Evolution
 
-### 3.1 Genesis Phase: ERC-20 Token on Polygon
+### 3.1 Phase 1: OGCFinity – Genesis Token (Polygon)
 
 **Current Status: Active**
 
-The Genesis OGC Token is deployed as an ERC-20 standard token on the Polygon network, providing:
-- **Fixed Supply**: 500,000,000 OGC tokens (immutable)
-- **Low Transaction Costs**: Leveraging Polygon's efficient infrastructure
-- **Fast Settlement**: Near-instant transaction finality
-- **Ethereum Compatibility**: Seamless integration with existing DeFi infrastructure
+**Official Name:** OGCFinity – Genesis Token (Polygon, ERC-20, Fixed Supply)
 
-**Genesis Token Characteristics:**
+The OGCFinity Genesis Token is deployed on Polygon as a fixed-supply ERC-20 token with a total supply of 500,000,000 OGCFinity. This supply will NEVER increase on Polygon. It acts as the foundational utility asset for the OGC NewFinity Ecosystem until the launch of the OGC Chain.
+
+**Token Characteristics:**
 - **Standard**: ERC-20 compliant
 - **Network**: Polygon PoS Mainnet
-- **Supply Model**: Fixed at 500M (no additional minting)
+- **Supply Model**: Fixed at 500,000,000 OGCFinity (immutable, no additional minting)
 - **Distribution**: Governed by allocation framework (see Section 5)
-- **Utility**: Full platform integration (AI, wallet, challenges, mining)
+- **Utility**: Full platform integration (AI, wallet, challenges, Contribution-Based Mining)
 
 **Why Polygon?**
 
@@ -87,22 +85,26 @@ Polygon offers the optimal balance of:
 - Security through Ethereum's proven infrastructure
 - Developer-friendly ecosystem for future expansion
 
-### 3.2 Future Phase: OGC Ecosystem Chain
+### 3.2 Phase 2: OGCFinity – Native Ecosystem Token (OGC Chain)
 
 **Roadmap: Phases 4-6**
 
-The future evolution of OGC Token will transition to a dedicated OGC Ecosystem Chain, enabling:
+**Official Name:** OGCFinity – Native Ecosystem Token (OGC Chain, Governance-Based Supply)
 
-**Flexible Supply Model**
-- Governance-controlled token issuance
-- Dynamic supply adjustments based on ecosystem needs
-- Contribution-mining based new token generation
-- Sustainable inflation mechanisms
+The OGCFinity Native Token will operate on the future OGC NewFinity blockchain (OGC Chain). This version supports a flexible, governance-driven issuance model. Any future supply increases occur ONLY on the OGC Chain and are controlled through DAO voting, contribution-based mechanisms, or protocol-level governance — never automatically and never on Polygon.
+
+**Native Token Characteristics:**
+
+- **Network**: OGC NewFinity blockchain (OGC Chain)
+- **Supply Model**: Governance-based flexible issuance (only on OGC Chain)
+- **Control Mechanism**: DAO voting, contribution-based mechanisms, protocol-level governance
+- **Polygon Supply**: Remains fixed at 500,000,000 OGCFinity (never increases)
+- **Utility**: Advanced staking, DAO governance, native smart contracts, cross-chain interoperability
 
 **Enhanced Capabilities**
 - Native smart contract execution for rewards
 - On-chain governance voting and proposal execution
-- Automated contribution mining protocols
+- Automated Contribution-Based Mining protocols
 - Cross-chain bridge support for multi-network interoperability
 
 **Governance-Based Issuance**
@@ -113,19 +115,23 @@ Token supply adjustments will be determined through:
 - Sustainability modeling
 - Transparent voting mechanisms
 
-**Migration Path**
+**Migration Logic**
 
-The transition from Genesis to Ecosystem Chain will include:
-- 1:1 token migration mechanism
-- Dual-chain support during transition period
-- User-friendly migration tools
-- Comprehensive documentation and support
+A 1:1 migration mechanism will allow users to securely transfer OGCFinity (Polygon) to OGCFinity (Native) once the OGC Chain is launched. This migration:
+
+- Will be optional for users
+- Will be secured by a native bridge contract
+- Will not inflate supply on Polygon
+- Will not force conversion
+- Will preserve token balances 1:1
+
+The migration bridge will enable seamless transfer while maintaining the fixed supply on Polygon and enabling governance-based features on the OGC Chain.
 
 ---
 
 ## 4. Platform-Aligned Token Utility Framework
 
-OGC Token is deeply integrated across all platform components, creating a cohesive economic ecosystem where tokens serve multiple functions simultaneously.
+OGCFinity is deeply integrated across all platform components, creating a cohesive economic ecosystem where tokens serve multiple functions simultaneously.
 
 ### 4.1 AI Agent (Amy) Integration
 
@@ -145,7 +151,7 @@ OGC Token is deeply integrated across all platform components, creating a cohesi
 - High-quality outputs trigger bonus rewards
 - Tool-specific achievement badges unlock token bonuses
 
-### 4.2 Wallet Dashboard Integration
+### 4.2 OGC Wallet Integration
 
 **Core Functions**
 - **Balance Display**: Real-time on-chain and off-chain token balances
@@ -155,7 +161,7 @@ OGC Token is deeply integrated across all platform components, creating a cohesi
 
 **Token Operations**
 - View on-chain Polygon balance
-- Track contribution mining conversions
+- Track Contribution-Based Mining conversions
 - Monitor challenge rewards
 - Review admin adjustments and special rewards
 
@@ -164,12 +170,13 @@ OGC Token is deeply integrated across all platform components, creating a cohesi
 - Governance voting dashboard (Phase 3)
 - Multi-wallet linking
 - NFT badge integration
+- OGC Vault (future)
 
-### 4.3 Contribution Mining System
+### 4.3 Contribution-Based Mining System
 
 **Mining Mechanics**
 
-Users earn OGC tokens through contribution mining by:
+Users earn OGCFinity through Contribution-Based Mining by:
 - **Challenge Participation**: Submitting entries, voting, winning
 - **Community Support**: Helping users, providing verified answers
 - **Creative Contributions**: Publishing educational content, suggesting improvements
@@ -203,7 +210,7 @@ Tokens Earned = Contribution Points × Subscription Multiplier × Global Rate
 
 **Tier-Based Benefits**
 
-OGC Token enhances subscription value:
+OGCFinity enhances subscription value:
 - **Contribution Multipliers**: Higher tiers earn more tokens per contribution
 - **Voting Power**: Increased influence in challenge voting (Pro: 1.5x, Enterprise: 2x)
 - **Access Levels**: Unlock premium challenge categories and AI tools
@@ -223,7 +230,7 @@ OGC Token enhances subscription value:
 
 **Reward Distribution**
 
-OGC tokens serve as the primary reward mechanism:
+OGCFinity serves as the primary reward mechanism:
 - **Prize Pools**: Token-based rewards for winners and participants
 - **Participation Rewards**: Tokens for submitting entries
 - **Voting Rewards**: Contribution points for active voting
@@ -232,9 +239,9 @@ OGC tokens serve as the primary reward mechanism:
 **Challenge Tracks**
 
 Different tracks offer varying reward scales:
-- **Student Track**: Educational focus with accessible rewards
-- **Group/Team Track**: Collaborative rewards and team bonuses
-- **Professional Track**: Higher prize pools and competitive rewards
+- **School Students Track (Ages 13–18)**: Educational focus with accessible rewards
+- **Startup Teams & Groups Track (Ages 18–35)**: Collaborative rewards and team bonuses
+- **Freelancers & Solo Innovators Track (Ages 18+)**: Higher prize pools and competitive rewards
 
 **Reward Types**
 - Direct token transfers to wallet
@@ -246,7 +253,7 @@ Different tracks offer varying reward scales:
 
 **Phase 3+ Implementation**
 
-OGC Token will enable governance participation:
+OGCFinity will enable governance participation:
 
 **Staking Requirements**
 - Minimum stake for voting eligibility
@@ -272,51 +279,38 @@ OGC Token will enable governance participation:
 
 ---
 
-## 5. Updated Tokenomics & Supply Model
+## 5. Tokenomics & Supply Model
 
 ### 5.1 Genesis Phase Tokenomics
 
-**Total Supply: 500,000,000 OGC**
+**Total Supply: 500,000,000 OGCFinity (Fixed — OGCFinity – Genesis Token (Polygon, ERC-20, Fixed Supply))**
 
 **Allocation Framework**
 
-| Category | Percentage | Amount (OGC) | Purpose |
-|----------|------------|--------------|---------|
-| **Community Rewards** | 40% | 200,000,000 | Contribution mining, challenges, platform participation |
-| **Team & Development** | 20% | 100,000,000 | Core team, developers, advisors |
-| **Ecosystem Growth** | 15% | 75,000,000 | Partnerships, marketing, expansion |
-| **Liquidity & Exchange** | 10% | 50,000,000 | DEX/CEX liquidity, market making |
-| **Treasury Reserve** | 10% | 50,000,000 | Platform operations, emergency fund |
-| **Innovation Fund** | 5% | 25,000,000 | Challenge program, special events |
+| Category | % | Amount (OGCFinity) |
+|----------|---|-------------------|
+| Core Team | 8% | 40,000,000 |
+| Advisors | 2% | 10,000,000 |
+| Development & R&D Fund | 20% | 100,000,000 |
+| Innovation & Sustainability Challenge Fund | 20% | 100,000,000 |
+| Ecosystem Incentives Fund | 15% | 75,000,000 |
+| Contribution Mining Rewards | 10% | 50,000,000 |
+| Public & Strategic Investors | 15% | 75,000,000 |
+| Treasury Reserve | 10% | 50,000,000 |
+| **Total** | **100%** | **500,000,000 OGCFinity** |
 
-**Vesting Schedules**
+**Vesting & Lock Periods**
 
-**Team & Development (20%)**
-- 12-month cliff
-- 48-month linear vesting
-- Performance milestones unlock additional tranches
-
-**Ecosystem Growth (15%)**
-- 6-month cliff
-- 36-month linear vesting
-- Milestone-based releases
-
-**Treasury Reserve (10%)**
-- Admin-controlled with governance oversight
-- Transparent reporting requirements
-- Emergency use protocols
-
-**Community Rewards (40%)**
-- Continuous distribution via contribution mining
-- Challenge program allocations
-- Seasonal event pools
-- No vesting (immediate utility)
+- **Core Team**: 12-month cliff + 24-month linear vesting
+- **Advisors**: Milestone-based unlocks
+- **Public/Investors**: 6–12 month lockups
+- **Treasury & Mining Funds**: Gradual release via governance/performance
 
 ### 5.2 Future Phase Tokenomics
 
 **Flexible Supply Model**
 
-Upon transition to OGC Ecosystem Chain:
+Upon transition to Future Ecosystem Token (OGC Chain, Governance-Based Supply):
 - Base supply inherited from Genesis migration
 - Governance-controlled issuance for:
   - New contribution mining rewards
@@ -346,7 +340,7 @@ Upon transition to OGC Ecosystem Chain:
 
 ### 6.1 Mining Architecture
 
-Contribution mining is the primary mechanism for distributing OGC tokens to active platform participants, creating a merit-based economy where value creation directly translates to token rewards.
+Contribution-Based Mining is the primary mechanism for distributing OGCFinity to active platform participants, creating a merit-based economy where value creation directly translates to token rewards.
 
 ### 6.2 Contribution Categories
 
@@ -571,7 +565,7 @@ Token Reward Calculation
 
 ### 7.5 Dashboard & Frontend Integration
 
-**Wallet Dashboard**
+**OGC Wallet**
 - Real-time balance display
 - Transaction history with filters
 - Mining activity timeline
@@ -607,7 +601,7 @@ Token Reward Calculation
 
 **Objectives**
 - Establish platform vision and mission
-- Deploy Genesis OGC Token on Polygon
+- Deploy Genesis Token (Polygon, ERC-20, Fixed Supply)
 - Launch core platform infrastructure
 - Implement basic wallet and contribution systems
 
@@ -615,8 +609,8 @@ Token Reward Calculation
 - ERC-20 token deployment (500M supply)
 - Platform core architecture
 - User authentication and profiles
-- Basic wallet dashboard
-- Initial contribution mining framework
+- Basic OGC Wallet
+- Initial Contribution-Based Mining framework
 
 **Token Integration**
 - Wallet balance display
@@ -629,7 +623,7 @@ Token Reward Calculation
 **Status: In Progress**
 
 **Objectives**
-- Full contribution mining activation
+- Full Contribution-Based Mining activation
 - Enhanced reward distribution
 - Subscription system integration
 - Advanced wallet features
@@ -721,13 +715,13 @@ Token Reward Calculation
 **Status: Future Vision**
 
 **Objectives**
-- Transition to OGC Ecosystem Chain
+- Transition to Future Ecosystem Token (OGC Chain, Governance-Based Supply)
 - Full DAO governance
 - Decentralized decision-making
 - Community autonomy
 
 **Deliverables**
-- OGC Ecosystem Chain deployment
+- Future Ecosystem Token (OGC Chain, Governance-Based Supply) deployment
 - Full on-chain governance
 - Decentralized treasury
 - Community-driven development
@@ -742,97 +736,61 @@ Token Reward Calculation
 
 ---
 
-## 9. Innovation & Sustainability Fund (Challenge Program)
+## 9. OGC NewFinity Challenge Program
 
 ### 9.1 Challenge Program Overview
 
-The Innovation & Sustainability Fund powers the OGC NewFinity Challenge Program, a competitive ecosystem where creativity, innovation, and skill are rewarded with OGC tokens.
+The OGC NewFinity Challenge Program is a global initiative empowering young innovators, creators, and early-stage builders across AI, sustainability, blockchain, and ethical digital solutions.
 
-### 9.2 Fund Allocation
+**Fund Linkage**
 
-**From Tokenomics: 5% (25M OGC) + Community Rewards Pool**
+The OGC NewFinity Challenge Program is funded directly by the Innovation & Sustainability Challenge Fund (20% – 100,000,000 OGCFinity). This allocation is part of the official Tokenomics model and supports grants, mentorship, tools, and ecosystem access for program participants.
 
-**Distribution Model**
-- **Regular Challenges**: 60% of fund
-- **Premium Challenges**: 25% of fund
-- **Seasonal Events**: 10% of fund
-- **Special Programs**: 5% of fund
+**Token Integration**
 
-### 9.3 Challenge Categories
+The Challenge Program is a primary real-world utility driver of OGCFinity. Participants use OGCFinity for submissions, premium tools, evaluations, and advanced ecosystem access. Winners receive OGCFinity grants directly from the Innovation & Sustainability Challenge Fund.
 
-**Technology & Innovation**
-- Coding challenges
-- Software development
-- Technical problem-solving
-- Innovation proposals
+### 9.2 Challenge Tracks
 
-**Design & Branding**
-- UI/UX design
-- Brand identity creation
-- Visual design challenges
-- Creative direction
+- **School Students Track (Ages 13–18)**  
+- **Freelancers & Solo Innovators Track (Ages 18+)**  
+- **Startup Teams & Groups Track (Ages 18–35)**
 
-**Creativity & Art**
-- Artistic submissions
-- Creative writing
-- Multimedia projects
-- Experimental work
+### 9.3 Thematic Areas
 
-**Business & Strategy**
-- Business plan development
-- Market analysis
-- Strategic planning
-- Entrepreneurship
+- AI for Good  
+- Green & Sustainable Technology  
+- Blockchain for Equity  
+- Inclusive Digital Solutions  
+- Civic Innovation
 
-**Writing & Communication**
-- Content creation
-- Technical writing
-- Communication strategies
-- Educational materials
+### 9.4 Rewards & Support
 
-**Student Projects**
-- Educational focus
-- Learning-oriented challenges
-- Skill development
-- Academic projects
+Funded by the **Innovation & Sustainability Challenge Fund (20% – 100M OGCFinity)**:
 
-### 9.4 Reward Structure
+- OGCFinity grants  
+- Mentorship from OGC NewFinity core team  
+- Access to AI tools and developer dashboards  
+- Priority onboarding to future OGC Chain programs  
+- Public recognition and ecosystem promotion
 
-**Prize Pool Distribution**
+### 9.5 Judging & Evaluation Criteria
 
-| Placement | Percentage of Pool | Example (10K Pool) |
-|-----------|-------------------|---------------------|
-| 1st Place | 40% | 4,000 OGC |
-| 2nd Place | 25% | 2,500 OGC |
-| 3rd Place | 15% | 1,500 OGC |
-| 4th-10th | 15% | 1,500 OGC (shared) |
-| Participation | 5% | 500 OGC (shared) |
+1. Creativity & Innovation  
+2. Technical Feasibility  
+3. Sustainability & Impact  
+4. Alignment with Themes  
+5. Presentation Clarity  
+6. Team Capability (for startup track)
 
-**Additional Rewards**
-- Contribution points for all participants
-- Special badges for winners
-- Voting rewards for community judges
-- Quality bonuses for exceptional work
+### 9.6 Program Timeline
 
-### 9.5 Sustainability Mechanisms
-
-**Fund Replenishment**
-- Regular allocations from treasury
-- Governance-approved increases
-- Partnership sponsorships (future)
-- Revenue share from premium features (future)
-
-**Economic Balance**
-- Challenge frequency controls
-- Prize pool scaling based on participation
-- Seasonal adjustments
-- Quality-based reward optimization
-
-**Transparency**
-- Public prize pool announcements
-- Transparent winner selection
-- Published reward distribution
-- Community audit access
+- Registration Opens: [Insert Date]  
+- Submission Deadline: [Insert Date]  
+- Shortlist Announcement: [Insert Date]  
+- Online Pitch Interviews: [Insert Date]  
+- Winners Announced: [Insert Date]  
+- Mentorship Phase Begins: [Insert Date]
 
 ---
 
@@ -887,7 +845,7 @@ The Innovation & Sustainability Fund powers the OGC NewFinity Challenge Program,
 - Phishing prevention measures
 
 **Fraud Prevention**
-- Contribution mining abuse detection
+- Contribution-Based Mining abuse detection
 - Challenge submission verification
 - Multi-account detection
 - Community reporting mechanisms
@@ -918,7 +876,7 @@ The Innovation & Sustainability Fund powers the OGC NewFinity Challenge Program,
 
 ### 11.1 Token Classification
 
-OGC Token is designed and intended as a **utility token** for use within the OGC NewFinity platform ecosystem. It is not:
+OGCFinity is designed and intended as a **utility token** for use within the OGC NewFinity Ecosystem. It is not:
 - A security or investment contract
 - A guarantee of returns or profits
 - A currency replacement
@@ -929,7 +887,7 @@ OGC Token is designed and intended as a **utility token** for use within the OGC
 **User Responsibilities**
 - Compliance with platform terms of service
 - Legitimate use of token utilities
-- Adherence to contribution mining rules
+- Adherence to Contribution-Based Mining rules
 - Respect for community guidelines
 
 **Platform Rights**
@@ -961,7 +919,7 @@ OGC Token is designed and intended as a **utility token** for use within the OGC
 ### 11.4 Disclaimer
 
 **Investment Warning**
-OGC Token is a utility token, not an investment. Token value may fluctuate. Past performance does not guarantee future results. Users should only acquire tokens they intend to use within the platform ecosystem.
+OGCFinity is a utility token, not an investment. Token value may fluctuate. Past performance does not guarantee future results. Users should only acquire tokens they intend to use within the OGC NewFinity Ecosystem.
 
 **Technology Risks**
 Blockchain technology involves inherent risks including smart contract bugs, network failures, and security vulnerabilities. Users participate at their own risk.
@@ -991,7 +949,7 @@ The platform and token utilities may evolve based on governance decisions, techn
 
 **Regular Reports**
 - Quarterly token distribution summaries
-- Contribution mining statistics
+- Contribution-Based Mining statistics
 - Challenge program outcomes
 - Platform growth metrics
 
@@ -1024,7 +982,7 @@ The platform and token utilities may evolve based on governance decisions, techn
 **Educational Resources**
 - Token utility guides
 - Platform usage tutorials
-- Contribution mining explanations
+- Contribution-Based Mining explanations
 - Governance participation guides
 
 ### 12.4 Accountability Measures
@@ -1053,9 +1011,9 @@ The platform and token utilities may evolve based on governance decisions, techn
 
 OGCFinity Currency represents more than a token—it is the economic foundation of a purpose-driven ecosystem where innovation, contribution, and community growth are recognized and rewarded.
 
-From the Genesis Phase ERC-20 token on Polygon to the future OGC Ecosystem Chain with governance-based flexible issuance, OGC Token evolves alongside the platform, maintaining its core mission: to power the future of purpose-driven innovation.
+From OGCFinity – Genesis Token (Polygon, ERC-20, Fixed Supply) to OGCFinity – Native Ecosystem Token (OGC Chain, Governance-Based Supply), OGCFinity evolves alongside the platform, maintaining its core mission: to power the future of purpose-driven innovation.
 
-As we progress through Phases 1-6, OGC Token will continue to integrate deeper into platform utilities, enable community governance, and support sustainable economic growth. The journey from centralized launch to decentralized autonomy reflects our commitment to building a truly community-owned ecosystem.
+As we progress through Phases 1-6, OGCFinity will continue to integrate deeper into platform utilities, enable community governance, and support sustainable economic growth. The journey from centralized launch to decentralized autonomy reflects our commitment to building a truly community-owned ecosystem.
 
 **Join us in building the future of tokenized innovation.**
 

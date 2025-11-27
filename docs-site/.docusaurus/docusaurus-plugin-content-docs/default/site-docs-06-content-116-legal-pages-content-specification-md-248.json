@@ -1,0 +1,15 @@
+{
+  "id": "content/legal-pages-content-specification",
+  "title": "OGC NewFinity — Legal Pages Content Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/06-content/116-legal-pages-content-specification.md",
+  "sourceDirName": "06-content",
+  "slug": "/content/legal-pages-content-specification",
+  "permalink": "/content/legal-pages-content-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 116,
+  "frontMatter": {}
+}

@@ -210,7 +210,7 @@ Below is the complete structured list of all API endpoints required by the platf
 
 | POST | `/wallet/link-address` | Link wallet address |
 
-| GET | `/wallet/mining-history` | Contribution mining activity |
+| GET | `/wallet/mining-history` | Contribution-Based Mining activity |
 
 
 

@@ -1,0 +1,15 @@
+{
+  "id": "backend/backend-email-queue-and-bulk-delivery-engine-specification",
+  "title": "OGC NewFinity — Backend Email Queue & Bulk Delivery Engine Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/90-backend-email-queue-and-bulk-delivery-engine-specification.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/backend-email-queue-and-bulk-delivery-engine-specification",
+  "permalink": "/backend/backend-email-queue-and-bulk-delivery-engine-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 90,
+  "frontMatter": {}
+}

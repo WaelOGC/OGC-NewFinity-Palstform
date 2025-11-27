@@ -1,0 +1,15 @@
+{
+  "id": "devops/backup-automation-and-restore-script-specifications",
+  "title": "OGC NewFinity — Backup Automation & Restore Script Specifications (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/05-devops/107-backup-automation-and-restore-script-specifications.md",
+  "sourceDirName": "05-devops",
+  "slug": "/devops/backup-automation-and-restore-script-specifications",
+  "permalink": "/devops/backup-automation-and-restore-script-specifications",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 107,
+  "frontMatter": {}
+}

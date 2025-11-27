@@ -1,0 +1,14 @@
+{
+  "id": "badges/README",
+  "title": "Folder Overview",
+  "description": "This folder contains documentation for the badges section of the OGC NewFinity Platform.",
+  "source": "@site/../docs/badges/README.md",
+  "sourceDirName": "badges",
+  "slug": "/badges/",
+  "permalink": "/badges/",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

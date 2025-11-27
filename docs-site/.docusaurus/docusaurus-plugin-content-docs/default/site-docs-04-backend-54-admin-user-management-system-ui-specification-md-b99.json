@@ -1,0 +1,15 @@
+{
+  "id": "backend/admin-user-management-system-ui-specification",
+  "title": "OGC NewFinity — Admin User Management System UI Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/54-admin-user-management-system-ui-specification.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/admin-user-management-system-ui-specification",
+  "permalink": "/backend/admin-user-management-system-ui-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 54,
+  "frontMatter": {}
+}

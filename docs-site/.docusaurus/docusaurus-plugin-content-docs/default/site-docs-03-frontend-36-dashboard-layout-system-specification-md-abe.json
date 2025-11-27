@@ -1,0 +1,15 @@
+{
+  "id": "frontend/dashboard-layout-system-specification",
+  "title": "OGC NewFinity — Dashboard Layout System Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/03-frontend/36-dashboard-layout-system-specification.md",
+  "sourceDirName": "03-frontend",
+  "slug": "/frontend/dashboard-layout-system-specification",
+  "permalink": "/frontend/dashboard-layout-system-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 36,
+  "frontMatter": {}
+}

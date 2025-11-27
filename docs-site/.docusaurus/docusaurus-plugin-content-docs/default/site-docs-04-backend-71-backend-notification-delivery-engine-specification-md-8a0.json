@@ -1,0 +1,15 @@
+{
+  "id": "backend/backend-notification-delivery-engine-specification",
+  "title": "OGC NewFinity — Backend Notification Delivery Engine Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/71-backend-notification-delivery-engine-specification.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/backend-notification-delivery-engine-specification",
+  "permalink": "/backend/backend-notification-delivery-engine-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 71,
+  "frontMatter": {}
+}

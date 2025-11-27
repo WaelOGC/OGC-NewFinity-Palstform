@@ -18,7 +18,7 @@ Contribution directly influences:
 - Leaderboards (future)
 - User progression
 
-This document defines the complete system that powers Contribution Mining.
+This document defines the complete system that powers Contribution-Based Mining.
 
 ## 2. Contribution Overview
 

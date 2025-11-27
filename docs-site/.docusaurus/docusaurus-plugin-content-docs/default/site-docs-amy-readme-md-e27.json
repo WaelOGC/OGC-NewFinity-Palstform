@@ -1,0 +1,14 @@
+{
+  "id": "amy/README",
+  "title": "Folder Overview",
+  "description": "This folder contains documentation for the amy section of the OGC NewFinity Platform.",
+  "source": "@site/../docs/amy/README.md",
+  "sourceDirName": "amy",
+  "slug": "/amy/",
+  "permalink": "/amy/",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

@@ -164,7 +164,7 @@ Manages:
 
 - On/off-chain balances  
 
-- OGC token accounting  
+- OGCFinity accounting  
 
 - Transactions  
 

@@ -1,0 +1,14 @@
+{
+  "id": "DOCUMENTATION-AUDIT-REPORT",
+  "title": "OGC NewFinity Documentation Integrity Audit Report",
+  "description": "Date: 2025-01-26",
+  "source": "@site/../docs/DOCUMENTATION-AUDIT-REPORT.md",
+  "sourceDirName": ".",
+  "slug": "/DOCUMENTATION-AUDIT-REPORT",
+  "permalink": "/DOCUMENTATION-AUDIT-REPORT",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

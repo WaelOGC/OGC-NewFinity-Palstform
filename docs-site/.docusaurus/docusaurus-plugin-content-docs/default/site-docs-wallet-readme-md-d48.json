@@ -1,0 +1,14 @@
+{
+  "id": "wallet/README",
+  "title": "Folder Overview",
+  "description": "This folder contains documentation for the wallet section of the OGC NewFinity Platform.",
+  "source": "@site/../docs/wallet/README.md",
+  "sourceDirName": "wallet",
+  "slug": "/wallet/",
+  "permalink": "/wallet/",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

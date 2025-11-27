@@ -1,0 +1,15 @@
+{
+  "id": "devops/load-balancer-and-traffic-routing-configuration",
+  "title": "OGC NewFinity — Load Balancer & Traffic Routing Configuration (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/05-devops/106-load-balancer-and-traffic-routing-configuration.md",
+  "sourceDirName": "05-devops",
+  "slug": "/devops/load-balancer-and-traffic-routing-configuration",
+  "permalink": "/devops/load-balancer-and-traffic-routing-configuration",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 106,
+  "frontMatter": {}
+}

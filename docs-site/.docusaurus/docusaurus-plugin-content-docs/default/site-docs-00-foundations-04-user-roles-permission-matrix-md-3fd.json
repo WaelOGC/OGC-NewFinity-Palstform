@@ -1,0 +1,15 @@
+{
+  "id": "foundations/user-roles-permission-matrix",
+  "title": "OGC NewFinity — User Roles & Permission Matrix (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/00-foundations/04-user-roles-permission-matrix.md",
+  "sourceDirName": "00-foundations",
+  "slug": "/foundations/user-roles-permission-matrix",
+  "permalink": "/foundations/user-roles-permission-matrix",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 4,
+  "frontMatter": {}
+}

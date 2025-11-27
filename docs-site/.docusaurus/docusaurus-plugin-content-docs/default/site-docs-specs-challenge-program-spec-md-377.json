@@ -1,0 +1,14 @@
+{
+  "id": "specs/challenge-program-spec",
+  "title": "OGC NewFinity Platform — Challenge Program Specification",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/specs/challenge-program-spec.md",
+  "sourceDirName": "specs",
+  "slug": "/specs/challenge-program-spec",
+  "permalink": "/specs/challenge-program-spec",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

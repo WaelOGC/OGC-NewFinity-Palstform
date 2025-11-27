@@ -1,0 +1,23 @@
+{
+  "id": "ci/mermaid-validation",
+  "title": "Mermaid Diagram Validation Rules",
+  "description": "Defines how CI/CD will validate Mermaid files.",
+  "source": "@site/../docs/ci/mermaid-validation.md",
+  "sourceDirName": "ci",
+  "slug": "/ci/mermaid-validation",
+  "permalink": "/ci/mermaid-validation",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Markdown Validation Rules",
+    "permalink": "/ci/markdown-rules"
+  },
+  "next": {
+    "title": "Naming Rule Validation",
+    "permalink": "/ci/naming-checks"
+  }
+}

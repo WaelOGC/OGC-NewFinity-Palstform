@@ -1,0 +1,23 @@
+{
+  "id": "api/subscription-api-blueprint",
+  "title": "OGC NewFinity Platform — Subscription API Blueprint",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/api/subscription-api-blueprint.md",
+  "sourceDirName": "api",
+  "slug": "/api/subscription-api-blueprint",
+  "permalink": "/api/subscription-api-blueprint",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "OGC NewFinity Platform — Notification System API Blueprint",
+    "permalink": "/api/notification-api-blueprint"
+  },
+  "next": {
+    "title": "Wallet API Blueprint — OGC NewFinity Platform",
+    "permalink": "/api/wallet-api-blueprint"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "contribution/README",
+  "title": "Folder Overview",
+  "description": "This folder contains documentation for the contribution section of the OGC NewFinity Platform.",
+  "source": "@site/../docs/contribution/README.md",
+  "sourceDirName": "contribution",
+  "slug": "/contribution/",
+  "permalink": "/contribution/",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

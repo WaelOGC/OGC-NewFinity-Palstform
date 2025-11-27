@@ -1,0 +1,14 @@
+{
+  "id": "flows/platform-flows-overview",
+  "title": "OGC NewFinity Platform — Flows Overview",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/flows/platform-flows-overview.md",
+  "sourceDirName": "flows",
+  "slug": "/flows/platform-flows-overview",
+  "permalink": "/flows/platform-flows-overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

@@ -1,0 +1,15 @@
+{
+  "id": "content/knowledge-base-structure-and-article-templates",
+  "title": "OGC NewFinity — Knowledge Base Structure & Article Templates (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/06-content/115-knowledge-base-structure-and-article-templates.md",
+  "sourceDirName": "06-content",
+  "slug": "/content/knowledge-base-structure-and-article-templates",
+  "permalink": "/content/knowledge-base-structure-and-article-templates",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 115,
+  "frontMatter": {}
+}

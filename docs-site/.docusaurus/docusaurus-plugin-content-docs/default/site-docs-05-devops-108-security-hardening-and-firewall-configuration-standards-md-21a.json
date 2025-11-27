@@ -1,0 +1,15 @@
+{
+  "id": "devops/security-hardening-and-firewall-configuration-standards",
+  "title": "OGC NewFinity — Security Hardening & Firewall Configuration Standards (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/05-devops/108-security-hardening-and-firewall-configuration-standards.md",
+  "sourceDirName": "05-devops",
+  "slug": "/devops/security-hardening-and-firewall-configuration-standards",
+  "permalink": "/devops/security-hardening-and-firewall-configuration-standards",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 108,
+  "frontMatter": {}
+}

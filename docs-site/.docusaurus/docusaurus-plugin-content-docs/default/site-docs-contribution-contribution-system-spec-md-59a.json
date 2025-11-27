@@ -1,0 +1,14 @@
+{
+  "id": "contribution/contribution-system-spec",
+  "title": "OGC NewFinity Platform — Contribution System Specification",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/contribution/contribution-system-spec.md",
+  "sourceDirName": "contribution",
+  "slug": "/contribution/contribution-system-spec",
+  "permalink": "/contribution/contribution-system-spec",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

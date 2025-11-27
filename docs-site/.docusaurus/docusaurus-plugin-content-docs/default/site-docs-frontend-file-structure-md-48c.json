@@ -1,0 +1,14 @@
+{
+  "id": "frontend/file-structure",
+  "title": "OGC NewFinity Platform — Frontend File Structure",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/frontend/file-structure.md",
+  "sourceDirName": "frontend",
+  "slug": "/frontend/file-structure",
+  "permalink": "/frontend/file-structure",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

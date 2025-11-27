@@ -1,0 +1,18 @@
+{
+  "id": "public/announcements/ogc-newfinity-v2.0-release-notes",
+  "title": "OGC NewFinity Documentation v2.0 — Technical Release Notes",
+  "description": "Technical release notes outlining all major changes, enhancements, standardizations, and system-wide upgrades included in OGC NewFinity Documentation v2.0.",
+  "source": "@site/../docs/public/announcements/ogc-newfinity-v2.0-release-notes.md",
+  "sourceDirName": "public/announcements",
+  "slug": "/public/announcements/ogc-newfinity-v2.0-release-notes",
+  "permalink": "/public/announcements/ogc-newfinity-v2.0-release-notes",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "OGC NewFinity Documentation v2.0 — Technical Release Notes",
+    "sidebar_label": "v2.0 Release Notes",
+    "description": "Technical release notes outlining all major changes, enhancements, standardizations, and system-wide upgrades included in OGC NewFinity Documentation v2.0."
+  }
+}

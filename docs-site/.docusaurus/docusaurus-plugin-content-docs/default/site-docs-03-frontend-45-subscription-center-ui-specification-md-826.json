@@ -1,0 +1,15 @@
+{
+  "id": "frontend/subscription-center-ui-specification",
+  "title": "OGC NewFinity — Subscription Center UI Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/03-frontend/45-subscription-center-ui-specification.md",
+  "sourceDirName": "03-frontend",
+  "slug": "/frontend/subscription-center-ui-specification",
+  "permalink": "/frontend/subscription-center-ui-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 45,
+  "frontMatter": {}
+}

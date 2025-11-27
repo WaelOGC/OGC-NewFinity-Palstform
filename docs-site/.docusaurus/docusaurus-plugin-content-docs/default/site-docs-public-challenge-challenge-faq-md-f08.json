@@ -1,0 +1,27 @@
+{
+  "id": "public/challenge/challenge-faq",
+  "title": "Challenge Program — FAQ",
+  "description": "Common questions and clear answers about the OGC NewFinity Challenge Program.",
+  "source": "@site/../docs/public/challenge/challenge-faq.md",
+  "sourceDirName": "public/challenge",
+  "slug": "/public/challenge/challenge-faq",
+  "permalink": "/public/challenge/challenge-faq",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Challenge Program — FAQ",
+    "sidebar_label": "Challenge FAQ",
+    "description": "Common questions and clear answers about the OGC NewFinity Challenge Program."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Judging Criteria",
+    "permalink": "/public/challenge/judging-and-rules"
+  },
+  "next": {
+    "title": "Investor Information Pack",
+    "permalink": "/public/investors/investor-information-pack"
+  }
+}

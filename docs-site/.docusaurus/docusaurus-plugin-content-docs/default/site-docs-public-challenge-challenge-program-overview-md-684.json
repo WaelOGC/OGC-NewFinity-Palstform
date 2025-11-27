@@ -1,0 +1,27 @@
+{
+  "id": "public/challenge/challenge-program-overview",
+  "title": "OGC NewFinity Challenge Program — Overview",
+  "description": "Explore the global OGC NewFinity Challenge Program powered by the Innovation & Sustainability Challenge Fund. Learn how participants win OGCFinity grants, mentorship, and ecosystem access.",
+  "source": "@site/../docs/public/challenge/challenge-program-overview.md",
+  "sourceDirName": "public/challenge",
+  "slug": "/public/challenge/challenge-program-overview",
+  "permalink": "/public/challenge/challenge-program-overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "OGC NewFinity Challenge Program — Overview",
+    "sidebar_label": "Program Overview",
+    "description": "Explore the global OGC NewFinity Challenge Program powered by the Innovation & Sustainability Challenge Fund. Learn how participants win OGCFinity grants, mentorship, and ecosystem access."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Amy AI Agent",
+    "permalink": "/public/platform/ai-agent-amy-overview"
+  },
+  "next": {
+    "title": "Tracks & Themes",
+    "permalink": "/public/challenge/tracks-categories"
+  }
+}

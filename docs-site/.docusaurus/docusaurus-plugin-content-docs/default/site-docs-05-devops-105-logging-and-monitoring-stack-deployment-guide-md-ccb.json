@@ -1,0 +1,15 @@
+{
+  "id": "devops/logging-and-monitoring-stack-deployment-guide",
+  "title": "OGC NewFinity — Logging & Monitoring Stack Deployment Guide (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/05-devops/105-logging-and-monitoring-stack-deployment-guide.md",
+  "sourceDirName": "05-devops",
+  "slug": "/devops/logging-and-monitoring-stack-deployment-guide",
+  "permalink": "/devops/logging-and-monitoring-stack-deployment-guide",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 105,
+  "frontMatter": {}
+}

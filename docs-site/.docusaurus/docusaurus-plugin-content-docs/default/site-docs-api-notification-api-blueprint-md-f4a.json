@@ -1,0 +1,23 @@
+{
+  "id": "api/notification-api-blueprint",
+  "title": "OGC NewFinity Platform — Notification System API Blueprint",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/api/notification-api-blueprint.md",
+  "sourceDirName": "api",
+  "slug": "/api/notification-api-blueprint",
+  "permalink": "/api/notification-api-blueprint",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "OGC NewFinity Platform — Governance API Blueprint",
+    "permalink": "/api/governance-api-blueprint"
+  },
+  "next": {
+    "title": "OGC NewFinity Platform — Subscription API Blueprint",
+    "permalink": "/api/subscription-api-blueprint"
+  }
+}

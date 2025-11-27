@@ -1,0 +1,15 @@
+{
+  "id": "api-contracts/ai-gateway-api-contract",
+  "title": "OGC NewFinity — AI Gateway API Contract (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/02-api-contracts/29-ai-gateway-api-contract.md",
+  "sourceDirName": "02-api-contracts",
+  "slug": "/api-contracts/ai-gateway-api-contract",
+  "permalink": "/api-contracts/ai-gateway-api-contract",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 29,
+  "frontMatter": {}
+}

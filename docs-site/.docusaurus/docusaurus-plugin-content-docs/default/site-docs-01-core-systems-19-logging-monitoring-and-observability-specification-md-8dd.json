@@ -1,0 +1,15 @@
+{
+  "id": "core-systems/logging-monitoring-and-observability-specification",
+  "title": "OGC NewFinity — Logging, Monitoring & System Observability Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/01-core-systems/19-logging-monitoring-and-observability-specification.md",
+  "sourceDirName": "01-core-systems",
+  "slug": "/core-systems/logging-monitoring-and-observability-specification",
+  "permalink": "/core-systems/logging-monitoring-and-observability-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 19,
+  "frontMatter": {}
+}

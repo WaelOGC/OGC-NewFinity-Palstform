@@ -260,24 +260,35 @@ Voting weight influenced by stake (Phase 3):
 vote_weight = stake_amount × multiplier
 ```
 
-## 12. Full System Interaction Flow Diagram (Mermaid SAFE)
+## 12. Full System Interaction Flow Diagram (Standardized)
+
+**Note:** For the official standardized Challenge Program flow diagram, see:
+- `docs/mermaid/00-standardized/challenge-program-flow-standardized.mmd`
+
+The standardized flow includes:
+- User → Select Track → Submit Project (OGCFinity token-gated) → Review Stage → Shortlisting → Pitch Interviews → Winners Selected → OGCFinity Grants Distributed → Mentorship Phase → Ecosystem Integration
+
+**Detailed Implementation Flow:**
 
 ```mermaid
 flowchart TD
 A[User Views Challenges] --> B[Views Challenge Details]
-B --> C[Submits Entry]
-C --> D[Submission Pending Review]
-D -->|Admin Approves| E[Approved]
-E --> F[Reward Issued]
-F --> G[Contribution Updated]
-G --> H[Badge Evaluation]
-H --> I[Notification Sent]
-I --> J[Archive Submission]
-D -->|Admin Rejects| K[Rejected → Notification → Archive]
-D -->|Admin Flags| L[Flagged for Review]
-L --> M[Admin Review]
-M --> E
-M --> K
+B --> C[Select Official Track]
+C --> D[Submit Entry<br/>OGCFinity Token-Gated]
+D --> E[Submission Pending Review]
+E -->|Admin Approves| F[Approved]
+F --> G[Shortlisting Stage]
+G --> H[Pitch Interviews]
+H --> I{Winners Selected}
+I -->|Winner| J[OGCFinity Grants Distributed<br/>From Innovation & Sustainability Challenge Fund]
+I -->|Not Winner| K[Notification Sent]
+J --> L[Mentorship Phase]
+L --> M[Ecosystem Integration]
+E -->|Admin Rejects| N[Rejected → Notification → Archive]
+E -->|Admin Flags| O[Flagged for Review]
+O --> P[Admin Review]
+P --> F
+P --> N
 ```
 
 ## 13. Database Interaction Summary

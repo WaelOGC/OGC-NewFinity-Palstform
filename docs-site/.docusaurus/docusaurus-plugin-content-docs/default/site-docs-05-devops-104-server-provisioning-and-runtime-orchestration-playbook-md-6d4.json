@@ -1,0 +1,15 @@
+{
+  "id": "devops/server-provisioning-and-runtime-orchestration-playbook",
+  "title": "OGC NewFinity — Server Provisioning & Runtime Orchestration Playbook (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/05-devops/104-server-provisioning-and-runtime-orchestration-playbook.md",
+  "sourceDirName": "05-devops",
+  "slug": "/devops/server-provisioning-and-runtime-orchestration-playbook",
+  "permalink": "/devops/server-provisioning-and-runtime-orchestration-playbook",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 104,
+  "frontMatter": {}
+}

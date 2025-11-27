@@ -1,0 +1,23 @@
+{
+  "id": "api/amy-router-api-blueprint",
+  "title": "Amy Router API Blueprint — OGC NewFinity Platform",
+  "description": "This document describes the API surface of the Amy AI Agent Router.",
+  "source": "@site/../docs/api/amy-router-api-blueprint.md",
+  "sourceDirName": "api",
+  "slug": "/api/amy-router-api-blueprint",
+  "permalink": "/api/amy-router-api-blueprint",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "OGC NewFinity Platform — Admin API Blueprint",
+    "permalink": "/api/admin-api-blueprint"
+  },
+  "next": {
+    "title": "API Blueprint Template — OGC NewFinity Platform",
+    "permalink": "/api/api-blueprint-template"
+  }
+}

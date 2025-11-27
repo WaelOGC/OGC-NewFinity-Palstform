@@ -1,0 +1,14 @@
+{
+  "id": "admin/README",
+  "title": "Folder Overview",
+  "description": "This folder contains documentation for the admin section of the OGC NewFinity Platform.",
+  "source": "@site/../docs/admin/README.md",
+  "sourceDirName": "admin",
+  "slug": "/admin/",
+  "permalink": "/admin/",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

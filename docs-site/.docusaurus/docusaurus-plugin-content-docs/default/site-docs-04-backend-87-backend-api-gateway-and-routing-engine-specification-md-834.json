@@ -1,0 +1,15 @@
+{
+  "id": "backend/backend-api-gateway-and-routing-engine-specification",
+  "title": "OGC NewFinity — Backend API Gateway & Routing Engine Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/87-backend-api-gateway-and-routing-engine-specification.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/backend-api-gateway-and-routing-engine-specification",
+  "permalink": "/backend/backend-api-gateway-and-routing-engine-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 87,
+  "frontMatter": {}
+}

@@ -6,7 +6,15 @@
 
 The OGC NewFinity Challenge Program is the competitive engine of the platform.  
 
-It empowers users—students, freelancers, creators, and groups—to participate in structured challenges, submit creative or technical entries, vote on submissions, earn contributions, and win OGC Token rewards.
+It empowers users—students, freelancers, creators, and groups—to participate in structured challenges, submit creative or technical entries, vote on submissions, earn contributions, and win OGCFinity rewards.
+
+**Fund Linkage**
+
+The OGC NewFinity Challenge Program is funded directly by the Innovation & Sustainability Challenge Fund (20% – 100,000,000 OGCFinity). This allocation is part of the official Tokenomics model and supports grants, mentorship, tools, and ecosystem access for program participants.
+
+**Token Integration**
+
+The Challenge Program is a primary real-world utility driver of OGCFinity. Participants use OGCFinity for submissions, premium tools, evaluations, and advanced ecosystem access. Winners receive OGCFinity grants directly from the Innovation & Sustainability Challenge Fund.
 
 
 
@@ -66,39 +74,31 @@ The Challenge Program consists of:
 
 
 
-# 3. Challenge Categories
+# 3. Thematic Areas
 
 
 
-Categories define the nature and theme of challenges.
+The OGC NewFinity Challenge Program focuses on the following thematic areas:
 
+- AI for Good  
 
+- Green & Sustainable Technology  
 
-Examples:
+- Blockchain for Equity  
 
-- Technology & Innovation  
+- Inclusive Digital Solutions  
 
-- Design & Branding  
-
-- Creativity & Art  
-
-- Business & Strategy  
-
-- Writing & Communication  
-
-- Student Projects  
-
-- Team Collaborations  
+- Civic Innovation  
 
 
 
 ### Rules:
 
-- Categories must be administrator-approved  
+- Thematic areas must be administrator-approved  
 
-- Categories may contain multiple active challenges  
+- Each area may contain multiple active challenges  
 
-- Categories may be time-bound or continuous  
+- Challenges may be time-bound or continuous  
 
 
 
@@ -114,7 +114,7 @@ Tracks define the **audience type**:
 
 
 
-### **Track 1: Students**
+### **Track 1: School Students Track (Ages 13–18)**
 
 - Solo or group participation allowed  
 
@@ -122,7 +122,7 @@ Tracks define the **audience type**:
 
 
 
-### **Track 2: Groups / Teams**
+### **Track 2: Startup Teams & Groups Track (Ages 18–35)**
 
 - Team collaboration  
 
@@ -130,7 +130,7 @@ Tracks define the **audience type**:
 
 
 
-### **Track 3: Freelancers / Professionals**
+### **Track 3: Freelancers & Solo Innovators Track (Ages 18+)**
 
 - Higher-level challenges  
 
@@ -294,7 +294,7 @@ A challenge moves through the following stages:
 
 - Defined by admins  
 
-- OGC Token-based  
+- OGCFinity-based  
 
 - Distributed proportionally or by ranking  
 

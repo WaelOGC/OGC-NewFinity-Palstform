@@ -1,0 +1,23 @@
+{
+  "id": "ci/naming-checks",
+  "title": "Naming Rule Validation",
+  "description": "Future CI/CD must enforce naming rules for all documentation and diagrams.",
+  "source": "@site/../docs/ci/naming-checks.md",
+  "sourceDirName": "ci",
+  "slug": "/ci/naming-checks",
+  "permalink": "/ci/naming-checks",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Mermaid Diagram Validation Rules",
+    "permalink": "/ci/mermaid-validation"
+  },
+  "next": {
+    "title": "API Tests — OGC NewFinity Platform",
+    "permalink": "/tests/api-tests"
+  }
+}

@@ -101,14 +101,15 @@ const sidebars = {
       items: [
         {
           type: 'category',
-          label: 'Overview',
+          label: '🚀 Start Here',
           items: [
             'public/overview/ogc-newfinity-overview',
+            'public/whitepaper/ogc-whitepaper-public',
           ],
         },
         {
           type: 'category',
-          label: 'Token',
+          label: '📘 OGCFinity Token',
           items: [
             'public/token/ogcfinity-token-summary',
             'public/token/tokenomics-visual',
@@ -117,17 +118,7 @@ const sidebars = {
         },
         {
           type: 'category',
-          label: 'Platform',
-          items: [
-            'public/platform/platform-user-guide',
-            'public/platform/wallet-feature-sheet',
-            'public/platform/subscriptions-overview',
-            'public/platform/ai-agent-amy-overview',
-          ],
-        },
-        {
-          type: 'category',
-          label: 'Challenge',
+          label: '🌱 Challenge Program',
           items: [
             'public/challenge/challenge-program-overview',
             'public/challenge/tracks-categories',
@@ -137,16 +128,45 @@ const sidebars = {
         },
         {
           type: 'category',
-          label: 'Investors',
+          label: '🧠 Platform & Tools',
           items: [
-            'public/investors/investor-information-pack',
-            'public/investors/market-positioning',
-            'public/investors/public-roadmap',
+            'public/platform/ai-agent-amy-overview',
+            'public/platform/wallet-feature-sheet',
+            'public/platform/platform-user-guide',
+            'public/platform/subscriptions-overview',
           ],
         },
         {
           type: 'category',
-          label: 'Legal',
+          label: '🛠 Architecture',
+          items: [
+            'architecture-principles',
+            {
+              type: 'link',
+              label: 'System Overview',
+              href: '/docs/00-foundations/02-system-architecture-overview',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: '📜 Governance',
+          items: [
+            {
+              type: 'link',
+              label: 'Governance Framework',
+              href: '/docs/07-governance/118-governance-framework-overview',
+            },
+            {
+              type: 'link',
+              label: 'Token Governance',
+              href: '/docs/07-governance/120-token-utility-and-governance-proposal-framework',
+            },
+          ],
+        },
+        {
+          type: 'category',
+          label: '📄 Legal & Compliance',
           items: [
             'public/legal/terms-of-use',
             'public/legal/privacy-policy',
@@ -155,9 +175,18 @@ const sidebars = {
         },
         {
           type: 'category',
-          label: 'Whitepaper',
+          label: '📊 Investors',
           items: [
-            'public/whitepaper/ogc-whitepaper-public',
+            'public/investors/investor-information-pack',
+            'public/investors/market-positioning',
+            'public/investors/public-roadmap',
+          ],
+        },
+        {
+          type: 'category',
+          label: '🎓 Glossary',
+          items: [
+            'glossary',
           ],
         },
       ],

@@ -1,0 +1,26 @@
+{
+  "id": "public/overview/ogc-newfinity-overview",
+  "title": "OGC NewFinity — Overview",
+  "description": "A public introduction to the OGC NewFinity ecosystem — AI, blockchain, and purpose-driven innovation in one unified platform.",
+  "source": "@site/../docs/public/overview/ogc-newfinity-overview.md",
+  "sourceDirName": "public/overview",
+  "slug": "/public/overview/ogc-newfinity-overview",
+  "permalink": "/public/overview/ogc-newfinity-overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "OGC NewFinity — Overview",
+    "description": "A public introduction to the OGC NewFinity ecosystem — AI, blockchain, and purpose-driven innovation in one unified platform."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Shortcuts",
+    "permalink": "/shortcuts"
+  },
+  "next": {
+    "title": "Token Overview",
+    "permalink": "/public/token/ogcfinity-token-summary"
+  }
+}

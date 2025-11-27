@@ -1,0 +1,14 @@
+{
+  "id": "frontend/base-layout-components",
+  "title": "OGC NewFinity Platform — Base Layout Components",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/frontend/base-layout-components.md",
+  "sourceDirName": "frontend",
+  "slug": "/frontend/base-layout-components",
+  "permalink": "/frontend/base-layout-components",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

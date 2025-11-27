@@ -1,0 +1,27 @@
+{
+  "id": "public/challenge/tracks-categories",
+  "title": "Challenge Tracks & Thematic Areas",
+  "description": "Explore the official challenge tracks and thematic areas for the OGC NewFinity Challenge Program.",
+  "source": "@site/../docs/public/challenge/tracks-categories.md",
+  "sourceDirName": "public/challenge",
+  "slug": "/public/challenge/tracks-categories",
+  "permalink": "/public/challenge/tracks-categories",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Challenge Tracks & Thematic Areas",
+    "sidebar_label": "Tracks & Themes",
+    "description": "Explore the official challenge tracks and thematic areas for the OGC NewFinity Challenge Program."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Program Overview",
+    "permalink": "/public/challenge/challenge-program-overview"
+  },
+  "next": {
+    "title": "Judging Criteria",
+    "permalink": "/public/challenge/judging-and-rules"
+  }
+}

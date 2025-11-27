@@ -1,0 +1,14 @@
+{
+  "id": "flows/README",
+  "title": "Folder Overview",
+  "description": "This folder contains documentation for the flows section of the OGC NewFinity Platform.",
+  "source": "@site/../docs/flows/README.md",
+  "sourceDirName": "flows",
+  "slug": "/flows/",
+  "permalink": "/flows/",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

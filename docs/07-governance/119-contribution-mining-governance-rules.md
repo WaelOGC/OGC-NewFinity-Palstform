@@ -92,7 +92,7 @@ Available for:
 
 ### 5.1 Core Reward Types
 
-- OGC Tokens
+- OGCFinity
 - Badges
 - Certificates
 - Ranking points

@@ -1,0 +1,14 @@
+{
+  "id": "flows/challenge-detailed-flow",
+  "title": "OGC NewFinity Platform — Detailed Challenge Flow",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/flows/challenge-detailed-flow.md",
+  "sourceDirName": "flows",
+  "slug": "/flows/challenge-detailed-flow",
+  "permalink": "/flows/challenge-detailed-flow",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

@@ -90,7 +90,7 @@ Responses are **JSON**.
 
 - Stripe  
 
-- (Optional future: OGC Token payments)
+- (Optional future: OGCFinity payments)
 
 
 
@@ -499,7 +499,7 @@ Copy code
 
 # 9. Future Extensions
 
-- OGC Token payments  
+- OGCFinity payments  
 
 - Usage-based billing  
 

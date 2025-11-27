@@ -10,7 +10,7 @@
 
 The OGC Wallet is the central economic system of the OGC NewFinity Platform.
 
-It manages token balance, earnings, contribution mining, badges, rewards, and future staking/governance features.
+It manages token balance, earnings, Contribution-Based Mining, badges, rewards, and future staking/governance features.
 
 This document defines the full product specification of the Wallet Module.
 
@@ -120,7 +120,7 @@ Events include:
 - Earnings
 - Admin adjustments
 - Challenge participation
-- Contribution mining events
+- Contribution-Based Mining events
 
 ### 5.4 Contribution Mining
 

@@ -1,0 +1,15 @@
+{
+  "id": "frontend/ui-components-reference",
+  "title": "OGC NewFinity — UI Components Reference (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/03-frontend/31-ui-components-reference.md",
+  "sourceDirName": "03-frontend",
+  "slug": "/frontend/ui-components-reference",
+  "permalink": "/frontend/ui-components-reference",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 31,
+  "frontMatter": {}
+}

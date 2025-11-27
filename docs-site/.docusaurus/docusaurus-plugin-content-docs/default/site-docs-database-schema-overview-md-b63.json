@@ -1,0 +1,14 @@
+{
+  "id": "database/schema-overview",
+  "title": "OGC NewFinity Platform — Database Schema Overview",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/database/schema-overview.md",
+  "sourceDirName": "database",
+  "slug": "/database/schema-overview",
+  "permalink": "/database/schema-overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

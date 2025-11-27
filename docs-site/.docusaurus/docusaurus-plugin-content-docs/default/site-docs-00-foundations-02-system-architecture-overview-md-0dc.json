@@ -1,0 +1,15 @@
+{
+  "id": "foundations/system-architecture-overview",
+  "title": "OGC NewFinity — System Architecture Overview (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/00-foundations/02-system-architecture-overview.md",
+  "sourceDirName": "00-foundations",
+  "slug": "/foundations/system-architecture-overview",
+  "permalink": "/foundations/system-architecture-overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 2,
+  "frontMatter": {}
+}

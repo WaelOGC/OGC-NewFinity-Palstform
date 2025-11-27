@@ -1,0 +1,26 @@
+{
+  "id": "public/investors/investor-information-pack",
+  "title": "Investor Information Pack",
+  "description": "A complete, investor-friendly overview of OGC NewFinity — mission, ecosystem structure, token model, revenue strategy, business roadmap, and long-term vision.",
+  "source": "@site/../docs/public/investors/investor-information-pack.md",
+  "sourceDirName": "public/investors",
+  "slug": "/public/investors/investor-information-pack",
+  "permalink": "/public/investors/investor-information-pack",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Investor Information Pack",
+    "description": "A complete, investor-friendly overview of OGC NewFinity — mission, ecosystem structure, token model, revenue strategy, business roadmap, and long-term vision."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Challenge FAQ",
+    "permalink": "/public/challenge/challenge-faq"
+  },
+  "next": {
+    "title": "Market Positioning",
+    "permalink": "/public/investors/market-positioning"
+  }
+}

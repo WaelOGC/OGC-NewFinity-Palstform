@@ -1,0 +1,15 @@
+{
+  "id": "frontend/design-tokens-and-theme-specification",
+  "title": "OGC NewFinity — Design Tokens & Theme Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/03-frontend/32-design-tokens-and-theme-specification.md",
+  "sourceDirName": "03-frontend",
+  "slug": "/frontend/design-tokens-and-theme-specification",
+  "permalink": "/frontend/design-tokens-and-theme-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 32,
+  "frontMatter": {}
+}

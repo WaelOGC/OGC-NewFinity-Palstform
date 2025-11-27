@@ -1,0 +1,27 @@
+{
+  "id": "public/token/ecosystem-economy",
+  "title": "OGC NewFinity Ecosystem Economy",
+  "description": "Understanding how value flows through the OGC NewFinity Ecosystem — across AI tools, Challenge Program, Contribution-Based Mining, users, teams, and long-term governance.",
+  "source": "@site/../docs/public/token/ecosystem-economy.md",
+  "sourceDirName": "public/token",
+  "slug": "/public/token/ecosystem-economy",
+  "permalink": "/public/token/ecosystem-economy",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "OGC NewFinity Ecosystem Economy",
+    "sidebar_label": "Ecosystem Economy",
+    "description": "Understanding how value flows through the OGC NewFinity Ecosystem — across AI tools, Challenge Program, Contribution-Based Mining, users, teams, and long-term governance."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Tokenomics",
+    "permalink": "/public/token/tokenomics-visual"
+  },
+  "next": {
+    "title": "Platform User Guide",
+    "permalink": "/public/platform/platform-user-guide"
+  }
+}

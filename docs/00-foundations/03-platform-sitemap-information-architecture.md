@@ -142,7 +142,7 @@ The authenticated, login-based ecosystem.
 
 - Staking (future)  
 
-- Contribution mining  
+- Contribution-Based Mining  
 
 - Transaction history  
 
@@ -194,7 +194,7 @@ The authenticated, login-based ecosystem.
 
 - Action history  
 
-- Contribution mining  
+- Contribution-Based Mining  
 
 - Level progression  
 
@@ -286,7 +286,7 @@ A standalone dashboard for token-related functions.
 
 - Token analytics  
 
-- Contribution mining statistics  
+- Contribution-Based Mining statistics  
 
 - Reward breakdowns  
 

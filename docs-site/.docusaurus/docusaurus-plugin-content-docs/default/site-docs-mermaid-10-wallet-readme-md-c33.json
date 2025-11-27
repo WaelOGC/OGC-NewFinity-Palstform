@@ -1,0 +1,14 @@
+{
+  "id": "mermaid/wallet/README",
+  "title": "Phase 10 – Wallet Dashboard",
+  "description": "Wallet subsystem diagrams for user balance, staking, and transaction lifecycle.",
+  "source": "@site/../docs/mermaid/10-wallet/README.md",
+  "sourceDirName": "mermaid/10-wallet",
+  "slug": "/mermaid/wallet/",
+  "permalink": "/mermaid/wallet/",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

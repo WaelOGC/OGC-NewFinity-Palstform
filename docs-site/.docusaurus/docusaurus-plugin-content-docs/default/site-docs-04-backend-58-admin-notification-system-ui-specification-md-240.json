@@ -1,0 +1,15 @@
+{
+  "id": "backend/admin-notification-system-ui-specification",
+  "title": "OGC NewFinity — Admin Notification System UI Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/58-admin-notification-system-ui-specification.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/admin-notification-system-ui-specification",
+  "permalink": "/backend/admin-notification-system-ui-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 58,
+  "frontMatter": {}
+}

@@ -1,0 +1,15 @@
+{
+  "id": "frontend/admin-panel-frontend-architecture",
+  "title": "OGC NewFinity — Admin Panel Frontend Architecture (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/03-frontend/37-admin-panel-frontend-architecture.md",
+  "sourceDirName": "03-frontend",
+  "slug": "/frontend/admin-panel-frontend-architecture",
+  "permalink": "/frontend/admin-panel-frontend-architecture",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 37,
+  "frontMatter": {}
+}

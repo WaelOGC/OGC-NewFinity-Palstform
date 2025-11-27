@@ -168,7 +168,7 @@ Must clearly disclose:
 
 ### 8.1 Required Sections
 
-- Purpose of OGC Token
+- Purpose of OGCFinity
 - Utility Nature of Token
 - No Investment Guarantee
 - No Speculation Encouraged

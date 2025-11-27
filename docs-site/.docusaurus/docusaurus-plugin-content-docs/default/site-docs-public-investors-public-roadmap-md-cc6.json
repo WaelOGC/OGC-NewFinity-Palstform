@@ -1,0 +1,26 @@
+{
+  "id": "public/investors/public-roadmap",
+  "title": "OGC Public Roadmap",
+  "description": "A transparent, high-level roadmap of OGC NewFinity's planned development phases — platform expansion, token evolution, governance, and future blockchain ecosystem.",
+  "source": "@site/../docs/public/investors/public-roadmap.md",
+  "sourceDirName": "public/investors",
+  "slug": "/public/investors/public-roadmap",
+  "permalink": "/public/investors/public-roadmap",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "OGC Public Roadmap",
+    "description": "A transparent, high-level roadmap of OGC NewFinity's planned development phases — platform expansion, token evolution, governance, and future blockchain ecosystem."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Market Positioning",
+    "permalink": "/public/investors/market-positioning"
+  },
+  "next": {
+    "title": "Terms of Use",
+    "permalink": "/public/legal/terms-of-use"
+  }
+}

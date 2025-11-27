@@ -72,7 +72,7 @@ Judging must be based on:
 
 Rewards may include:
 
-- OGC tokens
+- OGCFinity
 - Badges
 - Certificates
 - Ranking points

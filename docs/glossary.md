@@ -40,9 +40,19 @@ Module that interacts with the Polygon network for syncing balances and executin
 
 ## C
 
+### OGC NewFinity Challenge Program
+
+A global initiative empowering young innovators, creators, and early-stage builders across AI, sustainability, blockchain, and ethical digital solutions. The program is funded directly by the Innovation & Sustainability Challenge Fund (20% – 100,000,000 OGCFinity) and includes three tracks:
+
+- **School Students Track (Ages 13–18)**
+- **Freelancers & Solo Innovators Track (Ages 18+)**
+- **Startup Teams & Groups Track (Ages 18–35)**
+
+The Challenge Program is a primary real-world utility driver of OGCFinity, with participants using OGCFinity for submissions, premium tools, evaluations, and advanced ecosystem access.
+
 ### Challenge
 
-A user-submitted task or competition entry within the Challenge Program.
+A user-submitted task or competition entry within the OGC NewFinity Challenge Program.
 
 ### Cursor Agent
 
@@ -148,9 +158,15 @@ User's paid access to premium platform features.
 
 ## T
 
-### Token
+### OGCFinity
 
-The OGC utility token used for rewards and platform interactions.
+OGCFinity is the utility token used for rewards and platform interactions within the OGC NewFinity Ecosystem. It operates in two phases:
+
+- **Phase 1: OGCFinity – Genesis Token (Polygon, ERC-20, Fixed Supply)**: Fixed supply of 500,000,000 OGCFinity on Polygon that will never increase.
+
+- **Phase 2: OGCFinity – Native Ecosystem Token (OGC Chain, Governance-Based Supply)**: Future version operating on the OGC NewFinity blockchain with governance-based supply adjustments (only on OGC Chain).
+
+A secure 1:1 migration bridge will enable optional conversion from Genesis to Native tokens once the OGC Chain launches.
 
 ### Transaction Processor
 
@@ -172,9 +188,9 @@ Diagram showing how a user moves through key parts of the platform.
 
 ## W
 
-### Wallet Dashboard
+### OGC Wallet
 
-User interface for token balance, transactions, rewards, and blockchain syncing.
+User interface for token balance, transactions, rewards, and blockchain syncing. Future version will be called OGC Vault.
 
 ### Wallet Service
 

@@ -1,0 +1,15 @@
+{
+  "id": "backend/backend-admin-tools-and-moderation-engine-specification",
+  "title": "OGC NewFinity — Backend Admin Tools & Moderation Engine Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/76-backend-admin-tools-and-moderation-engine-specification.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/backend-admin-tools-and-moderation-engine-specification",
+  "permalink": "/backend/backend-admin-tools-and-moderation-engine-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 76,
+  "frontMatter": {}
+}

@@ -1,0 +1,15 @@
+{
+  "id": "core-systems/challenge-program-specification",
+  "title": "OGC NewFinity — Challenge Program Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/01-core-systems/13-challenge-program-specification.md",
+  "sourceDirName": "01-core-systems",
+  "slug": "/core-systems/challenge-program-specification",
+  "permalink": "/core-systems/challenge-program-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 13,
+  "frontMatter": {}
+}

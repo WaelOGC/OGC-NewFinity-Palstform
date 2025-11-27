@@ -1,0 +1,15 @@
+{
+  "id": "governance/security-council-and-emergency-powers-specification",
+  "title": "OGC NewFinity — Security Council & Emergency Powers Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/07-governance/123-security-council-and-emergency-powers-specification.md",
+  "sourceDirName": "07-governance",
+  "slug": "/governance/security-council-and-emergency-powers-specification",
+  "permalink": "/governance/security-council-and-emergency-powers-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 123,
+  "frontMatter": {}
+}

@@ -1,0 +1,14 @@
+{
+  "id": "specs/subscription-system-spec",
+  "title": "OGC NewFinity Platform — Subscription System Specification",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/specs/subscription-system-spec.md",
+  "sourceDirName": "specs",
+  "slug": "/specs/subscription-system-spec",
+  "permalink": "/specs/subscription-system-spec",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

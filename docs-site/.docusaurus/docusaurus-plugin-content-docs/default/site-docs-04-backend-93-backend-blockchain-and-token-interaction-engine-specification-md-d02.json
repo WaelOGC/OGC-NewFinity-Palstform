@@ -1,0 +1,15 @@
+{
+  "id": "backend/backend-blockchain-and-token-interaction-engine-specification",
+  "title": "OGC NewFinity — Backend Blockchain & Token Interaction Engine Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/93-backend-blockchain-and-token-interaction-engine-specification.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/backend-blockchain-and-token-interaction-engine-specification",
+  "permalink": "/backend/backend-blockchain-and-token-interaction-engine-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 93,
+  "frontMatter": {}
+}

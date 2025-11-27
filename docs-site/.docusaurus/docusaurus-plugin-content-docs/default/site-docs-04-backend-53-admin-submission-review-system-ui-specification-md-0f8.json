@@ -1,0 +1,15 @@
+{
+  "id": "backend/admin-submission-review-system-ui-specification",
+  "title": "OGC NewFinity — Admin Submission Review System UI Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/53-admin-submission-review-system-ui-specification.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/admin-submission-review-system-ui-specification",
+  "permalink": "/backend/admin-submission-review-system-ui-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 53,
+  "frontMatter": {}
+}

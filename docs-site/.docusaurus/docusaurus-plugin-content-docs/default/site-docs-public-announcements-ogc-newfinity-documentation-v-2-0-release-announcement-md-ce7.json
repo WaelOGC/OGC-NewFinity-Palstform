@@ -1,0 +1,18 @@
+{
+  "id": "public/announcements/ogc-newfinity-documentation-v2.0-release-announcement",
+  "title": "OGC NewFinity Documentation v2.0 – Official Release Announcement",
+  "description": "Official announcement of the OGC NewFinity Documentation v2.0 release, summarizing key changes, ecosystem alignment, and roadmap context.",
+  "source": "@site/../docs/public/announcements/ogc-newfinity-documentation-v2.0-release-announcement.md",
+  "sourceDirName": "public/announcements",
+  "slug": "/public/announcements/ogc-newfinity-documentation-v2.0-release-announcement",
+  "permalink": "/public/announcements/ogc-newfinity-documentation-v2.0-release-announcement",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "OGC NewFinity Documentation v2.0 – Official Release Announcement",
+    "sidebar_label": "Docs v2.0 Release Announcement",
+    "description": "Official announcement of the OGC NewFinity Documentation v2.0 release, summarizing key changes, ecosystem alignment, and roadmap context."
+  }
+}

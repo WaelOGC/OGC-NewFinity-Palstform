@@ -6,7 +6,7 @@ This document defines the architecture, interaction rules, transaction flows, sy
 
 The Token Engine ensures:
 
-- Secure interaction with the OGC Token smart contract
+- Secure interaction with the OGCFinity smart contract
 - Continuous wallet synchronization
 - Reliable read/write blockchain operations
 - Accurate token accounting
@@ -98,7 +98,7 @@ All write transactions must:
 ### 5.3 Transaction Types
 
 - User reward payouts (future)
-- Contribution mining rewards (future)
+- Contribution-Based Mining rewards (future)
 - Admin-triggered transfers
 - Automated system distributions
 

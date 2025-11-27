@@ -276,7 +276,7 @@ UI:
 
 Fields:
 
-- Reward type (OGC tokens, points, recognition)  
+- Reward type (OGCFinity, points, recognition)  
 
 - Amount  
 

@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This document defines the OGC token's platform utility, system interactions, governance alignment, and the formal process for creating, submitting, evaluating, and approving governance proposals within the OGC NewFinity ecosystem.
+This document defines OGCFinity's platform utility, system interactions, governance alignment, and the formal process for creating, submitting, evaluating, and approving governance proposals within the OGC NewFinity Ecosystem.
 
 The framework ensures:
 
@@ -18,18 +18,23 @@ This applies to the current off-chain governance structure and future decentrali
 
 ### 2.1 Core Utility Functions
 
-OGC tokens may be used for:
+OGCFinity may be used for:
 
+- OGC NewFinity Challenge Program participation and rewards
 - Challenge reward distribution
-- Contribution-mining payouts
+- Contribution-Based Mining payouts
 - Access to premium features (future)
 - Staking for governance participation (future)
 - Ecosystem participation incentives
 - Community achievements and badges
 
+**Challenge Program Integration**
+
+The OGC NewFinity Challenge Program is a primary real-world utility driver of OGCFinity. Participants use OGCFinity for submissions, premium tools, evaluations, and advanced ecosystem access. Winners receive OGCFinity grants directly from the Innovation & Sustainability Challenge Fund (20% – 100,000,000 OGCFinity).
+
 ### 2.2 Platform-Service Utility
 
-OGC tokens can unlock:
+OGCFinity can unlock:
 
 - Advanced analytics (future)
 - Special challenge categories
@@ -160,7 +165,7 @@ Allowing:
 
 ## 7. Token Utility & Reward Alignment
 
-### 7.1 Alignment with Contribution Mining
+### 7.1 Alignment with Contribution-Based Mining
 
 Token rewards must reflect:
 
@@ -241,5 +246,5 @@ All proposals remain permanently accessible.
 
 ## 11. Conclusion
 
-This Token Utility & Governance Proposal Framework defines how OGC token utility evolves responsibly and how governance decisions are structured, evaluated, and executed across the OGC NewFinity ecosystem.
+This Token Utility & Governance Proposal Framework defines how OGCFinity utility evolves responsibly and how governance decisions are structured, evaluated, and executed across the OGC NewFinity Ecosystem.
 

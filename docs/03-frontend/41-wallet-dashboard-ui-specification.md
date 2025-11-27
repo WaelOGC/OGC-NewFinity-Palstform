@@ -84,9 +84,9 @@ Three cards appear at the top:
 
 Displays:
 
-- OGC Token symbol  
+- OGCFinity symbol  
 
-- On-chain OGC balance  
+- On-chain OGCFinity balance  
 
 - Network: Polygon  
 
@@ -388,7 +388,7 @@ Triggered if last sync > X minutes:
 
 Used for:
 
-- OGC Token symbol  
+- OGCFinity symbol  
 
 - Network details  
 

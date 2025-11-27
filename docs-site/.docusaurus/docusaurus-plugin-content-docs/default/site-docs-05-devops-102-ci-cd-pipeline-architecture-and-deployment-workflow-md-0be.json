@@ -1,0 +1,15 @@
+{
+  "id": "devops/ci-cd-pipeline-architecture-and-deployment-workflow",
+  "title": "OGC NewFinity — CI/CD Pipeline Architecture & Deployment Workflow (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/05-devops/102-ci-cd-pipeline-architecture-and-deployment-workflow.md",
+  "sourceDirName": "05-devops",
+  "slug": "/devops/ci-cd-pipeline-architecture-and-deployment-workflow",
+  "permalink": "/devops/ci-cd-pipeline-architecture-and-deployment-workflow",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 102,
+  "frontMatter": {}
+}

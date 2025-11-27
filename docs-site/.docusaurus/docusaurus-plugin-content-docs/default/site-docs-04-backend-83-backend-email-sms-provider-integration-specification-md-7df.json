@@ -1,0 +1,15 @@
+{
+  "id": "backend/backend-email-sms-provider-integration-specification",
+  "title": "OGC NewFinity — Backend Email/SMS Provider Integration Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/83-backend-email-sms-provider-integration-specification.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/backend-email-sms-provider-integration-specification",
+  "permalink": "/backend/backend-email-sms-provider-integration-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 83,
+  "frontMatter": {}
+}

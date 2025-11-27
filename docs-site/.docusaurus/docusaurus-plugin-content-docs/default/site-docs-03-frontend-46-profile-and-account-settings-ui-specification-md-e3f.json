@@ -1,0 +1,15 @@
+{
+  "id": "frontend/profile-and-account-settings-ui-specification",
+  "title": "OGC NewFinity — Profile & Account Settings UI Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/03-frontend/46-profile-and-account-settings-ui-specification.md",
+  "sourceDirName": "03-frontend",
+  "slug": "/frontend/profile-and-account-settings-ui-specification",
+  "permalink": "/frontend/profile-and-account-settings-ui-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 46,
+  "frontMatter": {}
+}

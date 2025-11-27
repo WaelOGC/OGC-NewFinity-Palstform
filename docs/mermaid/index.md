@@ -8,6 +8,21 @@ sidebar_label: Diagram Index
 
 Welcome to the unified documentation dashboard for all architectural, operational, and subsystem diagrams used across the OGC NewFinity Platform.
 
+## 🎯 Standardized Diagrams (Official)
+
+**IMPORTANT**: Before creating new diagrams, check the standardized diagrams folder:
+
+- **Standardized Diagrams Folder**: [`00-standardized/`](00-standardized/)
+- **Roadmap Diagram**: [`00-standardized/roadmap-standardized.mmd`](00-standardized/roadmap-standardized.mmd)
+- **Ecosystem Architecture**: [`00-standardized/ecosystem-architecture-standardized.mmd`](00-standardized/ecosystem-architecture-standardized.mmd)
+- **Token Lifecycle**: [`00-standardized/token-lifecycle-standardized.mmd`](00-standardized/token-lifecycle-standardized.mmd)
+- **Challenge Program Flow**: [`00-standardized/challenge-program-flow-standardized.mmd`](00-standardized/challenge-program-flow-standardized.mmd)
+- **Platform Architecture**: [`00-standardized/platform-architecture-8-pillars-standardized.mmd`](00-standardized/platform-architecture-8-pillars-standardized.mmd)
+
+**Always use these standardized versions** when creating or updating documentation.
+
+---
+
 This index provides a structured, phase-based overview of every Mermaid diagram in the system, using the standardized naming convention:
 
 ```

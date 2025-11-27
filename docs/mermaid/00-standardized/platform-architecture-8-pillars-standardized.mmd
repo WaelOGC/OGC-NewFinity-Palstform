@@ -1,0 +1,58 @@
+%% OGC NewFinity Platform — Standardized 8-Pillar Architecture Diagram
+%% This is the official platform architecture diagram used across all documentation
+
+flowchart TB
+    subgraph PLATFORM["OGC NewFinity Platform Architecture - 8 Pillars"]
+        
+        PILLAR1["1. Main Public Site<br/>Corporate Website<br/>Public Information"]
+        
+        PILLAR2["2. OGC NewFinity Platform<br/>React + Vite<br/>Core SaaS Hub"]
+        
+        PILLAR3["3. OGC Wallet → OGC Vault<br/>Current: OGC Wallet<br/>Future: OGC Vault with Staking"]
+        
+        PILLAR4["4. Amy AI Agent<br/>Comprehensive AI Tools Suite<br/>Productivity & Creativity"]
+        
+        PILLAR5["5. Challenge Program Hub<br/>OGC NewFinity Challenge Program<br/>3 Official Tracks"]
+        
+        PILLAR6["6. Contribution-Based Mining Engine<br/>Rewards System<br/>User Engagement"]
+        
+        PILLAR7["7. Governance System<br/>Future DAO<br/>Community Voting"]
+        
+        PILLAR8["8. Marketplace & Developer Tools<br/>SDKs, APIs<br/>Tool Integrations"]
+    end
+
+    subgraph INTEGRATION["Integration Layer"]
+        OGCFINITY[OGCFinity Token<br/>Two-Phase Model]
+        FUND[Innovation & Sustainability<br/>Challenge Fund<br/>20% - 100M OGCFinity]
+    end
+
+    %% Connections
+    PILLAR1 --> PILLAR2
+    PILLAR2 --> PILLAR3
+    PILLAR2 --> PILLAR4
+    PILLAR2 --> PILLAR5
+    PILLAR2 --> PILLAR6
+    PILLAR2 --> PILLAR7
+    PILLAR2 --> PILLAR8
+
+    %% Token Integration
+    OGCFINITY -.->|Powers| PILLAR3
+    OGCFINITY -.->|Unlocks| PILLAR4
+    OGCFINITY -.->|Enables| PILLAR5
+    OGCFINITY -.->|Rewards| PILLAR6
+    OGCFINITY -.->|Governs| PILLAR7
+    OGCFINITY -.->|Pays| PILLAR8
+
+    FUND -.->|Funds| PILLAR5
+
+    style PILLAR1 fill:#e1f5ff
+    style PILLAR2 fill:#fff4e1
+    style PILLAR3 fill:#e8f5e9
+    style PILLAR4 fill:#fce4ec
+    style PILLAR5 fill:#f3e5f5
+    style PILLAR6 fill:#e0f2f1
+    style PILLAR7 fill:#fff9c4
+    style PILLAR8 fill:#f1f8e9
+    style OGCFINITY fill:#ffebee
+    style FUND fill:#e8eaf6
+

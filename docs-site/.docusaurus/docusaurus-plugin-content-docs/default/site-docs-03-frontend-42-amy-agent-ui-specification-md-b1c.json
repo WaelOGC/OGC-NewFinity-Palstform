@@ -1,0 +1,15 @@
+{
+  "id": "frontend/amy-agent-ui-specification",
+  "title": "OGC NewFinity — Amy Agent (AI Workspace) UI Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/03-frontend/42-amy-agent-ui-specification.md",
+  "sourceDirName": "03-frontend",
+  "slug": "/frontend/amy-agent-ui-specification",
+  "permalink": "/frontend/amy-agent-ui-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 42,
+  "frontMatter": {}
+}

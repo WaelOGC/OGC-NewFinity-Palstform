@@ -1,0 +1,27 @@
+{
+  "id": "public/platform/wallet-feature-sheet",
+  "title": "OGC Wallet — Feature Sheet",
+  "description": "A complete overview of the OGC Wallet — OGCFinity token balance, Contribution-Based Mining rewards, staking, governance, and user security.",
+  "source": "@site/../docs/public/platform/wallet-feature-sheet.md",
+  "sourceDirName": "public/platform",
+  "slug": "/public/platform/wallet-feature-sheet",
+  "permalink": "/public/platform/wallet-feature-sheet",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "OGC Wallet — Feature Sheet",
+    "sidebar_label": "OGC Wallet",
+    "description": "A complete overview of the OGC Wallet — OGCFinity token balance, Contribution-Based Mining rewards, staking, governance, and user security."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Platform User Guide",
+    "permalink": "/public/platform/platform-user-guide"
+  },
+  "next": {
+    "title": "Subscriptions",
+    "permalink": "/public/platform/subscriptions-overview"
+  }
+}

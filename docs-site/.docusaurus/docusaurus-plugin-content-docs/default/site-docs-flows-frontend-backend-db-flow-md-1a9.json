@@ -1,0 +1,14 @@
+{
+  "id": "flows/frontend-backend-db-flow",
+  "title": "OGC NewFinity Platform — Frontend → Backend → Database Connection Flow",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/flows/frontend-backend-db-flow.md",
+  "sourceDirName": "flows",
+  "slug": "/flows/frontend-backend-db-flow",
+  "permalink": "/flows/frontend-backend-db-flow",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

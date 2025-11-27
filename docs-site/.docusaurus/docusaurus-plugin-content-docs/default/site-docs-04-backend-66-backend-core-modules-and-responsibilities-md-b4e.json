@@ -1,0 +1,15 @@
+{
+  "id": "backend/backend-core-modules-and-responsibilities",
+  "title": "OGC NewFinity — Backend Core Modules & Responsibilities (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/66-backend-core-modules-and-responsibilities.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/backend-core-modules-and-responsibilities",
+  "permalink": "/backend/backend-core-modules-and-responsibilities",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 66,
+  "frontMatter": {}
+}

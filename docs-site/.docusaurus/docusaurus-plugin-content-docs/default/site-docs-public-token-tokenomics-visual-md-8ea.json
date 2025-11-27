@@ -1,0 +1,27 @@
+{
+  "id": "public/token/tokenomics-visual",
+  "title": "OGCFinity Tokenomics — Visual Overview",
+  "description": "A simple, visual breakdown of the OGCFinity token supply, allocations, and how value flows through the OGC NewFinity Ecosystem.",
+  "source": "@site/../docs/public/token/tokenomics-visual.md",
+  "sourceDirName": "public/token",
+  "slug": "/public/token/tokenomics-visual",
+  "permalink": "/public/token/tokenomics-visual",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "OGCFinity Tokenomics — Visual Overview",
+    "sidebar_label": "Tokenomics",
+    "description": "A simple, visual breakdown of the OGCFinity token supply, allocations, and how value flows through the OGC NewFinity Ecosystem."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Token Overview",
+    "permalink": "/public/token/ogcfinity-token-summary"
+  },
+  "next": {
+    "title": "Ecosystem Economy",
+    "permalink": "/public/token/ecosystem-economy"
+  }
+}

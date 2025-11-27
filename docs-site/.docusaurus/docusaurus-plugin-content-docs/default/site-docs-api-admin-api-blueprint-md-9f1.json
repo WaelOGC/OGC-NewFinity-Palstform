@@ -1,0 +1,23 @@
+{
+  "id": "api/admin-api-blueprint",
+  "title": "OGC NewFinity Platform — Admin API Blueprint",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/api/admin-api-blueprint.md",
+  "sourceDirName": "api",
+  "slug": "/api/admin-api-blueprint",
+  "permalink": "/api/admin-api-blueprint",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "RFC Template — OGC NewFinity Platform",
+    "permalink": "/rfc/rfc-template"
+  },
+  "next": {
+    "title": "Amy Router API Blueprint — OGC NewFinity Platform",
+    "permalink": "/api/amy-router-api-blueprint"
+  }
+}

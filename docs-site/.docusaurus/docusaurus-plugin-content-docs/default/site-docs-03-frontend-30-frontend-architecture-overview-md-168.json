@@ -1,0 +1,15 @@
+{
+  "id": "frontend/frontend-architecture-overview",
+  "title": "OGC NewFinity — Frontend Architecture Overview (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/03-frontend/30-frontend-architecture-overview.md",
+  "sourceDirName": "03-frontend",
+  "slug": "/frontend/frontend-architecture-overview",
+  "permalink": "/frontend/frontend-architecture-overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 30,
+  "frontMatter": {}
+}

@@ -1,0 +1,36 @@
+%% OGC NewFinity Challenge Program — Standardized Flow Diagram
+%% This is the official Challenge Program flow diagram used across all documentation
+
+flowchart TD
+    START[User Starts Challenge Journey] --> SELECT_TRACK{Select Official Track}
+    
+    SELECT_TRACK -->|Track 1| TRACK1[School Students Track<br/>Ages 13-18]
+    SELECT_TRACK -->|Track 2| TRACK2[Freelancers & Solo Innovators Track<br/>Ages 18+]
+    SELECT_TRACK -->|Track 3| TRACK3[Startup Teams & Groups Track<br/>Ages 18-35]
+    
+    TRACK1 --> SUBMIT_PROJECT
+    TRACK2 --> SUBMIT_PROJECT
+    TRACK3 --> SUBMIT_PROJECT
+    
+    SUBMIT_PROJECT[Submit Project<br/>OGCFinity Token-Gated] --> REVIEW[Review Stage<br/>Judging & Evaluation]
+    
+    REVIEW --> SHORTLIST{Shortlisting Decision}
+    
+    SHORTLIST -->|Selected| PITCH[Pitch Interviews<br/>Online Sessions]
+    SHORTLIST -->|Not Selected| NOTIFY_REJECT[Notification Sent<br/>Archive Submission]
+    
+    PITCH --> WINNERS{Winners Selected}
+    
+    WINNERS -->|Winner| GRANTS[OGCFinity Grants Distributed<br/>From Innovation & Sustainability<br/>Challenge Fund]
+    WINNERS -->|Not Winner| NOTIFY_FINAL[Notification Sent<br/>Archive Submission]
+    
+    GRANTS --> MENTORSHIP[Mentorship Phase<br/>OGC NewFinity Core Team]
+    
+    MENTORSHIP --> ECOSYSTEM[Ecosystem Integration<br/>Priority Onboarding<br/>Future OGC Chain Programs]
+    
+    style TRACK1 fill:#e1f5ff
+    style TRACK2 fill:#fff4e1
+    style TRACK3 fill:#e8f5e9
+    style GRANTS fill:#fce4ec
+    style MENTORSHIP fill:#f3e5f5
+

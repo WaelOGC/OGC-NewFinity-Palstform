@@ -1,0 +1,15 @@
+{
+  "id": "frontend/challenge-hub-ui-specification",
+  "title": "OGC NewFinity — Challenge Hub UI Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/03-frontend/43-challenge-hub-ui-specification.md",
+  "sourceDirName": "03-frontend",
+  "slug": "/frontend/challenge-hub-ui-specification",
+  "permalink": "/frontend/challenge-hub-ui-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 43,
+  "frontMatter": {}
+}

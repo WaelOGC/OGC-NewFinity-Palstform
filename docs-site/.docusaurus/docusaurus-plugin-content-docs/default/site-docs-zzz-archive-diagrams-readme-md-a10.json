@@ -1,0 +1,14 @@
+{
+  "id": "zzz-archive-diagrams/README",
+  "title": "Archived Diagrams",
+  "description": "This folder contains archived diagrams that have been replaced by standardized versions.",
+  "source": "@site/../docs/zzz-archive-diagrams/README.md",
+  "sourceDirName": "zzz-archive-diagrams",
+  "slug": "/zzz-archive-diagrams/",
+  "permalink": "/zzz-archive-diagrams/",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

@@ -1,0 +1,41 @@
+%% OGCFinity Token Lifecycle — Standardized Two-Phase Model Diagram
+%% This is the official token lifecycle diagram used across all documentation
+
+flowchart LR
+    subgraph PHASE1["Phase 1: OGCFinity Genesis Token (Polygon)"]
+        ERC20[ERC-20 Standard]
+        FIXED_SUPPLY[Fixed Supply<br/>500,000,000 OGCFinity]
+        PLATFORM_UTILS[Platform Utilities<br/>AI Tools, Submissions, Mining]
+        POLYGON_NET[Polygon Network<br/>Current Active]
+    end
+
+    subgraph MIGRATION["Migration Bridge (Future)"]
+        BRIDGE[Secure 1:1<br/>Optional Migration]
+        BRIDGE_CONTRACT[Native Bridge Contract<br/>Secure Transfer]
+    end
+
+    subgraph PHASE2["Phase 2: OGCFinity Native Token (OGC Chain)"]
+        NATIVE_TOKEN[Native Token<br/>OGC Chain]
+        GOV_SUPPLY[Governance-Based Supply<br/>DAO Controlled]
+        STAKING[Staking & DAO<br/>Advanced Utilities]
+        OGC_CHAIN[OGC Chain<br/>Future Blockchain]
+    end
+
+    PHASE1 -->|Optional 1:1 Migration| MIGRATION
+    MIGRATION -->|Secure Transfer| PHASE2
+
+    ERC20 --> FIXED_SUPPLY
+    FIXED_SUPPLY --> PLATFORM_UTILS
+    PLATFORM_UTILS --> POLYGON_NET
+
+    BRIDGE --> BRIDGE_CONTRACT
+    BRIDGE_CONTRACT --> NATIVE_TOKEN
+
+    NATIVE_TOKEN --> GOV_SUPPLY
+    GOV_SUPPLY --> STAKING
+    STAKING --> OGC_CHAIN
+
+    style PHASE1 fill:#e1f5ff
+    style MIGRATION fill:#fff4e1
+    style PHASE2 fill:#e8f5e9
+

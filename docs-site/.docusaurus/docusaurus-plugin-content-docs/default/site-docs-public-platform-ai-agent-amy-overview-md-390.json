@@ -1,0 +1,27 @@
+{
+  "id": "public/platform/ai-agent-amy-overview",
+  "title": "Amy AI Agent — Overview",
+  "description": "Meet Amy, the intelligent AI engine powering the OGC NewFinity Ecosystem. Explore her features, capabilities, and role across the platform.",
+  "source": "@site/../docs/public/platform/ai-agent-amy-overview.md",
+  "sourceDirName": "public/platform",
+  "slug": "/public/platform/ai-agent-amy-overview",
+  "permalink": "/public/platform/ai-agent-amy-overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Amy AI Agent — Overview",
+    "sidebar_label": "Amy AI Agent",
+    "description": "Meet Amy, the intelligent AI engine powering the OGC NewFinity Ecosystem. Explore her features, capabilities, and role across the platform."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Subscriptions",
+    "permalink": "/public/platform/subscriptions-overview"
+  },
+  "next": {
+    "title": "Program Overview",
+    "permalink": "/public/challenge/challenge-program-overview"
+  }
+}

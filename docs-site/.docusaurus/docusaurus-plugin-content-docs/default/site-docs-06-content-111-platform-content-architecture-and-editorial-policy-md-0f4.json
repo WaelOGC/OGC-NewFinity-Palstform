@@ -1,0 +1,15 @@
+{
+  "id": "content/platform-content-architecture-and-editorial-policy",
+  "title": "OGC NewFinity — Platform Content Architecture & Editorial Policy (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/06-content/111-platform-content-architecture-and-editorial-policy.md",
+  "sourceDirName": "06-content",
+  "slug": "/content/platform-content-architecture-and-editorial-policy",
+  "permalink": "/content/platform-content-architecture-and-editorial-policy",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 111,
+  "frontMatter": {}
+}

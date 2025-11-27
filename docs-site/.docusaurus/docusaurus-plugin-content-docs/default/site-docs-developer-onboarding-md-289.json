@@ -1,0 +1,14 @@
+{
+  "id": "developer-onboarding",
+  "title": "🚀 Developer Onboarding Guide — OGC NewFinity Platform",
+  "description": "Welcome to the development ecosystem for the OGC NewFinity Platform.",
+  "source": "@site/../docs/developer-onboarding.md",
+  "sourceDirName": ".",
+  "slug": "/developer-onboarding",
+  "permalink": "/developer-onboarding",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

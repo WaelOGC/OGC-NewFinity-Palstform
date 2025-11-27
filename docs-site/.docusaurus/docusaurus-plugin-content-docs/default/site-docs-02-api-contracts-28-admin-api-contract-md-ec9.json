@@ -1,0 +1,15 @@
+{
+  "id": "api-contracts/admin-api-contract",
+  "title": "OGC NewFinity — Admin API Contract (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/02-api-contracts/28-admin-api-contract.md",
+  "sourceDirName": "02-api-contracts",
+  "slug": "/api-contracts/admin-api-contract",
+  "permalink": "/api-contracts/admin-api-contract",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 28,
+  "frontMatter": {}
+}

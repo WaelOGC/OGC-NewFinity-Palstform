@@ -1,0 +1,15 @@
+{
+  "id": "frontend/component-interaction-and-motion-specification",
+  "title": "OGC NewFinity — Component Interaction & Motion Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/03-frontend/34-component-interaction-and-motion-specification.md",
+  "sourceDirName": "03-frontend",
+  "slug": "/frontend/component-interaction-and-motion-specification",
+  "permalink": "/frontend/component-interaction-and-motion-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 34,
+  "frontMatter": {}
+}

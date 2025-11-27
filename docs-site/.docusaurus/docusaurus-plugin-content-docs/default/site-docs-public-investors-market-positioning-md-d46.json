@@ -1,0 +1,26 @@
+{
+  "id": "public/investors/market-positioning",
+  "title": "Market Positioning",
+  "description": "Understanding OGC NewFinity's place in the global AI, blockchain, and sustainable innovation landscape.",
+  "source": "@site/../docs/public/investors/market-positioning.md",
+  "sourceDirName": "public/investors",
+  "slug": "/public/investors/market-positioning",
+  "permalink": "/public/investors/market-positioning",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "title": "Market Positioning",
+    "description": "Understanding OGC NewFinity's place in the global AI, blockchain, and sustainable innovation landscape."
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Investor Information Pack",
+    "permalink": "/public/investors/investor-information-pack"
+  },
+  "next": {
+    "title": "OGC Public Roadmap",
+    "permalink": "/public/investors/public-roadmap"
+  }
+}

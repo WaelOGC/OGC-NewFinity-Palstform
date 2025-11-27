@@ -8,7 +8,7 @@ Define the architecture, features, and flow of the OGC Wallet — the core compo
 
 1. **Balance Management**
 
-   - Displays real-time OGC Token balance and rewards.  
+   - Displays real-time OGCFinity balance and rewards.  
    - Syncs with blockchain via Wallet API (Phase 8.4).  
    - Updates periodically through the Indexer Service (Phase 8.5).  
 
@@ -22,11 +22,11 @@ Define the architecture, features, and flow of the OGC Wallet — the core compo
 
    - Users can stake tokens for rewards and ecosystem participation.  
    - Staking pools managed via smart contracts (Polygon).  
-   - Rewards calculated based on contribution mining and challenge results.  
+   - Rewards calculated based on Contribution-Based Mining and challenge results.  
 
 4. **Contribution Mining**
 
-   - Users earn OGC tokens through activity, challenges, and ecosystem engagement.  
+   - Users earn OGCFinity through activity, challenges, and ecosystem engagement.  
    - Mined rewards reflected as "pending" until validated on-chain.  
 
 5. **User Interface**

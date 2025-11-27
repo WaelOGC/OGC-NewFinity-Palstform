@@ -32,7 +32,7 @@ Components include:
 
 ### 2.1 Staking Engine
 
-Users stake OGC tokens to unlock governance rights.
+Users stake OGCFinity to unlock governance rights.
 
 ### 2.2 Governance Dashboard
 
@@ -71,9 +71,9 @@ Minimum stake required (example values):
 
 | Tier | Governance Stake |
 |------|------------------|
-| Governance Tier | 100 OGC |
-| Extended Tier | 500 OGC |
-| Proposer Tier | 1000 OGC |
+| Governance Tier | 100 OGCFinity |
+| Extended Tier | 500 OGCFinity |
+| Proposer Tier | 1000 OGCFinity |
 
 (Actual values defined in Phase 3 rollout.)
 
@@ -178,7 +178,7 @@ Results published
 ### 6.1 Staking Flow
 
 ```
-User stakes OGC tokens →
+User stakes OGCFinity →
 System locks tokens →
 Governance tier activated →
 Voting rights applied →

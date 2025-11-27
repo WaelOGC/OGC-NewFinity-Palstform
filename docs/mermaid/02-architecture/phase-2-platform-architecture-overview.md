@@ -26,8 +26,9 @@ Define the structural and technological foundation of the OGC NewFinity Platform
 
 4. **Blockchain Integration**
 
-   - Polygon (OGC Token – ERC-20 standard).
-   - Manages deposits, staking, and contribution mining records.
+   - Polygon (OGCFinity – Genesis Token, ERC-20 standard, Fixed Supply: 500M).
+   - Manages deposits, staking, and Contribution-Based Mining records.
+   - Future: OGC Chain with OGCFinity Native Token (governance-based supply).
 
 5. **AI Integration**
 
@@ -40,9 +41,20 @@ Define the structural and technological foundation of the OGC NewFinity Platform
    - Backend → Dedicated Server / VPS + PM2 Monitoring.
    - Database → Cloud MySQL Instance.
 
-## Diagram Placeholder
+## Standardized Architecture Diagram
 
-(A high-level Mermaid architecture diagram will be added after all subsystem definitions are finalized.)
+See the official standardized platform architecture diagram:
+- `docs/mermaid/00-standardized/platform-architecture-8-pillars-standardized.mmd`
+
+The platform follows the 8-pillar architecture model:
+1. Main Public Site
+2. OGC NewFinity Platform (React + Vite)
+3. OGC Wallet → OGC Vault
+4. Amy AI Agent
+5. Challenge Program Hub
+6. Contribution-Based Mining Engine
+7. Governance System
+8. Marketplace & Developer Tools
 
 ## Deliverables
 

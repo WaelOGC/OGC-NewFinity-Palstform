@@ -1,0 +1,1101 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": true,
+          "path": "/",
+          "mainDocId": "index",
+          "docs": [
+            {
+              "id": "admin/admin-tools-overview",
+              "path": "/admin/admin-tools-overview"
+            },
+            {
+              "id": "admin/README",
+              "path": "/admin/"
+            },
+            {
+              "id": "amy/amy-feature-matrix",
+              "path": "/amy/amy-feature-matrix"
+            },
+            {
+              "id": "amy/amy-system-spec",
+              "path": "/amy/amy-system-spec"
+            },
+            {
+              "id": "amy/README",
+              "path": "/amy/"
+            },
+            {
+              "id": "api-contracts/admin-api-contract",
+              "path": "/api-contracts/admin-api-contract"
+            },
+            {
+              "id": "api-contracts/ai-gateway-api-contract",
+              "path": "/api-contracts/ai-gateway-api-contract"
+            },
+            {
+              "id": "api-contracts/auth-api-contract",
+              "path": "/api-contracts/auth-api-contract"
+            },
+            {
+              "id": "api-contracts/badge-contribution-api-contract",
+              "path": "/api-contracts/badge-contribution-api-contract"
+            },
+            {
+              "id": "api-contracts/challenge-api-contract",
+              "path": "/api-contracts/challenge-api-contract"
+            },
+            {
+              "id": "api-contracts/notification-api-contract",
+              "path": "/api-contracts/notification-api-contract"
+            },
+            {
+              "id": "api-contracts/submission-api-contract",
+              "path": "/api-contracts/submission-api-contract"
+            },
+            {
+              "id": "api-contracts/subscription-api-contract",
+              "path": "/api-contracts/subscription-api-contract"
+            },
+            {
+              "id": "api-contracts/wallet-api-contract",
+              "path": "/api-contracts/wallet-api-contract"
+            },
+            {
+              "id": "api/admin-api-blueprint",
+              "path": "/api/admin-api-blueprint",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "api/amy-router-api-blueprint",
+              "path": "/api/amy-router-api-blueprint",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "api/api-blueprint-template",
+              "path": "/api/api-blueprint-template",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "api/api-index",
+              "path": "/api/api-index",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "api/auth-api-blueprint",
+              "path": "/api/auth-api-blueprint",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "api/challenge-api-blueprint",
+              "path": "/api/challenge-api-blueprint",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "api/governance-api-blueprint",
+              "path": "/api/governance-api-blueprint",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "api/notification-api-blueprint",
+              "path": "/api/notification-api-blueprint",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "api/subscription-api-blueprint",
+              "path": "/api/subscription-api-blueprint",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "api/wallet-api-blueprint",
+              "path": "/api/wallet-api-blueprint",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "architecture-principles",
+              "path": "/architecture-principles",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "automation/auto-diagrams",
+              "path": "/automation/auto-diagrams",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "automation/generator-rules",
+              "path": "/automation/generator-rules",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "backend/admin-audit-trail-and-activity-tracking-ui-specification",
+              "path": "/backend/admin-audit-trail-and-activity-tracking-ui-specification"
+            },
+            {
+              "id": "backend/admin-badges-and-contribution-management-ui-specification",
+              "path": "/backend/admin-badges-and-contribution-management-ui-specification"
+            },
+            {
+              "id": "backend/admin-challenge-management-ui-specification",
+              "path": "/backend/admin-challenge-management-ui-specification"
+            },
+            {
+              "id": "backend/admin-data-tables-and-moderation-tools-ui-specification",
+              "path": "/backend/admin-data-tables-and-moderation-tools-ui-specification"
+            },
+            {
+              "id": "backend/admin-developer-tools-and-api-console-ui-specification",
+              "path": "/backend/admin-developer-tools-and-api-console-ui-specification"
+            },
+            {
+              "id": "backend/admin-email-sms-template-management-ui-specification",
+              "path": "/backend/admin-email-sms-template-management-ui-specification"
+            },
+            {
+              "id": "backend/admin-notification-system-ui-specification",
+              "path": "/backend/admin-notification-system-ui-specification"
+            },
+            {
+              "id": "backend/admin-rate-limiting-and-resource-management-ui-specification",
+              "path": "/backend/admin-rate-limiting-and-resource-management-ui-specification"
+            },
+            {
+              "id": "backend/admin-submission-review-system-ui-specification",
+              "path": "/backend/admin-submission-review-system-ui-specification"
+            },
+            {
+              "id": "backend/admin-subscription-management-ui-specification",
+              "path": "/backend/admin-subscription-management-ui-specification"
+            },
+            {
+              "id": "backend/admin-system-logs-and-observability-ui-specification",
+              "path": "/backend/admin-system-logs-and-observability-ui-specification"
+            },
+            {
+              "id": "backend/admin-system-settings-and-configuration-ui-specification",
+              "path": "/backend/admin-system-settings-and-configuration-ui-specification"
+            },
+            {
+              "id": "backend/admin-user-management-system-ui-specification",
+              "path": "/backend/admin-user-management-system-ui-specification"
+            },
+            {
+              "id": "backend/admin-wallet-and-transactions-management-ui-specification",
+              "path": "/backend/admin-wallet-and-transactions-management-ui-specification"
+            },
+            {
+              "id": "backend/backend-admin-tools-and-moderation-engine-specification",
+              "path": "/backend/backend-admin-tools-and-moderation-engine-specification"
+            },
+            {
+              "id": "backend/backend-analytics-and-insights-engine-specification",
+              "path": "/backend/backend-analytics-and-insights-engine-specification"
+            },
+            {
+              "id": "backend/backend-api-gateway-and-routing-engine-specification",
+              "path": "/backend/backend-api-gateway-and-routing-engine-specification"
+            },
+            {
+              "id": "backend/backend-api-standards-and-conventions",
+              "path": "/backend/backend-api-standards-and-conventions"
+            },
+            {
+              "id": "backend/backend-architecture-overview",
+              "path": "/backend/backend-architecture-overview"
+            },
+            {
+              "id": "backend/backend-authentication-and-token-lifecycle-specification",
+              "path": "/backend/backend-authentication-and-token-lifecycle-specification"
+            },
+            {
+              "id": "backend/backend-blockchain-and-token-interaction-engine-specification",
+              "path": "/backend/backend-blockchain-and-token-interaction-engine-specification"
+            },
+            {
+              "id": "backend/backend-cache-layer-architecture-and-optimization-rules",
+              "path": "/backend/backend-cache-layer-architecture-and-optimization-rules"
+            },
+            {
+              "id": "backend/backend-challenge-engine-logic-and-workflow-specification",
+              "path": "/backend/backend-challenge-engine-logic-and-workflow-specification"
+            },
+            {
+              "id": "backend/backend-contribution-and-badge-engine-specification",
+              "path": "/backend/backend-contribution-and-badge-engine-specification"
+            },
+            {
+              "id": "backend/backend-core-modules-and-responsibilities",
+              "path": "/backend/backend-core-modules-and-responsibilities"
+            },
+            {
+              "id": "backend/backend-database-schema-and-data-modeling-guidelines",
+              "path": "/backend/backend-database-schema-and-data-modeling-guidelines"
+            },
+            {
+              "id": "backend/backend-developer-sandbox-and-testing-environment-specification",
+              "path": "/backend/backend-developer-sandbox-and-testing-environment-specification"
+            },
+            {
+              "id": "backend/backend-email-queue-and-bulk-delivery-engine-specification",
+              "path": "/backend/backend-email-queue-and-bulk-delivery-engine-specification"
+            },
+            {
+              "id": "backend/backend-email-sms-provider-integration-specification",
+              "path": "/backend/backend-email-sms-provider-integration-specification"
+            },
+            {
+              "id": "backend/backend-file-migration-and-archiving-engine",
+              "path": "/backend/backend-file-migration-and-archiving-engine"
+            },
+            {
+              "id": "backend/backend-file-processing-and-validation-pipeline-specification",
+              "path": "/backend/backend-file-processing-and-validation-pipeline-specification"
+            },
+            {
+              "id": "backend/backend-file-uploads-storage-and-media-handling-specification",
+              "path": "/backend/backend-file-uploads-storage-and-media-handling-specification"
+            },
+            {
+              "id": "backend/backend-fraud-detection-and-abuse-prevention-engine",
+              "path": "/backend/backend-fraud-detection-and-abuse-prevention-engine"
+            },
+            {
+              "id": "backend/backend-internationalization-i18n-support-specification",
+              "path": "/backend/backend-internationalization-i18n-support-specification"
+            },
+            {
+              "id": "backend/backend-logging-and-observability-engine-specification",
+              "path": "/backend/backend-logging-and-observability-engine-specification"
+            },
+            {
+              "id": "backend/backend-multi-tenant-and-multi-instance-expansion-framework",
+              "path": "/backend/backend-multi-tenant-and-multi-instance-expansion-framework"
+            },
+            {
+              "id": "backend/backend-notification-delivery-engine-specification",
+              "path": "/backend/backend-notification-delivery-engine-specification"
+            },
+            {
+              "id": "backend/backend-notification-template-rendering-engine-specification",
+              "path": "/backend/backend-notification-template-rendering-engine-specification"
+            },
+            {
+              "id": "backend/backend-payment-gateway-integration-specification",
+              "path": "/backend/backend-payment-gateway-integration-specification"
+            },
+            {
+              "id": "backend/backend-rate-limiting-engine-specification",
+              "path": "/backend/backend-rate-limiting-engine-specification"
+            },
+            {
+              "id": "backend/backend-search-and-indexing-engine-specification",
+              "path": "/backend/backend-search-and-indexing-engine-specification"
+            },
+            {
+              "id": "backend/backend-service-health-monitoring-and-status-endpoint-specification",
+              "path": "/backend/backend-service-health-monitoring-and-status-endpoint-specification"
+            },
+            {
+              "id": "backend/backend-storage-management-and-bucket-lifecycle-rules",
+              "path": "/backend/backend-storage-management-and-bucket-lifecycle-rules"
+            },
+            {
+              "id": "backend/backend-submission-processing-engine-specification",
+              "path": "/backend/backend-submission-processing-engine-specification"
+            },
+            {
+              "id": "backend/backend-system-backup-and-disaster-recovery-specification",
+              "path": "/backend/backend-system-backup-and-disaster-recovery-specification"
+            },
+            {
+              "id": "backend/backend-system-logging-retention-and-data-compliance-specification",
+              "path": "/backend/backend-system-logging-retention-and-data-compliance-specification"
+            },
+            {
+              "id": "backend/backend-system-settings-and-configuration-engine-specification",
+              "path": "/backend/backend-system-settings-and-configuration-engine-specification"
+            },
+            {
+              "id": "backend/backend-system-shutdown-restart-and-deployment-safeguards",
+              "path": "/backend/backend-system-shutdown-restart-and-deployment-safeguards"
+            },
+            {
+              "id": "backend/backend-wallet-and-reward-distribution-engine-specification",
+              "path": "/backend/backend-wallet-and-reward-distribution-engine-specification"
+            },
+            {
+              "id": "backend/backend-worker-queue-and-task-scheduler-specification",
+              "path": "/backend/backend-worker-queue-and-task-scheduler-specification"
+            },
+            {
+              "id": "badges/badges-and-levels-spec",
+              "path": "/badges/badges-and-levels-spec"
+            },
+            {
+              "id": "badges/README",
+              "path": "/badges/"
+            },
+            {
+              "id": "changelog",
+              "path": "/changelog",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "ci/docs-validation-overview",
+              "path": "/ci/docs-validation-overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "ci/link-checking",
+              "path": "/ci/link-checking",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "ci/markdown-rules",
+              "path": "/ci/markdown-rules",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "ci/mermaid-validation",
+              "path": "/ci/mermaid-validation",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "ci/naming-checks",
+              "path": "/ci/naming-checks",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "content/challenge-content-and-publishing-guidelines",
+              "path": "/content/challenge-content-and-publishing-guidelines"
+            },
+            {
+              "id": "content/content-localization-and-language-expansion-strategy",
+              "path": "/content/content-localization-and-language-expansion-strategy"
+            },
+            {
+              "id": "content/knowledge-base-structure-and-article-templates",
+              "path": "/content/knowledge-base-structure-and-article-templates"
+            },
+            {
+              "id": "content/legal-pages-content-specification",
+              "path": "/content/legal-pages-content-specification"
+            },
+            {
+              "id": "content/marketing-content-and-seo-framework",
+              "path": "/content/marketing-content-and-seo-framework"
+            },
+            {
+              "id": "content/platform-content-architecture-and-editorial-policy",
+              "path": "/content/platform-content-architecture-and-editorial-policy"
+            },
+            {
+              "id": "content/user-education-and-onboarding-content-framework",
+              "path": "/content/user-education-and-onboarding-content-framework"
+            },
+            {
+              "id": "contribution/contribution-system-spec",
+              "path": "/contribution/contribution-system-spec"
+            },
+            {
+              "id": "contribution/README",
+              "path": "/contribution/"
+            },
+            {
+              "id": "contributors-guide",
+              "path": "/contributors-guide",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "core-systems/admin-panel-specification-and-operational-workflows",
+              "path": "/core-systems/admin-panel-specification-and-operational-workflows"
+            },
+            {
+              "id": "core-systems/amy-agent-ai-tools-specification",
+              "path": "/core-systems/amy-agent-ai-tools-specification"
+            },
+            {
+              "id": "core-systems/api-architecture-and-endpoint-inventory",
+              "path": "/core-systems/api-architecture-and-endpoint-inventory"
+            },
+            {
+              "id": "core-systems/authentication-and-security-architecture",
+              "path": "/core-systems/authentication-and-security-architecture"
+            },
+            {
+              "id": "core-systems/badge-and-contribution-system-specification",
+              "path": "/core-systems/badge-and-contribution-system-specification"
+            },
+            {
+              "id": "core-systems/challenge-program-specification",
+              "path": "/core-systems/challenge-program-specification"
+            },
+            {
+              "id": "core-systems/database-schema-and-entity-relationships",
+              "path": "/core-systems/database-schema-and-entity-relationships"
+            },
+            {
+              "id": "core-systems/error-handling-and-system-messaging-specification",
+              "path": "/core-systems/error-handling-and-system-messaging-specification"
+            },
+            {
+              "id": "core-systems/logging-monitoring-and-observability-specification",
+              "path": "/core-systems/logging-monitoring-and-observability-specification"
+            },
+            {
+              "id": "core-systems/navigation-flow-and-user-journey-maps",
+              "path": "/core-systems/navigation-flow-and-user-journey-maps"
+            },
+            {
+              "id": "core-systems/notification-system-specification",
+              "path": "/core-systems/notification-system-specification"
+            },
+            {
+              "id": "core-systems/rate-limiting-and-resource-management-specification",
+              "path": "/core-systems/rate-limiting-and-resource-management-specification"
+            },
+            {
+              "id": "core-systems/subscription-system-specification",
+              "path": "/core-systems/subscription-system-specification"
+            },
+            {
+              "id": "core-systems/ui-ux-framework-and-design-system-overview",
+              "path": "/core-systems/ui-ux-framework-and-design-system-overview"
+            },
+            {
+              "id": "core-systems/wallet-and-token-system-specification",
+              "path": "/core-systems/wallet-and-token-system-specification"
+            },
+            {
+              "id": "database/README",
+              "path": "/database/"
+            },
+            {
+              "id": "database/schema-overview",
+              "path": "/database/schema-overview"
+            },
+            {
+              "id": "developer-onboarding",
+              "path": "/developer-onboarding"
+            },
+            {
+              "id": "devops/backup-automation-and-restore-script-specifications",
+              "path": "/devops/backup-automation-and-restore-script-specifications"
+            },
+            {
+              "id": "devops/ci-cd-pipeline-architecture-and-deployment-workflow",
+              "path": "/devops/ci-cd-pipeline-architecture-and-deployment-workflow"
+            },
+            {
+              "id": "devops/devops-alerts-notifications-and-health-dashboard-setup",
+              "path": "/devops/devops-alerts-notifications-and-health-dashboard-setup"
+            },
+            {
+              "id": "devops/devops-infrastructure-overview",
+              "path": "/devops/devops-infrastructure-overview"
+            },
+            {
+              "id": "devops/environment-configuration-and-secret-management-specification",
+              "path": "/devops/environment-configuration-and-secret-management-specification"
+            },
+            {
+              "id": "devops/load-balancer-and-traffic-routing-configuration",
+              "path": "/devops/load-balancer-and-traffic-routing-configuration"
+            },
+            {
+              "id": "devops/logging-and-monitoring-stack-deployment-guide",
+              "path": "/devops/logging-and-monitoring-stack-deployment-guide"
+            },
+            {
+              "id": "devops/security-hardening-and-firewall-configuration-standards",
+              "path": "/devops/security-hardening-and-firewall-configuration-standards"
+            },
+            {
+              "id": "devops/server-provisioning-and-runtime-orchestration-playbook",
+              "path": "/devops/server-provisioning-and-runtime-orchestration-playbook"
+            },
+            {
+              "id": "devops/zero-downtime-deployment-procedures",
+              "path": "/devops/zero-downtime-deployment-procedures"
+            },
+            {
+              "id": "diagrams/README",
+              "path": "/diagrams/"
+            },
+            {
+              "id": "DOCUMENTATION-AUDIT-REPORT",
+              "path": "/DOCUMENTATION-AUDIT-REPORT"
+            },
+            {
+              "id": "documentation-overview",
+              "path": "/documentation-overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "faq",
+              "path": "/faq",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "flows/challenge-detailed-flow",
+              "path": "/flows/challenge-detailed-flow"
+            },
+            {
+              "id": "flows/frontend-backend-db-flow",
+              "path": "/flows/frontend-backend-db-flow"
+            },
+            {
+              "id": "flows/platform-flows-overview",
+              "path": "/flows/platform-flows-overview"
+            },
+            {
+              "id": "flows/README",
+              "path": "/flows/"
+            },
+            {
+              "id": "footer",
+              "path": "/footer"
+            },
+            {
+              "id": "foundations/detailed-feature-specification",
+              "path": "/foundations/detailed-feature-specification"
+            },
+            {
+              "id": "foundations/platform-overview",
+              "path": "/foundations/platform-overview"
+            },
+            {
+              "id": "foundations/platform-sitemap-information-architecture",
+              "path": "/foundations/platform-sitemap-information-architecture"
+            },
+            {
+              "id": "foundations/system-architecture-overview",
+              "path": "/foundations/system-architecture-overview"
+            },
+            {
+              "id": "foundations/user-roles-permission-matrix",
+              "path": "/foundations/user-roles-permission-matrix"
+            },
+            {
+              "id": "frontend/admin-panel-frontend-architecture",
+              "path": "/frontend/admin-panel-frontend-architecture"
+            },
+            {
+              "id": "frontend/amy-agent-ui-specification",
+              "path": "/frontend/amy-agent-ui-specification"
+            },
+            {
+              "id": "frontend/authentication-ui-flow-and-screen-specification",
+              "path": "/frontend/authentication-ui-flow-and-screen-specification"
+            },
+            {
+              "id": "frontend/base-layout-components",
+              "path": "/frontend/base-layout-components"
+            },
+            {
+              "id": "frontend/challenge-hub-ui-specification",
+              "path": "/frontend/challenge-hub-ui-specification"
+            },
+            {
+              "id": "frontend/component-interaction-and-motion-specification",
+              "path": "/frontend/component-interaction-and-motion-specification"
+            },
+            {
+              "id": "frontend/cross-app-interface-and-unified-experience-specification",
+              "path": "/frontend/cross-app-interface-and-unified-experience-specification"
+            },
+            {
+              "id": "frontend/dashboard-layout-system-specification",
+              "path": "/frontend/dashboard-layout-system-specification"
+            },
+            {
+              "id": "frontend/dashboard-navigation",
+              "path": "/frontend/dashboard-navigation"
+            },
+            {
+              "id": "frontend/dashboard-widgets-and-data-visualization-ui-specification",
+              "path": "/frontend/dashboard-widgets-and-data-visualization-ui-specification"
+            },
+            {
+              "id": "frontend/design-tokens-and-theme-specification",
+              "path": "/frontend/design-tokens-and-theme-specification"
+            },
+            {
+              "id": "frontend/file-structure",
+              "path": "/frontend/file-structure"
+            },
+            {
+              "id": "frontend/frontend-architecture-overview",
+              "path": "/frontend/frontend-architecture-overview"
+            },
+            {
+              "id": "frontend/frontend-error-handling-and-ux-messaging-rules",
+              "path": "/frontend/frontend-error-handling-and-ux-messaging-rules"
+            },
+            {
+              "id": "frontend/frontend-form-system-and-validation-framework",
+              "path": "/frontend/frontend-form-system-and-validation-framework"
+            },
+            {
+              "id": "frontend/global-navigation-system-ui-specification",
+              "path": "/frontend/global-navigation-system-ui-specification"
+            },
+            {
+              "id": "frontend/global-styling-and-css-architecture",
+              "path": "/frontend/global-styling-and-css-architecture"
+            },
+            {
+              "id": "frontend/layouts-and-navigation",
+              "path": "/frontend/layouts-and-navigation"
+            },
+            {
+              "id": "frontend/notification-center-ui-specification",
+              "path": "/frontend/notification-center-ui-specification"
+            },
+            {
+              "id": "frontend/profile-and-account-settings-ui-specification",
+              "path": "/frontend/profile-and-account-settings-ui-specification"
+            },
+            {
+              "id": "frontend/README",
+              "path": "/frontend/"
+            },
+            {
+              "id": "frontend/responsive-layout-and-breakpoint-specification",
+              "path": "/frontend/responsive-layout-and-breakpoint-specification"
+            },
+            {
+              "id": "frontend/submissions-ui-specification",
+              "path": "/frontend/submissions-ui-specification"
+            },
+            {
+              "id": "frontend/subscription-center-ui-specification",
+              "path": "/frontend/subscription-center-ui-specification"
+            },
+            {
+              "id": "frontend/ui-components-reference",
+              "path": "/frontend/ui-components-reference"
+            },
+            {
+              "id": "frontend/wallet-dashboard-ui-specification",
+              "path": "/frontend/wallet-dashboard-ui-specification"
+            },
+            {
+              "id": "glossary",
+              "path": "/glossary",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "governance/community-voting-procedures-and-decision-policy",
+              "path": "/governance/community-voting-procedures-and-decision-policy"
+            },
+            {
+              "id": "governance/contribution-mining-governance-rules",
+              "path": "/governance/contribution-mining-governance-rules"
+            },
+            {
+              "id": "governance/dao-transition-roadmap-future",
+              "path": "/governance/dao-transition-roadmap-future"
+            },
+            {
+              "id": "governance/ecosystem-compliance-and-risk-assessment-guidelines",
+              "path": "/governance/ecosystem-compliance-and-risk-assessment-guidelines"
+            },
+            {
+              "id": "governance/governance-framework-overview",
+              "path": "/governance/governance-framework-overview"
+            },
+            {
+              "id": "governance/security-council-and-emergency-powers-specification",
+              "path": "/governance/security-council-and-emergency-powers-specification"
+            },
+            {
+              "id": "governance/token-utility-and-governance-proposal-framework",
+              "path": "/governance/token-utility-and-governance-proposal-framework"
+            },
+            {
+              "id": "index",
+              "path": "/",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "maintenance-guide",
+              "path": "/maintenance-guide",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "manifest",
+              "path": "/manifest",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/amy-agent/phase-9-amy-ai-agent-overview",
+              "path": "/mermaid/amy-agent/phase-9-amy-ai-agent-overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/amy-agent/README",
+              "path": "/mermaid/amy-agent/",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/api-contracts/phase-8-api-contracts-overview",
+              "path": "/mermaid/api-contracts/phase-8-api-contracts-overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/api-contracts/README",
+              "path": "/mermaid/api-contracts/",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/architecture/phase-2-platform-architecture-overview",
+              "path": "/mermaid/architecture/phase-2-platform-architecture-overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/architecture/phase-2-security-and-protection-framework",
+              "path": "/mermaid/architecture/phase-2-security-and-protection-framework",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/architecture/README",
+              "path": "/mermaid/architecture/",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/core-sequences/phase-5-core-system-sequences-overview",
+              "path": "/mermaid/core-sequences/phase-5-core-system-sequences-overview"
+            },
+            {
+              "id": "mermaid/core-sequences/README",
+              "path": "/mermaid/core-sequences/"
+            },
+            {
+              "id": "mermaid/data-models/phase-7-data-models-and-prisma-layer-overview",
+              "path": "/mermaid/data-models/phase-7-data-models-and-prisma-layer-overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/data-models/README",
+              "path": "/mermaid/data-models/",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/foundations/phase-1-strategic-foundations-plan",
+              "path": "/mermaid/foundations/phase-1-strategic-foundations-plan"
+            },
+            {
+              "id": "mermaid/foundations/README",
+              "path": "/mermaid/foundations/"
+            },
+            {
+              "id": "mermaid/governance/phase-6-governance-and-permissions-overview",
+              "path": "/mermaid/governance/phase-6-governance-and-permissions-overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/governance/README",
+              "path": "/mermaid/governance/",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/index",
+              "path": "/mermaid/",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/index-report",
+              "path": "/mermaid/index-report"
+            },
+            {
+              "id": "mermaid/layouts-and-navigation/README",
+              "path": "/mermaid/layouts-and-navigation/"
+            },
+            {
+              "id": "mermaid/platform-flows/phase-3-platform-flows-overview",
+              "path": "/mermaid/platform-flows/phase-3-platform-flows-overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/platform-flows/README",
+              "path": "/mermaid/platform-flows/",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/RENAME_SUMMARY",
+              "path": "/mermaid/RENAME_SUMMARY"
+            },
+            {
+              "id": "mermaid/standardized/DIAGRAM-STANDARDIZATION-SUMMARY",
+              "path": "/mermaid/standardized/DIAGRAM-STANDARDIZATION-SUMMARY"
+            },
+            {
+              "id": "mermaid/standardized/README",
+              "path": "/mermaid/standardized/"
+            },
+            {
+              "id": "mermaid/standardized/roadmap-reference",
+              "path": "/mermaid/standardized/roadmap-reference"
+            },
+            {
+              "id": "mermaid/unified-master-flow/phase-4-unified-master-flow-overview",
+              "path": "/mermaid/unified-master-flow/phase-4-unified-master-flow-overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/unified-master-flow/README",
+              "path": "/mermaid/unified-master-flow/",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/wallet-architecture/README",
+              "path": "/mermaid/wallet-architecture/",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "mermaid/wallet/phase-10-wallet-dashboard-overview",
+              "path": "/mermaid/wallet/phase-10-wallet-dashboard-overview"
+            },
+            {
+              "id": "mermaid/wallet/README",
+              "path": "/mermaid/wallet/"
+            },
+            {
+              "id": "PRIORITY-1-FIXES-SUMMARY",
+              "path": "/PRIORITY-1-FIXES-SUMMARY"
+            },
+            {
+              "id": "public/announcements/ogc-newfinity-documentation-v2.0-release-announcement",
+              "path": "/public/announcements/ogc-newfinity-documentation-v2.0-release-announcement"
+            },
+            {
+              "id": "public/announcements/ogc-newfinity-v2.0-release-notes",
+              "path": "/public/announcements/ogc-newfinity-v2.0-release-notes"
+            },
+            {
+              "id": "public/challenge/challenge-faq",
+              "path": "/public/challenge/challenge-faq",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/challenge/challenge-program-overview",
+              "path": "/public/challenge/challenge-program-overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/challenge/judging-and-rules",
+              "path": "/public/challenge/judging-and-rules",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/challenge/tracks-categories",
+              "path": "/public/challenge/tracks-categories",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/investors/investor-information-pack",
+              "path": "/public/investors/investor-information-pack",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/investors/market-positioning",
+              "path": "/public/investors/market-positioning",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/investors/public-roadmap",
+              "path": "/public/investors/public-roadmap",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/legal/cookies-and-data-policy",
+              "path": "/public/legal/cookies-and-data-policy",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/legal/privacy-policy",
+              "path": "/public/legal/privacy-policy",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/legal/terms-of-use",
+              "path": "/public/legal/terms-of-use",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/overview/ogc-newfinity-overview",
+              "path": "/public/overview/ogc-newfinity-overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/platform/ai-agent-amy-overview",
+              "path": "/public/platform/ai-agent-amy-overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/platform/platform-user-guide",
+              "path": "/public/platform/platform-user-guide",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/platform/subscriptions-overview",
+              "path": "/public/platform/subscriptions-overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/platform/wallet-feature-sheet",
+              "path": "/public/platform/wallet-feature-sheet",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/token/ecosystem-economy",
+              "path": "/public/token/ecosystem-economy",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/token/ogcfinity-token-summary",
+              "path": "/public/token/ogcfinity-token-summary",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/token/tokenomics-visual",
+              "path": "/public/token/tokenomics-visual",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "public/whitepaper/ogc-whitepaper-public",
+              "path": "/public/whitepaper/ogc-whitepaper-public",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "quickstart",
+              "path": "/quickstart",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "rfc/rfc-examples",
+              "path": "/rfc/rfc-examples",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "rfc/rfc-guidelines",
+              "path": "/rfc/rfc-guidelines",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "rfc/rfc-template",
+              "path": "/rfc/rfc-template",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "shortcuts",
+              "path": "/shortcuts",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "site/deployment-options",
+              "path": "/site/deployment-options"
+            },
+            {
+              "id": "site/navigation-structure",
+              "path": "/site/navigation-structure"
+            },
+            {
+              "id": "site/sidebar-config",
+              "path": "/site/sidebar-config"
+            },
+            {
+              "id": "site/site-preparation",
+              "path": "/site/site-preparation"
+            },
+            {
+              "id": "site/theme-guidelines",
+              "path": "/site/theme-guidelines"
+            },
+            {
+              "id": "specs/auth-system-spec",
+              "path": "/specs/auth-system-spec"
+            },
+            {
+              "id": "specs/challenge-program-spec",
+              "path": "/specs/challenge-program-spec"
+            },
+            {
+              "id": "specs/governance-system-spec",
+              "path": "/specs/governance-system-spec"
+            },
+            {
+              "id": "specs/README",
+              "path": "/specs/"
+            },
+            {
+              "id": "specs/subscription-system-spec",
+              "path": "/specs/subscription-system-spec"
+            },
+            {
+              "id": "structure-map",
+              "path": "/structure-map",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "tests/api-tests",
+              "path": "/tests/api-tests",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "tests/integration-tests",
+              "path": "/tests/integration-tests",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "tests/test-standards",
+              "path": "/tests/test-standards",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "tests/testing-overview",
+              "path": "/tests/testing-overview",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "tests/unit-tests",
+              "path": "/tests/unit-tests",
+              "sidebar": "docsSidebar"
+            },
+            {
+              "id": "wallet/README",
+              "path": "/wallet/"
+            },
+            {
+              "id": "wallet/wallet-product-spec",
+              "path": "/wallet/wallet-product-spec"
+            },
+            {
+              "id": "wallet/wallet-ui-wireframes",
+              "path": "/wallet/wallet-ui-wireframes"
+            },
+            {
+              "id": "zzz-archive-diagrams/README",
+              "path": "/zzz-archive-diagrams/"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "docsSidebar": {
+              "link": {
+                "path": "/",
+                "label": "index"
+              }
+            }
+          }
+        }
+      ],
+      "breadcrumbs": true
+    }
+  }
+}

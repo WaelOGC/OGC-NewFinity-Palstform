@@ -1,0 +1,14 @@
+{
+  "id": "frontend/dashboard-navigation",
+  "title": "OGC NewFinity Platform — Dashboard Navigation Specification",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/frontend/dashboard-navigation.md",
+  "sourceDirName": "frontend",
+  "slug": "/frontend/dashboard-navigation",
+  "permalink": "/frontend/dashboard-navigation",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

@@ -1,0 +1,15 @@
+{
+  "id": "backend/admin-subscription-management-ui-specification",
+  "title": "OGC NewFinity — Admin Subscription Management UI Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/57-admin-subscription-management-ui-specification.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/admin-subscription-management-ui-specification",
+  "permalink": "/backend/admin-subscription-management-ui-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 57,
+  "frontMatter": {}
+}

@@ -1,0 +1,15 @@
+{
+  "id": "backend/backend-authentication-and-token-lifecycle-specification",
+  "title": "OGC NewFinity — Backend Authentication & Token Lifecycle Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/70-backend-authentication-and-token-lifecycle-specification.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/backend-authentication-and-token-lifecycle-specification",
+  "permalink": "/backend/backend-authentication-and-token-lifecycle-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 70,
+  "frontMatter": {}
+}

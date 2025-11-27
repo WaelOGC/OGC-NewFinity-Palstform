@@ -46,7 +46,7 @@ Built with **React + Vite**, consisting of:
 
 - **Main Platform** (dashboard, challenges, contributions, subscriptions)  
 
-- **Wallet Dashboard** (standalone)  
+- **OGC Wallet** (standalone, future: OGC Vault)  
 
 - **Amy Agent Dashboard** (standalone)  
 
@@ -160,7 +160,7 @@ Future expansion:
 
 ### 3.5 Blockchain Layer
 
-Based on **Polygon ERC-20 OGC Token**, enabling:
+Based on **OGCFinity – Genesis Token (Polygon, ERC-20, Fixed Supply)**, enabling:
 
 
 
@@ -168,7 +168,7 @@ Based on **Polygon ERC-20 OGC Token**, enabling:
 
 - Transaction history  
 
-- Contribution mining  
+- Contribution-Based Mining  
 
 - Challenge rewards  
 
@@ -318,7 +318,7 @@ Admins operate in a secure, protected environment.
 
 2. Backend syncs data  
 
-3. Wallet dashboard updates  
+3. OGC Wallet updates  
 
 
 

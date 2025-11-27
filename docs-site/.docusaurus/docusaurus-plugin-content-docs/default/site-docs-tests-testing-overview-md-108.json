@@ -1,0 +1,23 @@
+{
+  "id": "tests/testing-overview",
+  "title": "Testing Overview — OGC NewFinity Platform",
+  "description": "This folder defines testing guidelines and structures for the OGC NewFinity Platform.",
+  "source": "@site/../docs/tests/testing-overview.md",
+  "sourceDirName": "tests",
+  "slug": "/tests/testing-overview",
+  "permalink": "/tests/testing-overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Test Standards — OGC NewFinity Platform",
+    "permalink": "/tests/test-standards"
+  },
+  "next": {
+    "title": "Unit Tests — OGC NewFinity Platform",
+    "permalink": "/tests/unit-tests"
+  }
+}

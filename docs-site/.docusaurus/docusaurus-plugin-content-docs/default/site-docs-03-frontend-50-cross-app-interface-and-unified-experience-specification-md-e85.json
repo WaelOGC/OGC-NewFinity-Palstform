@@ -1,0 +1,15 @@
+{
+  "id": "frontend/cross-app-interface-and-unified-experience-specification",
+  "title": "OGC NewFinity — Cross-App Interface & Unified Experience Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/03-frontend/50-cross-app-interface-and-unified-experience-specification.md",
+  "sourceDirName": "03-frontend",
+  "slug": "/frontend/cross-app-interface-and-unified-experience-specification",
+  "permalink": "/frontend/cross-app-interface-and-unified-experience-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 50,
+  "frontMatter": {}
+}

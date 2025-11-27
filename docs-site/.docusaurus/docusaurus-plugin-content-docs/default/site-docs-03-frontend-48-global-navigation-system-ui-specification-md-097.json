@@ -1,0 +1,15 @@
+{
+  "id": "frontend/global-navigation-system-ui-specification",
+  "title": "OGC NewFinity — Global Navigation System UI Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/03-frontend/48-global-navigation-system-ui-specification.md",
+  "sourceDirName": "03-frontend",
+  "slug": "/frontend/global-navigation-system-ui-specification",
+  "permalink": "/frontend/global-navigation-system-ui-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 48,
+  "frontMatter": {}
+}

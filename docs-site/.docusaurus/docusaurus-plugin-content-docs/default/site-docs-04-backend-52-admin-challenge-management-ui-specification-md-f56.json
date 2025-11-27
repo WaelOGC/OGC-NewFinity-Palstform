@@ -1,0 +1,15 @@
+{
+  "id": "backend/admin-challenge-management-ui-specification",
+  "title": "OGC NewFinity — Admin Challenge Management UI Specification (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/52-admin-challenge-management-ui-specification.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/admin-challenge-management-ui-specification",
+  "permalink": "/backend/admin-challenge-management-ui-specification",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 52,
+  "frontMatter": {}
+}

@@ -1,0 +1,14 @@
+{
+  "id": "specs/README",
+  "title": "Folder Overview",
+  "description": "This folder contains documentation for the specs section of the OGC NewFinity Platform.",
+  "source": "@site/../docs/specs/README.md",
+  "sourceDirName": "specs",
+  "slug": "/specs/",
+  "permalink": "/specs/",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

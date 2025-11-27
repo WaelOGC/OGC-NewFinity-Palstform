@@ -1,0 +1,59 @@
+%% OGC NewFinity — Standardized 4-Layer Ecosystem Architecture Diagram
+%% This is the official ecosystem architecture diagram used across all documentation
+
+flowchart TB
+    subgraph LAYER1["1. Infrastructure Layer"]
+        OGC_CHAIN[OGC Chain<br/>Future]
+        AI_INFRA[AI Infrastructure<br/>Amy Agent Core]
+        WALLET_VAULT[OGC Wallet → OGC Vault<br/>Token Management]
+        SECURITY[Security & Identity<br/>Auth & Verification]
+    end
+
+    subgraph LAYER2["2. Application Layer"]
+        AI_TOOLS[AI Tools & Dashboards<br/>Amy Agent Suite]
+        SUBMISSION[Submission & Challenge Portals<br/>OGC NewFinity Challenge Program]
+        SDK[Developer SDKs<br/>API Access]
+        MARKETPLACE[Marketplace<br/>Tools, Datasets, Models]
+    end
+
+    subgraph LAYER3["3. Community Layer"]
+        CHALLENGE[Challenge Program<br/>3 Official Tracks]
+        GOVERNANCE[Governance<br/>Future DAO]
+        CONTRIBUTIONS[Community Contributions<br/>Open Source]
+        PARTICIPATION[Open-Source Participation<br/>Community Building]
+    end
+
+    subgraph LAYER4["4. Economic Layer"]
+        TOKEN_UTILITY[OGCFinity Token Utility<br/>Platform Access]
+        TOKEN_GATED[Token-Gated Features<br/>Premium Tools]
+        MINING[Contribution-Based Mining<br/>Rewards System]
+        FUND[Innovation & Sustainability<br/>Challenge Fund<br/>20% - 100M OGCFinity]
+    end
+
+    %% Infrastructure to Application connections
+    LAYER1 --> LAYER2
+    AI_INFRA --> AI_TOOLS
+    WALLET_VAULT --> SUBMISSION
+    SECURITY --> SDK
+
+    %% Application to Community connections
+    LAYER2 --> LAYER3
+    SUBMISSION --> CHALLENGE
+    SDK --> CONTRIBUTIONS
+
+    %% Community to Economic connections
+    LAYER3 --> LAYER4
+    CHALLENGE --> FUND
+    CONTRIBUTIONS --> MINING
+    GOVERNANCE --> TOKEN_UTILITY
+
+    %% Economic feedback to other layers
+    LAYER4 -.->|Token Utility| LAYER2
+    LAYER4 -.->|Rewards| LAYER3
+    LAYER4 -.->|Funding| LAYER1
+
+    style LAYER1 fill:#e1f5ff
+    style LAYER2 fill:#fff4e1
+    style LAYER3 fill:#e8f5e9
+    style LAYER4 fill:#fce4ec
+

@@ -256,7 +256,7 @@ All logs must include:
 
 ## 13. Future Enhancements
 
-- Token payments (ERC-20 OGC Token)
+- Token payments (ERC-20 OGCFinity)
 - Smart contract-based billing
 - Multi-currency support
 - Fraud detection integration

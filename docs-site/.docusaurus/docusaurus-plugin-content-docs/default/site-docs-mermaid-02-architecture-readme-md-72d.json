@@ -1,0 +1,23 @@
+{
+  "id": "mermaid/architecture/README",
+  "title": "📁 Phase 2 — Architecture Diagrams",
+  "description": "This folder contains all high-level architectural Mermaid diagrams for the OGC NewFinity Platform.",
+  "source": "@site/../docs/mermaid/02-architecture/README.md",
+  "sourceDirName": "mermaid/02-architecture",
+  "slug": "/mermaid/architecture/",
+  "permalink": "/mermaid/architecture/",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Architecture Principles",
+    "permalink": "/architecture-principles"
+  },
+  "next": {
+    "title": "Phase 02 – Platform Architecture Overview (OGC NewFinity Platform)",
+    "permalink": "/mermaid/architecture/phase-2-platform-architecture-overview"
+  }
+}

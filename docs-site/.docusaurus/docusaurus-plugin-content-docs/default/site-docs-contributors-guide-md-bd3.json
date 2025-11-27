@@ -1,0 +1,27 @@
+{
+  "id": "contributors-guide",
+  "title": "OGC NewFinity — Documentation Contributors Guide",
+  "description": "This guide defines how contributors should update and maintain the documentation for the OGC NewFinity Platform.",
+  "source": "@site/../docs/contributors-guide.md",
+  "sourceDirName": ".",
+  "slug": "/contributors-guide",
+  "permalink": "/contributors-guide",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "contributors-guide",
+    "title": "OGC NewFinity — Documentation Contributors Guide",
+    "sidebar_label": "Contributors Guide"
+  },
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Glossary",
+    "permalink": "/glossary"
+  },
+  "next": {
+    "title": "Maintenance Guide",
+    "permalink": "/maintenance-guide"
+  }
+}

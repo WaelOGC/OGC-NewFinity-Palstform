@@ -1,0 +1,23 @@
+{
+  "id": "automation/auto-diagrams",
+  "title": "Auto-Generated Diagrams — OGC NewFinity Platform",
+  "description": "This document defines how automated Mermaid diagrams will be generated using scripts, Cursor Agent automation, or future CI/CD workflows.",
+  "source": "@site/../docs/automation/auto-diagrams.md",
+  "sourceDirName": "automation",
+  "slug": "/automation/auto-diagrams",
+  "permalink": "/automation/auto-diagrams",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {},
+  "sidebar": "docsSidebar",
+  "previous": {
+    "title": "Wallet API Blueprint — OGC NewFinity Platform",
+    "permalink": "/api/wallet-api-blueprint"
+  },
+  "next": {
+    "title": "Diagram Generator Rules — OGC NewFinity Platform",
+    "permalink": "/automation/generator-rules"
+  }
+}

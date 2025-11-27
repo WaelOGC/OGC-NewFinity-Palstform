@@ -126,7 +126,7 @@ Provide users with full visibility into token balances, earnings, and mining act
 
 - Transaction history  
 
-- Contribution mining log  
+- Contribution-Based Mining log  
 
 - Staking (future)  
 
@@ -288,31 +288,33 @@ Control access to features using tier-based permissions.
 
 
 
-## 3.5 OGC Challenge Program
+## 3.5 OGC NewFinity Challenge Program
 
 
 
 ### Purpose
 
-Provide community competitions for individuals, teams, students, and freelancers.
+Provide community competitions for individuals, teams, students, and freelancers through the OGC NewFinity Challenge Program, funded by the Innovation & Sustainability Challenge Fund (20% – 100,000,000 OGCFinity).
 
 
 
 ### Features
 
-- Challenge categories  
+- Three challenge tracks (School Students, Freelancers & Solo Innovators, Startup Teams & Groups)  
 
-- Track selection  
+- Thematic areas (AI for Good, Green & Sustainable Technology, Blockchain for Equity, Inclusive Digital Solutions, Civic Innovation)  
 
-- Submission system  
+- Submission system with OGCFinity integration  
 
 - Voting system  
 
-- Prize pools  
+- Prize pools funded by Innovation & Sustainability Challenge Fund  
 
 - Leaderboards  
 
 - User submission history  
+
+- Judging criteria (Creativity & Innovation, Technical Feasibility, Sustainability & Impact, Alignment with Themes, Presentation Clarity, Team Capability)
 
 
 
@@ -322,9 +324,11 @@ Provide community competitions for individuals, teams, students, and freelancers
 
 - Voting may be limited by subscription tier  
 
-- Submissions must follow category rules  
+- Submissions must follow thematic area rules  
 
 - Admin moderation required  
+
+- Winners receive OGCFinity grants directly from Innovation & Sustainability Challenge Fund  
 
 
 
@@ -364,7 +368,7 @@ Gamify the user experience using achievements and contribution-based progression
 
 - Contribution points  
 
-- Contribution mining  
+- Contribution-Based Mining  
 
 - Level progression  
 
@@ -378,7 +382,7 @@ Gamify the user experience using achievements and contribution-based progression
 
 - Certain badges are admin-only  
 
-- Contribution mining tied to challenge performance  
+- Contribution-Based Mining tied to challenge performance  
 
 
 

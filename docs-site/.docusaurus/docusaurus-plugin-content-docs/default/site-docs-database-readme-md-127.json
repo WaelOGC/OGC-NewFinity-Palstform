@@ -1,0 +1,14 @@
+{
+  "id": "database/README",
+  "title": "Folder Overview",
+  "description": "This folder contains documentation for the database section of the OGC NewFinity Platform.",
+  "source": "@site/../docs/database/README.md",
+  "sourceDirName": "database",
+  "slug": "/database/",
+  "permalink": "/database/",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

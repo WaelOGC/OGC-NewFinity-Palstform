@@ -1,0 +1,15 @@
+{
+  "id": "backend/backend-file-migration-and-archiving-engine",
+  "title": "OGC NewFinity — Backend File Migration & Archiving Engine (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/04-backend/99-backend-file-migration-and-archiving-engine.md",
+  "sourceDirName": "04-backend",
+  "slug": "/backend/backend-file-migration-and-archiving-engine",
+  "permalink": "/backend/backend-file-migration-and-archiving-engine",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 99,
+  "frontMatter": {}
+}

@@ -194,7 +194,7 @@ Hover effect:
 
 - Deadline date  
 
-- Reward amount (OGC tokens or points)  
+- Reward amount (OGCFinity or points)  
 
 - Difficulty level (optional)  
 

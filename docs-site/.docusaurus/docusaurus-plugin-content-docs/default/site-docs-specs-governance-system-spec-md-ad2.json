@@ -1,0 +1,14 @@
+{
+  "id": "specs/governance-system-spec",
+  "title": "OGC NewFinity Platform — Governance System Specification",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/specs/governance-system-spec.md",
+  "sourceDirName": "specs",
+  "slug": "/specs/governance-system-spec",
+  "permalink": "/specs/governance-system-spec",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

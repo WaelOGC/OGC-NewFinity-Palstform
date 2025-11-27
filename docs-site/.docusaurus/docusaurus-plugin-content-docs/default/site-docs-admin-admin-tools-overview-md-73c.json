@@ -1,0 +1,14 @@
+{
+  "id": "admin/admin-tools-overview",
+  "title": "OGC NewFinity Platform — Admin Tools Overview",
+  "description": "Version: v1.0",
+  "source": "@site/../docs/admin/admin-tools-overview.md",
+  "sourceDirName": "admin",
+  "slug": "/admin/admin-tools-overview",
+  "permalink": "/admin/admin-tools-overview",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "frontMatter": {}
+}

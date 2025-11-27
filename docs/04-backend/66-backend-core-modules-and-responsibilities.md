@@ -224,7 +224,7 @@ Each module is isolated with well-defined boundaries.
 
 ### Responsibilities:
 
-- Store OGC token balances  
+- Store OGCFinity balances  
 
 - Handle transactions  
 

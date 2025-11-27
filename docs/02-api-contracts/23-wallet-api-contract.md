@@ -10,13 +10,13 @@ The Wallet API Contract defines all backend endpoints responsible for wallet bal
 
 This API integrates:
 
-- On-chain OGC Token (Polygon)  
+- On-chain OGCFinity (Polygon)  
 
 - Off-chain wallet logic  
 
 - Reward system  
 
-- Contribution mining engine  
+- Contribution-Based Mining engine  
 
 - Admin transaction tools  
 
@@ -62,7 +62,7 @@ Responses are always **JSON**.
 
 ### **On-chain Balance**
 
-Actual OGC Token stored on Polygon.
+Actual OGCFinity stored on Polygon.
 
 
 
@@ -315,7 +315,7 @@ Copy code
 
 ### Description
 
-Returns all contribution mining conversions and mining events.
+Returns all Contribution-Based Mining conversions and mining events.
 
 
 

@@ -1,0 +1,15 @@
+{
+  "id": "devops/devops-alerts-notifications-and-health-dashboard-setup",
+  "title": "OGC NewFinity — DevOps Alerts, Notifications & Health Dashboard Setup (v1.0)",
+  "description": "1. Introduction",
+  "source": "@site/../docs/05-devops/110-devops-alerts-notifications-and-health-dashboard-setup.md",
+  "sourceDirName": "05-devops",
+  "slug": "/devops/devops-alerts-notifications-and-health-dashboard-setup",
+  "permalink": "/devops/devops-alerts-notifications-and-health-dashboard-setup",
+  "draft": false,
+  "unlisted": false,
+  "tags": [],
+  "version": "current",
+  "sidebarPosition": 110,
+  "frontMatter": {}
+}
