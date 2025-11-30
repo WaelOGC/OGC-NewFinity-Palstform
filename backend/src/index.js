@@ -22,6 +22,41 @@ app.use('/api/v1', routes);
 // Health
 app.get('/healthz', (_, res) => res.status(200).json({ ok: true }));
 
+// --- Platform status & health endpoints ---
+
+const buildStatusPayload = () => ({
+  service: 'ogc-newfinity-backend',
+  status: 'ok',
+  uptime: process.uptime(),
+  timestamp: new Date().toISOString()
+});
+
+const buildHealthPayload = () => ({
+  status: 'healthy',
+  checks: {
+    database: 'unknown',
+    cache: 'unknown',
+    version: process.env.npm_package_version || '1.0.0'
+  },
+  timestamp: new Date().toISOString()
+});
+
+const statusHandler = (req, res) => {
+  res.json(buildStatusPayload());
+};
+
+const healthHandler = (req, res) => {
+  res.json(buildHealthPayload());
+};
+
+// Root paths
+app.get('/status', statusHandler);
+app.get('/health', healthHandler);
+
+// API-prefixed paths (if something in the stack expects /api/… directly)
+app.get('/api/status', statusHandler);
+app.get('/api/health', healthHandler);
+
 // Error handler (last)
 app.use(errorHandler);
 
