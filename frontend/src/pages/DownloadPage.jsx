@@ -45,8 +45,6 @@ export default function DownloadPage() {
 
   const handleDownload = (doc) => {
     // TODO: Implement actual download logic
-    // For now, log to console
-    console.log('Download requested:', doc.name);
     // Placeholder: In production, this would trigger a file download
     // window.open(`/api/downloads/${doc.id}`, '_blank');
   };

@@ -66,7 +66,6 @@ export default function ContactPage() {
     
     if (validate()) {
       // TODO: Implement backend API call
-      console.log('Form submitted:', formData);
       setSubmitted(true);
       
       // Reset form after 3 seconds

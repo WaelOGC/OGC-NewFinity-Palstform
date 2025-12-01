@@ -24,44 +24,64 @@ app.get('/healthz', (_, res) => res.status(200).json({ ok: true }));
 
 // --- Platform status & health endpoints ---
 
-const buildStatusPayload = () => ({
-  service: 'ogc-newfinity-backend',
-  status: 'ok',
-  uptime: process.uptime(),
-  timestamp: new Date().toISOString()
+// Status endpoint
+app.get('/status', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'ogc-backend',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
 });
 
-const buildHealthPayload = () => ({
-  status: 'healthy',
-  checks: {
-    database: 'unknown',
-    cache: 'unknown',
-    version: process.env.npm_package_version || '1.0.0'
-  },
-  timestamp: new Date().toISOString()
+// Health endpoint
+app.get('/health', (req, res) => {
+  const health = {
+    status: 'ok',
+    checks: {
+      backend: 'up'
+      // Leave TODO comments for DB or other services if they are not wired yet
+      // e.g. db: 'unknown'
+    },
+    version: '1.0.0',
+    timestamp: new Date().toISOString()
+  };
+
+  res.json(health);
 });
 
-const statusHandler = (req, res) => {
-  res.json(buildStatusPayload());
-};
+// API-prefixed paths for nginx proxy
+app.get('/api/status', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'ogc-backend',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
 
-const healthHandler = (req, res) => {
-  res.json(buildHealthPayload());
-};
+app.get('/api/health', (req, res) => {
+  const health = {
+    status: 'ok',
+    checks: {
+      backend: 'up'
+      // Leave TODO comments for DB or other services if they are not wired yet
+      // e.g. db: 'unknown'
+    },
+    version: '1.0.0',
+    timestamp: new Date().toISOString()
+  };
 
-// Root paths
-app.get('/status', statusHandler);
-app.get('/health', healthHandler);
-
-// API-prefixed paths (if something in the stack expects /api/… directly)
-app.get('/api/status', statusHandler);
-app.get('/api/health', healthHandler);
+  res.json(health);
+});
 
 // Error handler (last)
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`OGC NewFinity backend listening on :${PORT}`);
+const HOST = process.env.NODE_ENV === 'production' ? '127.0.0.1' : '0.0.0.0';
+
+app.listen(PORT, HOST, () => {
+  console.log(`OGC NewFinity backend listening on ${HOST}:${PORT}`);
 });
 

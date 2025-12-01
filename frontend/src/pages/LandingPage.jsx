@@ -17,6 +17,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import HeroSection from '../sections/HeroSection.jsx';
+import SystemStatusBadge from '../components/SystemStatusBadge.jsx';
 import '../styles/landing-page.css';
 
 export default function LandingPage() {
@@ -309,6 +310,9 @@ export default function LandingPage() {
               >
                 Discord
               </a>
+            </div>
+            <div style={{ marginTop: '24px', textAlign: 'center' }}>
+              <SystemStatusBadge />
             </div>
           </div>
         </section>
