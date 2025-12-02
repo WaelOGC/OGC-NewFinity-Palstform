@@ -1,0 +1,410 @@
+/* ============================================
+   COMING SOON PAGE STYLES
+   OGC NewFinity Platform - Coming Soon Page
+   
+   Design: Dark theme with custom fusion-plasma background
+   Colors: Deep plasma blue, cyan, soft violet, white-hot core
+   ============================================ */
+
+/* Import shared CSS variables from landing-page.css */
+/* Note: This assumes landing-page.css defines the CSS variables */
+/* If variables are not available, they will fall back to defaults */
+
+/* ============================================
+   ROOT LAYOUT
+   ============================================ */
+
+.coming-soon-root {
+  position: relative;
+  min-height: 100vh;
+  background: #050811;
+  color: var(--text-primary, #f7f7ff);
+  overflow-x: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  line-height: 1.6;
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+/* ============================================
+   PLASMA CANVAS BACKGROUND
+   ============================================ */
+
+.plasma-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ============================================
+   CONTAINER
+   ============================================ */
+
+.coming-soon-container {
+  position: relative;
+  z-index: 10;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 80px 24px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 48px;
+}
+
+/* ============================================
+   HERO SECTION
+   ============================================ */
+
+.cs-hero-section {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.cs-hero-title {
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 800;
+  margin: 0 0 24px;
+  color: var(--text-primary, #f7f7ff);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--text-primary, #f7f7ff) 0%, #4dd0e1 50%, #9575cd 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@supports not (background-clip: text) {
+  .cs-hero-title {
+    color: var(--text-primary, #f7f7ff);
+  }
+}
+
+.cs-hero-subtitle {
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  font-weight: 600;
+  color: var(--text-primary, #f7f7ff);
+  margin: 0 0 20px;
+  opacity: 0.95;
+  line-height: 1.4;
+}
+
+.cs-hero-description {
+  font-size: clamp(1rem, 2vw, 1.15rem);
+  color: var(--text-primary, #f7f7ff);
+  margin: 0;
+  opacity: 0.85;
+  line-height: 1.7;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ============================================
+   STATUS CARD
+   ============================================ */
+
+.cs-status-section {
+  width: 100%;
+  max-width: 600px;
+}
+
+.cs-status-card {
+  text-align: center;
+  padding: 48px 40px;
+}
+
+.cs-status-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #4dd0e1;
+  margin-bottom: 12px;
+  opacity: 0.9;
+}
+
+.cs-status-phase {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  color: var(--text-primary, #f7f7ff);
+  margin-bottom: 32px;
+  line-height: 1.3;
+}
+
+.cs-milestones {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid rgba(77, 208, 225, 0.25);
+}
+
+.cs-milestones-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary, #f7f7ff);
+  margin: 0 0 20px;
+  opacity: 0.9;
+}
+
+.cs-milestones-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cs-milestones-list li {
+  font-size: 1rem;
+  color: var(--text-primary, #f7f7ff);
+  opacity: 0.85;
+  padding-left: 28px;
+  position: relative;
+  line-height: 1.6;
+}
+
+.cs-milestones-list li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: #4dd0e1;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+/* ============================================
+   CTA BUTTONS SECTION
+   ============================================ */
+
+.cs-cta-section {
+  width: 100%;
+  max-width: 700px;
+}
+
+.cs-cta-buttons {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Reuse button styles from landing-page.css */
+/* If buttons are not styled, add fallback styles */
+.cs-cta-buttons .btn-primary,
+.cs-cta-buttons .btn-secondary {
+  position: relative;
+  display: inline-block;
+  padding: 16px 36px;
+  background: transparent;
+  color: var(--text-primary, #f7f7ff);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 200ms ease-out;
+  cursor: pointer;
+  z-index: 1;
+  text-align: center;
+}
+
+.cs-cta-buttons .btn-primary {
+  border: 2px solid var(--sunburst-yellow, #FFBC25);
+  box-shadow: 0 4px 16px rgba(255, 188, 37, 0.25), 0 0 20px rgba(255, 188, 37, 0.15);
+}
+
+.cs-cta-buttons .btn-primary:hover {
+  border-color: var(--sunburst-yellow, #FFBC25);
+  background: rgba(255, 188, 37, 0.15);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 28px rgba(255, 188, 37, 0.35), 0 0 40px rgba(0, 255, 198, 0.4);
+}
+
+.cs-cta-buttons .btn-secondary {
+  border: 2px solid #4dd0e1;
+  box-shadow: 0 4px 16px rgba(77, 208, 225, 0.2), 0 0 20px rgba(77, 208, 225, 0.1);
+}
+
+.cs-cta-buttons .btn-secondary:hover {
+  border-color: #4dd0e1;
+  background: rgba(77, 208, 225, 0.08);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 28px rgba(77, 208, 225, 0.3), 0 0 35px rgba(77, 208, 225, 0.25);
+}
+
+.cs-cta-buttons .btn-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: #4dd0e1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.cs-cta-buttons .btn-primary:hover .btn-ripple,
+.cs-cta-buttons .btn-secondary:hover .btn-ripple {
+  animation: ripple 0.8s ease-out;
+}
+
+@keyframes ripple {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 0.6;
+  }
+  100% {
+    width: 200px;
+    height: 200px;
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   FOOTER SECTION
+   ============================================ */
+
+.cs-footer-section {
+  width: 100%;
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 32px;
+  border-top: 1px solid rgba(77, 208, 225, 0.15);
+}
+
+.cs-footer-text {
+  font-size: 0.9rem;
+  color: var(--text-primary, #f7f7ff);
+  opacity: 0.7;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ============================================
+   GLASS CARD STYLES
+   ============================================ */
+
+.glass-card {
+  background: rgba(12, 18, 48, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 18px;
+  border: 1px solid rgba(77, 208, 225, 0.25);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+  transition: transform 200ms ease-out, box-shadow 220ms ease-out, border-color 220ms ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #4dd0e1, transparent);
+  opacity: 0.5;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(77, 208, 225, 0.3) inset, 0 0 40px rgba(77, 208, 225, 0.25);
+  border-color: #4dd0e1;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+@media (max-width: 768px) {
+  .coming-soon-container {
+    padding: 60px 20px 40px;
+    gap: 40px;
+  }
+
+  .cs-hero-section {
+    padding: 0 16px;
+  }
+
+  .cs-status-card {
+    padding: 36px 28px;
+  }
+
+  .cs-cta-buttons {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .cs-cta-buttons .btn-primary,
+  .cs-cta-buttons .btn-secondary {
+    width: 100%;
+    padding: 14px 28px;
+  }
+
+  .cs-milestones-list {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .coming-soon-container {
+    padding: 40px 16px 32px;
+    gap: 32px;
+  }
+
+  .cs-hero-title {
+    font-size: 2rem;
+    margin-bottom: 20px;
+  }
+
+  .cs-hero-subtitle {
+    font-size: 1.15rem;
+    margin-bottom: 16px;
+  }
+
+  .cs-hero-description {
+    font-size: 0.95rem;
+  }
+
+  .cs-status-card {
+    padding: 28px 24px;
+  }
+
+  .cs-status-phase {
+    font-size: 1.5rem;
+    margin-bottom: 24px;
+  }
+
+  .cs-milestones {
+    margin-top: 24px;
+    padding-top: 24px;
+  }
+}
+
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

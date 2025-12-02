@@ -17,7 +17,7 @@ export async function getStatus() {
   // Fallback logic:
   // - If full URL is passed → keep it
   // - If path only → prefix with API_BASE_URL
-  // In production: /api/status
+  // In production: https://finityplatform.cloud/api/status (when VITE_API_BASE_URL="https://finityplatform.cloud/api")
   // In dev with proxy: /api/status (proxied to http://localhost:4000)
   // In dev without proxy: http://localhost:4000/api/status (if VITE_API_BASE_URL is set)
   const statusPath = API_BASE_URL.startsWith('http') 
@@ -36,7 +36,7 @@ export async function getHealth() {
   // Fallback logic:
   // - If full URL is passed → keep it
   // - If path only → prefix with API_BASE_URL
-  // In production: /api/health
+  // In production: https://finityplatform.cloud/api/health (when VITE_API_BASE_URL="https://finityplatform.cloud/api")
   // In dev with proxy: /api/health (proxied to http://localhost:4000)
   // In dev without proxy: http://localhost:4000/api/health (if VITE_API_BASE_URL is set)
   const healthPath = API_BASE_URL.startsWith('http') 

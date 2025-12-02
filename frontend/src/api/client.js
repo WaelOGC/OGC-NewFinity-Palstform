@@ -12,7 +12,7 @@ export function createClient(getToken) {
     if (token) headers.Authorization = `Bearer ${token}`;
     
     // Fallback logic:
-    // - If full URL is passed (e.g., http://localhost:4000) → keep it as is
+    // - If full URL is passed (e.g., https://finityplatform.cloud/api) → keep it as is
     // - If path only (e.g., /api) → prefix with BASE
     let apiPath;
     if (path.startsWith('http://') || path.startsWith('https://')) {

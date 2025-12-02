@@ -100,11 +100,13 @@ The frontend uses the following environment variable:
 
 - `VITE_API_BASE_URL`: Base URL for API calls (default: `/api`)
 
-To override the API base URL, create a `.env` file in the `frontend/` directory:
+**Required for production**: Set `VITE_API_BASE_URL="https://finityplatform.cloud/api"` to use the production backend API.
+
+To set the API base URL, create a `.env` file in the `frontend/` directory:
 
 ```bash
 cd /var/www/ogc-platform/frontend
-echo "VITE_API_BASE_URL=/api" > .env
+echo 'VITE_API_BASE_URL="https://finityplatform.cloud/api"' > .env
 npm run build
 ```
 
