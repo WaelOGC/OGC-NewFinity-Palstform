@@ -14,24 +14,18 @@
  * - CTA sections
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import HeroSection from '../sections/HeroSection.jsx';
 import SystemStatusBadge from '../components/SystemStatusBadge.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import '../styles/landing-page.css';
 
 export default function LandingPage() {
-  const [theme, setTheme] = useState(() => {
-    const savedTheme = localStorage.getItem('landing-page-theme');
-    return savedTheme || 'dark';
-  });
+  const { isAuthenticated } = useAuth();
 
   const cluster1Ref = useRef(null);
   const cluster2Ref = useRef(null);
-
-  useEffect(() => {
-    localStorage.setItem('landing-page-theme', theme);
-  }, [theme]);
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -53,12 +47,8 @@ export default function LandingPage() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
-
   return (
-    <main className={`landing-root ${theme === 'dark' ? 'theme-dark' : 'theme-light'}`}>
+    <main className="landing-root">
       {/* Futuristic Background Layer */}
       <div className="lp-bg-layer">
         <div className="fog fog-1"></div>
@@ -73,14 +63,6 @@ export default function LandingPage() {
       </div>
 
       <div className="landing-container">
-        {/* Theme Toggle */}
-        <button 
-          className="theme-toggle"
-          onClick={toggleTheme}
-          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-        >
-          {theme === 'dark' ? '☀' : '🌙'}
-        </button>
 
         {/* Hero Section */}
         <section className="lp-section">
@@ -179,7 +161,7 @@ export default function LandingPage() {
             <p className="challenge-footer">
               Winners receive OGCFinity grants, expert mentorship, platform access, and ecosystem integration.
             </p>
-            <a href="/docs" className="link-inline">Learn more in the documentation →</a>
+            <Link to="/docs" className="link-inline">Learn more in the documentation →</Link>
           </div>
         </section>
 
@@ -264,6 +246,14 @@ export default function LandingPage() {
                 <span className="btn-ripple"></span>
                 Join the Community
               </Link>
+              {isAuthenticated && (
+                <Link
+                  to="/dashboard"
+                  className="inline-flex items-center rounded-md border border-cyan-400/70 px-3 py-1.5 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/15"
+                >
+                  Open Dashboard
+                </Link>
+              )}
             </div>
           </div>
         </section>

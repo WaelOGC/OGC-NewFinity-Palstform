@@ -1,6 +1,17 @@
 #!/bin/bash
 
 # ============================================================================
+# PRODUCTION/VPS ONLY - NOT FOR LOCAL DEVELOPMENT
+# ============================================================================
+# This script is for production deployment to VPS only.
+# Local development does NOT require or use this file.
+# 
+# For local development, use:
+#   - Frontend: npm run dev (in frontend/)
+#   - Backend: npm run dev (in backend/)
+#   - No deployment scripts needed locally
+# ============================================================================
+#
 # OGC NewFinity Platform - Frontend Deployment Script
 # ============================================================================
 # This script automates frontend deployment:
@@ -118,4 +129,3 @@ echo ""
 echo "Frontend build is ready!"
 echo "Nginx should automatically serve from: ${DIST_DIR}"
 echo ""
-

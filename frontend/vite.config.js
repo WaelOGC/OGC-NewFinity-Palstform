@@ -6,11 +6,11 @@ export default defineConfig({
   plugins: [react()],
   base: '/', // Ensure assets work correctly behind Nginx
   server: {
-    host: '0.0.0.0', // Listen on all network interfaces
+    host: 'localhost', // Local development - use localhost
     port: 5173,
     strictPort: false,
     open: false,
-    // Dev server proxy - localhost only, does not affect production build
+    // Dev server proxy - proxies /api/* to backend on localhost:4000
     proxy: {
       '/api': {
         target: 'http://localhost:4000',

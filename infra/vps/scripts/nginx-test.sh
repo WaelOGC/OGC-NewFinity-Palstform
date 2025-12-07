@@ -1,6 +1,17 @@
 #!/bin/bash
 
 # ============================================================================
+# PRODUCTION/VPS ONLY - NOT FOR LOCAL DEVELOPMENT
+# ============================================================================
+# This script is for production deployment to VPS only.
+# Local development does NOT require or use this file.
+# 
+# For local development, use:
+#   - Frontend: npm run dev (in frontend/)
+#   - Backend: npm run dev (in backend/)
+#   - No Nginx needed locally
+# ============================================================================
+#
 # OGC NewFinity Platform - Nginx Configuration Test Script
 # ============================================================================
 # This script validates Nginx configuration:
@@ -68,4 +79,3 @@ else
     echo ""
     exit $EXIT_CODE
 fi
-

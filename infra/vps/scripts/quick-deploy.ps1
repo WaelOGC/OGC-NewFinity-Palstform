@@ -1,4 +1,15 @@
 # ============================================================================
+# PRODUCTION/VPS ONLY - NOT FOR LOCAL DEVELOPMENT
+# ============================================================================
+# This script is for production deployment to VPS only.
+# Local development does NOT require or use this file.
+# 
+# For local development, use:
+#   - Frontend: npm run dev (in frontend/)
+#   - Backend: npm run dev (in backend/)
+#   - No deployment scripts needed locally
+# ============================================================================
+#
 # OGC NewFinity Platform - Quick Deploy Script (PowerShell)
 # ============================================================================
 # For Windows users - Quick deploy to VPS
@@ -13,7 +24,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$ProjectRoot = Split-Path -Parent $PSScriptRoot
+$ProjectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $FrontendDir = Join-Path $ProjectRoot "frontend"
 $DistDir = Join-Path $FrontendDir "dist"
 
@@ -44,34 +55,56 @@ if (-not (Test-Path $DistDir)) {
 
 # Step 3: Deploy via rsync (if available) or scp
 Write-Host "📤 Deploying to VPS..." -ForegroundColor Yellow
+Write-Host "  Source: $DistDir\" -ForegroundColor Cyan
+Write-Host "  Target: ${VPSUser}@${VPSHost}:${VPSPath}/" -ForegroundColor Cyan
 
 # Check if rsync is available (via WSL or Git Bash)
 $rsyncAvailable = $false
+$rsyncCmd = $null
 if (Get-Command wsl -ErrorAction SilentlyContinue) {
     $rsyncAvailable = $true
-    $rsyncCmd = "wsl rsync"
+    $rsyncCmd = "wsl"
+    $rsyncArgs = "rsync", "-avz", "--delete", "$($DistDir -replace '\\', '/')/", "${VPSUser}@${VPSHost}:${VPSPath}/"
 } elseif (Get-Command rsync -ErrorAction SilentlyContinue) {
     $rsyncAvailable = $true
     $rsyncCmd = "rsync"
+    $rsyncArgs = "-avz", "--delete", "$($DistDir -replace '\\', '/')/", "${VPSUser}@${VPSHost}:${VPSPath}/"
 }
 
 if ($rsyncAvailable) {
     # Use rsync
-    $rsyncArgs = "-avz", "--delete", "$DistDir/", "${VPSUser}@${VPSHost}:${VPSPath}/"
-    & $rsyncCmd.Split(' ') $rsyncArgs
+    if ($rsyncCmd -eq "wsl") {
+        & wsl $rsyncArgs
+    } else {
+        & $rsyncCmd $rsyncArgs
+    }
     if ($LASTEXITCODE -ne 0) {
         Write-Host "❌ Deployment failed!" -ForegroundColor Red
+        Write-Host "  Check SSH connection: ssh ${VPSUser}@${VPSHost}" -ForegroundColor Yellow
         exit 1
+    }
+    Write-Host "✅ Files synced successfully" -ForegroundColor Green
+    
+    # Verify deployment
+    Write-Host "🔍 Verifying deployment..." -ForegroundColor Yellow
+    $verifyCmd = "ssh ${VPSUser}@${VPSHost} 'test -f ${VPSPath}/index.html && echo OK || echo MISSING'"
+    $verifyResult = if ($rsyncCmd -eq "wsl") { wsl bash -c $verifyCmd } else { bash -c $verifyCmd }
+    if ($verifyResult -match "OK") {
+        Write-Host "✅ Deployment verified: index.html exists on VPS" -ForegroundColor Green
+    } else {
+        Write-Host "⚠️  Warning: Could not verify index.html on VPS" -ForegroundColor Yellow
     }
 } else {
     # Fallback to scp (less efficient but works)
     Write-Host "⚠️  rsync not available, using scp (slower)..." -ForegroundColor Yellow
-    $scpArgs = "-r", "$DistDir/*", "${VPSUser}@${VPSHost}:${VPSPath}/"
+    $scpArgs = "-r", "$DistDir\*", "${VPSUser}@${VPSHost}:${VPSPath}/"
     scp $scpArgs
     if ($LASTEXITCODE -ne 0) {
         Write-Host "❌ Deployment failed!" -ForegroundColor Red
+        Write-Host "  Check SSH connection: ssh ${VPSUser}@${VPSHost}" -ForegroundColor Yellow
         exit 1
     }
+    Write-Host "✅ Files copied successfully" -ForegroundColor Green
 }
 
 Write-Host "✅ Deployment successful!" -ForegroundColor Green
@@ -92,4 +125,3 @@ Write-Host "========================================" -ForegroundColor Green
 Write-Host "✅ DEPLOYMENT COMPLETED" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
-

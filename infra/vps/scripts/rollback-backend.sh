@@ -1,6 +1,17 @@
 #!/bin/bash
 
 # ============================================================================
+# PRODUCTION/VPS ONLY - NOT FOR LOCAL DEVELOPMENT
+# ============================================================================
+# This script is for production deployment to VPS only.
+# Local development does NOT require or use this file.
+# 
+# For local development, use:
+#   - Frontend: npm run dev (in frontend/)
+#   - Backend: npm run dev (in backend/)
+#   - No rollback scripts needed locally (use git reset locally)
+# ============================================================================
+#
 # OGC NewFinity Platform - Backend Rollback Script
 # ============================================================================
 # This script rolls back the backend to a previous Git version:
@@ -185,4 +196,3 @@ echo ""
 echo "Backend has been rolled back to commit: ${TARGET_COMMIT_FULL:0:7}"
 echo "View logs with: pm2 logs ${PM2_APP_NAME}"
 echo ""
-

@@ -86,13 +86,8 @@ const blogPosts = [
 ];
 
 function BlogIndex() {
-  const [theme] = useState(() => {
-    const savedTheme = localStorage.getItem('landing-page-theme');
-    return savedTheme || 'dark';
-  });
-
   return (
-    <main className={`landing-root ${theme === 'dark' ? 'theme-dark' : 'theme-light'}`}>
+    <main className="landing-root">
       <div className="lp-bg-layer">
         <div className="fog fog-1"></div>
         <div className="fog fog-2"></div>
@@ -195,7 +190,7 @@ function BlogPost() {
 
   if (!post) {
     return (
-      <main className={`landing-root ${theme === 'dark' ? 'theme-dark' : 'theme-light'}`}>
+      <main className="landing-root">
         <div className="lp-bg-layer">
           <div className="fog fog-1"></div>
           <div className="fog fog-2"></div>
@@ -249,7 +244,7 @@ function BlogPost() {
   };
 
   return (
-    <main className={`landing-root ${theme === 'dark' ? 'theme-dark' : 'theme-light'}`}>
+    <main className="landing-root">
       <div className="lp-bg-layer">
         <div className="fog fog-1"></div>
         <div className="fog fog-2"></div>

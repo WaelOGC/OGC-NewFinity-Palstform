@@ -1,56 +1,55 @@
-import React, { useEffect, useState } from 'react';
-import { getStatus } from '../api/status.js';
+import { useEffect, useState } from "react";
 
-/**
- * SystemStatusBadge - Lightweight component to display backend status
- * 
- * Shows "Backend: Online ✅" if status is ok, otherwise "Backend: Unreachable ⚠️"
- * Non-intrusive, small font-size component suitable for footer or utility areas.
- */
-export default function SystemStatusBadge() {
-  const [status, setStatus] = useState(null);
-  const [isOnline, setIsOnline] = useState(false);
+function SystemStatusBadge() {
+  const [status, setStatus] = useState("checking");
+  const [details, setDetails] = useState(null);
 
   useEffect(() => {
-    let mounted = true;
-
-    async function checkStatus() {
+    async function fetchStatus() {
       try {
-        const data = await getStatus();
-        if (mounted) {
-          setStatus(data);
-          setIsOnline(data?.status === 'ok');
+        const res = await fetch("http://localhost:3000/api/system/db-check");
+        if (!res.ok) {
+          throw new Error("Non-OK response");
+        }
+        const data = await res.json();
+        if (data.status === "OK" && data.db === "connected") {
+          setStatus("ok");
+          setDetails(data.details);
+        } else {
+          setStatus("error");
+          setDetails(data);
         }
       } catch (err) {
-        if (mounted) {
-          setIsOnline(false);
-          setStatus(null);
-        }
+        console.error("System status check failed:", err);
+        setStatus("error");
+        setDetails({ error: err.message });
       }
     }
 
-    checkStatus();
-    // Check status every 30 seconds
-    const interval = setInterval(checkStatus, 30000);
-
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-    };
+    fetchStatus();
   }, []);
 
+  let label = "Checking system...";
+  let className =
+    "inline-flex items-center rounded-full px-3 py-1 text-xs font-medium";
+
+  if (status === "ok") {
+    label = "Backend + DB: ONLINE";
+    className += " bg-green-700/30 text-green-300 border border-green-500/60";
+  } else if (status === "error") {
+    label = "Backend + DB: OFFLINE";
+    className += " bg-red-700/30 text-red-300 border border-red-500/60";
+  } else {
+    className += " bg-slate-700/40 text-slate-200 border border-slate-500/50";
+  }
+
   return (
-    <div style={{
-      fontSize: '0.75rem',
-      opacity: 0.7,
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '4px'
-    }}>
-      <span style={{ color: isOnline ? '#00ffc6' : '#ff6b6b' }}>
-        Backend: {isOnline ? 'Online ✅' : 'Unreachable ⚠️'}
-      </span>
+    <div className="mt-2">
+      <span className={className}>{label}</span>
+      {/* Optional: show debug info in console only; keep UI clean */}
     </div>
   );
 }
+
+export default SystemStatusBadge;
 

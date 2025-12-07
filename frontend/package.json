@@ -8,9 +8,7 @@
     "build": "vite build",
     "preview": "vite preview --port 5173",
     "lint": "echo \"(add eslint later)\"",
-    "watch": "node ../scripts/watch-and-build.cjs",
-    "deploy": "../scripts/auto-deploy-frontend.sh deploy",
-    "deploy:watch": "../scripts/auto-deploy-frontend.sh watch"
+    "watch": "node ../scripts/watch-and-build.cjs"
   },
   "dependencies": {
     "react": "^18.3.1",

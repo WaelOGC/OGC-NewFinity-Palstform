@@ -10,10 +10,6 @@ import { Link } from 'react-router-dom';
 import '../styles/landing-page.css';
 
 export default function ContactPage() {
-  const [theme] = useState(() => {
-    const savedTheme = localStorage.getItem('landing-page-theme');
-    return savedTheme || 'dark';
-  });
 
   const [formData, setFormData] = useState({
     name: '',
@@ -77,7 +73,7 @@ export default function ContactPage() {
   };
 
   return (
-    <main className={`landing-root ${theme === 'dark' ? 'theme-dark' : 'theme-light'}`}>
+    <main className="landing-root">
       <div className="lp-bg-layer">
         <div className="fog fog-1"></div>
         <div className="fog fog-2"></div>

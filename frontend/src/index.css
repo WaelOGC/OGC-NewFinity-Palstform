@@ -1,0 +1,25 @@
+:root {
+  color-scheme: dark;
+  --ogc-bg: #020617;    /* dark slate */
+  --ogc-fg: #e5e7eb;    /* slate-200 */
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --ogc-bg: #f9fafb;    /* light background */
+  --ogc-fg: #020617;    /* dark text */
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--ogc-bg);
+  color: var(--ogc-fg);
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+#root {
+  min-height: 100vh;
+  background-color: var(--ogc-bg);
+}

@@ -79,7 +79,7 @@ app.get('/api/health', (req, res) => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 4000;
-const HOST = process.env.NODE_ENV === 'production' ? '127.0.0.1' : '0.0.0.0';
+const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '127.0.0.1' : 'localhost');
 
 app.listen(PORT, HOST, () => {
   console.log(`OGC NewFinity backend listening on ${HOST}:${PORT}`);

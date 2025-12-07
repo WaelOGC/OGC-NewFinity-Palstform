@@ -3,12 +3,20 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build || echo 'Backend does not have a build script'",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
     "mmd:png": "find docs/mermaid -name '*.mmd' -print0 | xargs -0 -I{} npx mmdc -i {} -o {}.png",
     "mmd:svg": "find docs/mermaid -name '*.mmd' -print0 | xargs -0 -I{} npx mmdc -i {} -o {}.svg",
     "mmd:html": "npx mmdc -i docs/mermaid/index.md -o docs/mermaid/index.html"
   },
   "devDependencies": {
-    "mermaid-cli": "^10.9.1"
+    "concurrently": "^8.2.2",
+    "@mermaid-js/mermaid-cli": "^11.0.0"
   }
 }
 

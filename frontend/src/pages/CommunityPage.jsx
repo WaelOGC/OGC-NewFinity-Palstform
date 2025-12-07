@@ -10,10 +10,6 @@ import { Link } from 'react-router-dom';
 import '../styles/landing-page.css';
 
 export default function CommunityPage() {
-  const [theme] = useState(() => {
-    const savedTheme = localStorage.getItem('landing-page-theme');
-    return savedTheme || 'dark';
-  });
 
   // Mock community posts - TODO: Replace with API call
   const [posts, setPosts] = useState([
@@ -91,7 +87,7 @@ export default function CommunityPage() {
   };
 
   return (
-    <main className={`landing-root ${theme === 'dark' ? 'theme-dark' : 'theme-light'}`}>
+    <main className="landing-root">
       <div className="lp-bg-layer">
         <div className="fog fog-1"></div>
         <div className="fog fog-2"></div>

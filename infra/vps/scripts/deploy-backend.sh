@@ -1,6 +1,17 @@
 #!/bin/bash
 
 # ============================================================================
+# PRODUCTION/VPS ONLY - NOT FOR LOCAL DEVELOPMENT
+# ============================================================================
+# This script is for production deployment to VPS only.
+# Local development does NOT require or use this file.
+# 
+# For local development, use:
+#   - Frontend: npm run dev (in frontend/)
+#   - Backend: npm run dev (in backend/)
+#   - No deployment scripts needed locally
+# ============================================================================
+#
 # OGC NewFinity Platform - Backend Deployment Script
 # ============================================================================
 # This script automates backend deployment:
@@ -156,4 +167,3 @@ echo ""
 echo "Backend is running and healthy!"
 echo "View logs with: pm2 logs ${PM2_APP_NAME}"
 echo ""
-

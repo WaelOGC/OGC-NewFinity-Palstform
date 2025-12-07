@@ -1,6 +1,17 @@
 #!/bin/bash
 
 # ============================================================================
+# PRODUCTION/VPS ONLY - NOT FOR LOCAL DEVELOPMENT
+# ============================================================================
+# This script is for production deployment to VPS only.
+# Local development does NOT require or use this file.
+# 
+# For local development, use:
+#   - Frontend: npm run dev (in frontend/)
+#   - Backend: npm run dev (in backend/)
+#   - Health checks can be done manually via browser/curl
+# ============================================================================
+#
 # OGC NewFinity Platform - Health Check Script
 # ============================================================================
 # This script performs comprehensive health checks:
@@ -148,4 +159,3 @@ else
 fi
 
 exit $STATUS_CODE
-
