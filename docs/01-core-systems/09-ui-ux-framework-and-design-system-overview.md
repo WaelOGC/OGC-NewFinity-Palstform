@@ -28,7 +28,7 @@ This is the master reference for all UI/UX designers, frontend developers, and b
 
 - **Clean & Minimal** — no clutter, clear hierarchy  
 
-- **Neon Identity** — signature OGC color palette  
+- **Plasma Identity** — signature OGC color palette with fluid gradients, soft radiance, and molten-style transitions  
 
 - **Dark Theme First** — transparent layers, glowing accents  
 
@@ -66,7 +66,7 @@ This is the master reference for all UI/UX designers, frontend developers, and b
 
 ## 3.1 Core Brand Colors
 
-- **Neon Teal** — `#00FFC6`  
+- **Plasma Teal** — `#00FFC6` (fluid gradient with soft radiance)  
 
 - **Sunburst Yellow** — `#FFBC25`  
 
@@ -90,7 +90,7 @@ This is the master reference for all UI/UX designers, frontend developers, and b
 
 - **White text only** — consistent across the ecosystem  
 
-- **Neon colors** used for:
+- **Plasma colors** (fluid gradients, soft radiance, molten-style transitions) used for:
 
   - Highlights
 
@@ -174,7 +174,7 @@ This is the master reference for all UI/UX designers, frontend developers, and b
 
 - Rounded corners (6–10px)  
 
-- Subtle neon outer glows  
+- Subtle plasma internal glow with diffused depth  
 
 
 
@@ -198,7 +198,7 @@ This is the master reference for all UI/UX designers, frontend developers, and b
 
 ## 6.1 Buttons
 
-- **Primary Neon Button**  
+- **Primary Plasma Button** (smooth edges, internal glow)  
 
 - **Outline Button**  
 
@@ -226,7 +226,7 @@ Rules:
 
 - Transparent layered cards  
 
-- Neon border or edge glow  
+- Plasma border with internal glow and diffused depth  
 
 - Icon or illustration support  
 
@@ -244,7 +244,7 @@ Rules:
 
 - White text  
 
-- Subtle neon border on focus  
+- Subtle plasma internal glow on focus  
 
 - Error state in red glow  
 
@@ -276,7 +276,7 @@ Rules:
 
 - Glow on hover  
 
-- Active state neon highlight  
+- Active state plasma highlight with soft pulsing  
 
 - Responsive collapse mode  
 
@@ -348,7 +348,7 @@ Rules:
 
 ### 7.4 Loading States
 
-- Neon progress rings  
+- Plasma progress rings with wave motion  
 
 - Skeleton cards  
 

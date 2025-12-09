@@ -1,0 +1,9 @@
+/* Landing Page - Minimal Wrapper */
+/* HeroSection handles its own styling */
+
+.landing-page {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+}

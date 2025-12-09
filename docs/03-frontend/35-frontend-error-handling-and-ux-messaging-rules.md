@@ -20,7 +20,7 @@ The goal:
 
 - Keep the experience predictable  
 
-- Match the platform's futuristic, neon UI identity  
+- Match the platform's futuristic, plasma UI identity  
 
 
 
@@ -168,7 +168,7 @@ Used for quick, transient feedback.
 
 - Types: success, error, warning, info  
 
-- Neon color accents  
+- Plasma color accents (fluid gradients, soft radiance)  
 
 - Slide-in + fade animation  
 
@@ -374,7 +374,7 @@ Used for:
 
 - Never show a blank screen  
 
-- Use neon-accented skeleton gradients  
+- Use plasma-accented skeleton gradients (fluid gradients, soft radiance)  
 
 
 
@@ -480,7 +480,7 @@ Examples:
 
 - Soft fade-up  
 
-- Color shift to neon green  
+- Color shift to plasma green (soft radiance)  
 
 
 

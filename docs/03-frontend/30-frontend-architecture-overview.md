@@ -108,7 +108,7 @@ Create universal components:
 
 Use:
 
-- Neon accents  
+- Plasma accents (fluid gradients, soft radiance)  
 
 - Transparent backgrounds  
 
@@ -380,7 +380,7 @@ Stored in:
 
 ### Design Principles:
 
-- Futuristic neon  
+- Futuristic plasma design system  
 
 - Transparent card components  
 

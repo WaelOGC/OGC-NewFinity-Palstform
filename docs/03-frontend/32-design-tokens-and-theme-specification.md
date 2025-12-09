@@ -46,7 +46,7 @@ These tokens apply to:
 
 ## 2.1 Brand Palette (User-Approved)
 
---color-neon-teal: #00FFC6;
+--color-plasma-teal: #00FFC6;
 
 --color-sunburst: #FFBC25;
 
@@ -252,7 +252,7 @@ Copy code
 
 
 
-## 5.2 Neon Glows
+## 5.2 Plasma Glows
 
 --glow-teal: 0 0 12px rgba(0,255,198,0.8);
 
@@ -385,7 +385,7 @@ Copy code
 
 ### Buttons
 
-- Use neon borders & glow tokens  
+- Use plasma borders & internal glow tokens  
 
 - Hover = glow intensifies  
 
@@ -401,7 +401,7 @@ Copy code
 
 - Rounded corners  
 
-- Subtle neon edge highlights  
+- Subtle plasma internal glow with diffused depth  
 
 
 
@@ -417,13 +417,13 @@ Copy code
 
 - Minimal borders  
 
-- Neon focus rings  
+- Plasma focus rings with internal glow  
 
 
 
 ### Tables
 
-- Dark rows with neon hover highlights  
+- Dark rows with plasma hover highlights (soft pulsing)  
 
 
 
@@ -501,7 +501,7 @@ Copy code
 
 - No bright backgrounds  
 
-- Strong contrast via neon borders & glows  
+- Strong contrast via plasma borders & internal glow  
 
 
 

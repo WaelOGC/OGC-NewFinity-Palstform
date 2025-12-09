@@ -14,7 +14,7 @@ Motion design expresses the brand:
 
 - Clean  
 
-- Neon-accented  
+- Plasma-accented (wave motion, soft pulsing, liquid morphing)  
 
 - Smooth  
 
@@ -152,7 +152,7 @@ Copy code
 
 - Glow effect intensifies  
 
-- Border neon brightens  
+- Border plasma internal glow intensifies  
 
 
 
@@ -184,7 +184,7 @@ Copy code
 
 ### Hover:
 
-- Soft neon border appears  
+- Soft plasma border with internal glow appears  
 
 - Shadow intensifies slightly  
 
@@ -200,7 +200,7 @@ Copy code
 
 ### Focus:
 
-- Neon focus ring using theme token  
+- Plasma focus ring with internal glow using theme token  
 
 
 
@@ -261,7 +261,7 @@ Copy code
 
 - Active menu item glows softly  
 
-- Hover → neon underline  
+- Hover → plasma underline with soft radiance  
 
 - Expand/collapse animated at 180ms  
 
@@ -401,7 +401,7 @@ Copy code
 
 - Output box fades in  
 
-- Tool selection highlights with neon pulse  
+- Tool selection highlights with plasma soft pulsing  
 
 
 
@@ -429,7 +429,7 @@ Copy code
 
 - Success toast → slides and fades into view  
 
-- Loading spinner → neon rotating ring  
+- Loading spinner → plasma rotating ring with wave motion  
 
 
 

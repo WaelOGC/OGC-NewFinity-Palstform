@@ -28,7 +28,7 @@ All components follow:
 
 - White typography  
 
-- Neon accents  
+- Plasma accents (fluid gradients, soft radiance, molten-style transitions)  
 
 - Transparent cards  
 
@@ -160,7 +160,7 @@ All components adhere to:
 
 - White font color only  
 
-- Neon accent palette (user-provided):
+- Plasma accent palette (user-provided, fluid gradients):
 
   - #00FFC6  
 
@@ -228,7 +228,7 @@ Below is a detailed specification of every global UI component.
 
 ### Features:
 
-- Neon glow hover  
+- Plasma internal glow hover with soft pulsing  
 
 - Loading state  
 
@@ -310,7 +310,7 @@ Standard card for all sections.
 
 - Highlight  
 
-- Accent (neon border)  
+- Accent (plasma border with internal glow)  
 
 
 
@@ -342,7 +342,7 @@ Copy code
 
 
 
-Neon-themed translucent modal.
+Plasma-themed translucent modal with smooth edges and internal glow.
 
 
 
@@ -402,7 +402,7 @@ Features:
 
 - Pagination  
 
-- Neon highlight for selected rows  
+- Plasma highlight for selected rows (soft pulsing)  
 
 
 

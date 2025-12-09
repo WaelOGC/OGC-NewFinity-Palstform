@@ -1,0 +1,771 @@
+/* Hero Section - Plasma + Neutron Star Style */
+
+.hero {
+  width: 100%;
+  max-width: 100%;
+  min-height: auto;
+  position: relative;
+  overflow: hidden;
+  padding: 40px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.4s ease;
+}
+
+/* Dark Mode Background */
+[data-theme="dark"] .hero {
+  background: linear-gradient(135deg, #0a0e27 0%, #0d1b2a 25%, #1a1f3a 50%, #0d1b2a 75%, #0a0e27 100%);
+}
+
+/* Light Mode Background */
+[data-theme="light"] .hero {
+  background: linear-gradient(135deg, #f0f4f8 0%, #e8f0f5 25%, #e0ecf1 50%, #e8f0f5 75%, #f0f4f8 100%);
+}
+
+/* Plasma Blob Background Effects */
+.hero::before,
+.hero::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 0.4s ease, background 0.4s ease;
+}
+
+/* Dark Mode Blobs */
+[data-theme="dark"] .hero::before,
+[data-theme="dark"] .hero::after {
+  opacity: 0.15;
+}
+
+[data-theme="dark"] .hero::before {
+  background: radial-gradient(circle, rgba(100, 150, 255, 0.4) 0%, transparent 70%);
+}
+
+[data-theme="dark"] .hero::after {
+  background: radial-gradient(circle, rgba(0, 255, 200, 0.3) 0%, transparent 70%);
+}
+
+/* Light Mode Blobs - Softer, more subtle */
+[data-theme="light"] .hero::before,
+[data-theme="light"] .hero::after {
+  opacity: 0.08;
+}
+
+[data-theme="light"] .hero::before {
+  background: radial-gradient(circle, rgba(80, 120, 200, 0.25) 0%, transparent 70%);
+}
+
+[data-theme="light"] .hero::after {
+  background: radial-gradient(circle, rgba(0, 180, 160, 0.2) 0%, transparent 70%);
+}
+
+.hero::before {
+  width: 600px;
+  height: 600px;
+  top: -200px;
+  left: -200px;
+  animation: blob-drift-1 20s ease-in-out infinite;
+  /* Constrain to prevent overflow */
+  max-width: calc(100vw + 200px);
+  max-height: calc(100vh + 200px);
+}
+
+.hero::after {
+  width: 500px;
+  height: 500px;
+  bottom: -150px;
+  right: -150px;
+  animation: blob-drift-2 25s ease-in-out infinite;
+  /* Constrain to prevent overflow */
+  max-width: calc(100vw + 150px);
+  max-height: calc(100vh + 150px);
+}
+
+@keyframes blob-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(100px, 100px) scale(1.2); }
+}
+
+@keyframes blob-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-80px, -80px) scale(1.1); }
+}
+
+.hero-container {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  gap: 80px;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+/* Left Column - Content */
+.hero-left {
+  flex: 1;
+  max-width: 600px;
+  z-index: 2;
+}
+
+.hero-title {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 24px 0;
+  letter-spacing: -0.02em;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .hero-title {
+  color: #f7f7ff;
+}
+
+[data-theme="light"] .hero-title {
+  color: #111827;
+}
+
+.hero-description {
+  font-size: clamp(1rem, 1.5vw, 1.125rem);
+  line-height: 1.7;
+  margin: 0 0 32px 0;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .hero-description {
+  color: rgba(247, 247, 255, 0.85);
+}
+
+[data-theme="light"] .hero-description {
+  color: rgba(17, 24, 39, 0.85);
+}
+
+.hero-features {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+}
+
+.hero-feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-feature-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hero-feature-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.hero-feature-label {
+  font-size: 0.875rem;
+  white-space: nowrap;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .hero-feature-label {
+  color: rgba(247, 247, 255, 0.7);
+}
+
+[data-theme="light"] .hero-feature-label {
+  color: rgba(17, 24, 39, 0.7);
+}
+
+.hero-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.hero-button {
+  padding: 14px 32px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-button-primary {
+  transition: all 0.3s ease, background 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
+}
+
+[data-theme="dark"] .hero-button-primary {
+  background: linear-gradient(135deg, rgba(100, 150, 255, 0.9) 0%, rgba(0, 255, 200, 0.9) 100%);
+  color: #0a0e27;
+  box-shadow: 0 4px 20px rgba(100, 150, 255, 0.3);
+}
+
+[data-theme="light"] .hero-button-primary {
+  background: linear-gradient(135deg, rgba(60, 120, 220, 0.95) 0%, rgba(0, 200, 170, 0.95) 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 20px rgba(60, 120, 220, 0.4);
+}
+
+.hero-button-primary:hover {
+  transform: scale(1.05);
+}
+
+[data-theme="dark"] .hero-button-primary:hover {
+  box-shadow: 0 6px 30px rgba(100, 150, 255, 0.5);
+  filter: brightness(1.1);
+}
+
+[data-theme="light"] .hero-button-primary:hover {
+  box-shadow: 0 6px 30px rgba(60, 120, 220, 0.6);
+  filter: brightness(1.05);
+}
+
+.hero-button-secondary {
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease, background 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+}
+
+[data-theme="dark"] .hero-button-secondary {
+  background: rgba(100, 150, 255, 0.1);
+  color: rgba(247, 247, 255, 0.9);
+  border: 1px solid rgba(100, 150, 255, 0.3);
+}
+
+[data-theme="light"] .hero-button-secondary {
+  background: rgba(60, 120, 220, 0.15);
+  color: rgba(17, 24, 39, 0.9);
+  border: 1px solid rgba(60, 120, 220, 0.4);
+}
+
+.hero-button-secondary:hover {
+  transform: scale(1.05);
+}
+
+[data-theme="dark"] .hero-button-secondary:hover {
+  background: rgba(100, 150, 255, 0.2);
+  border-color: rgba(100, 150, 255, 0.5);
+}
+
+[data-theme="light"] .hero-button-secondary:hover {
+  background: rgba(60, 120, 220, 0.25);
+  border-color: rgba(60, 120, 220, 0.6);
+}
+
+.hero-meta {
+  font-size: 0.875rem;
+  margin: 0;
+  font-style: italic;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .hero-meta {
+  color: rgba(247, 247, 255, 0.6);
+}
+
+[data-theme="light"] .hero-meta {
+  color: rgba(17, 24, 39, 0.6);
+}
+
+/* Right Column - Neutron Star Core Visual */
+.hero-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.neutron-core {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  max-width: 100%;
+  transition: transform 0.1s ease-out;
+}
+
+/* Central Plasma Orb */
+.core-orb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  animation: core-pulse 10s ease-in-out infinite;
+  z-index: 3;
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+[data-theme="dark"] .core-orb {
+  background: radial-gradient(circle at 30% 30%, rgba(150, 200, 255, 0.9) 0%, rgba(100, 150, 255, 0.7) 30%, rgba(0, 255, 200, 0.5) 60%, rgba(100, 50, 200, 0.3) 100%);
+  box-shadow: 
+    inset 0 0 40px rgba(150, 200, 255, 0.6),
+    0 0 60px rgba(100, 150, 255, 0.4),
+    0 0 100px rgba(0, 255, 200, 0.2);
+}
+
+[data-theme="light"] .core-orb {
+  background: radial-gradient(circle at 30% 30%, rgba(80, 130, 220, 0.85) 0%, rgba(60, 110, 200, 0.7) 30%, rgba(0, 180, 160, 0.6) 60%, rgba(70, 50, 180, 0.4) 100%);
+  box-shadow: 
+    inset 0 0 40px rgba(80, 130, 220, 0.5),
+    0 0 60px rgba(60, 110, 200, 0.35),
+    0 0 100px rgba(0, 180, 160, 0.25);
+}
+
+.core-orb-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+[data-theme="dark"] .core-orb-inner {
+  background: radial-gradient(circle, rgba(200, 220, 255, 1) 0%, rgba(150, 200, 255, 0.5) 100%);
+  box-shadow: inset 0 0 20px rgba(200, 220, 255, 0.8);
+}
+
+[data-theme="light"] .core-orb-inner {
+  background: radial-gradient(circle, rgba(100, 150, 220, 0.95) 0%, rgba(80, 130, 200, 0.6) 100%);
+  box-shadow: inset 0 0 20px rgba(100, 150, 220, 0.7);
+}
+
+/* OGC Mark */
+.ogc-mark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  z-index: 5;
+  animation: ogc-pulse 8s ease-in-out infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.4s ease;
+}
+
+[data-theme="dark"] .ogc-mark svg {
+  filter: drop-shadow(0 0 8px rgba(200, 220, 255, 0.4));
+}
+
+[data-theme="light"] .ogc-mark svg {
+  filter: drop-shadow(0 0 8px rgba(80, 130, 220, 0.5));
+}
+
+.ogc-mark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.ogc-mark .ogc-circle {
+  transition: fill 0.4s ease;
+}
+
+[data-theme="dark"] .ogc-mark .ogc-circle {
+  fill: url(#ogcGradientDark);
+}
+
+[data-theme="light"] .ogc-mark .ogc-circle {
+  fill: url(#ogcGradientLight);
+}
+
+.ogc-mark .ogc-text {
+  transition: fill 0.4s ease;
+}
+
+[data-theme="dark"] .ogc-mark .ogc-text {
+  fill: #0a0e27;
+}
+
+[data-theme="light"] .ogc-mark .ogc-text {
+  fill: #ffffff;
+}
+
+@keyframes ogc-pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+    opacity: 0.95;
+  }
+}
+
+@keyframes core-pulse {
+  0%, 100% { 
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  50% { 
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 0.9;
+  }
+}
+
+/* Accretion Disk Ring */
+.core-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  animation: ring-rotate 25s linear infinite;
+  z-index: 2;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+[data-theme="dark"] .core-ring {
+  border: 1px solid rgba(100, 150, 255, 0.3);
+  box-shadow: 
+    0 0 20px rgba(100, 150, 255, 0.2),
+    inset 0 0 20px rgba(0, 255, 200, 0.1);
+}
+
+[data-theme="light"] .core-ring {
+  border: 1px solid rgba(60, 110, 200, 0.4);
+  box-shadow: 
+    0 0 20px rgba(60, 110, 200, 0.25),
+    inset 0 0 20px rgba(0, 180, 160, 0.15);
+}
+
+@keyframes ring-rotate {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Orbiting Icons */
+.orbit-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 28px;
+  height: 28px;
+  z-index: 4;
+  transform-origin: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.orbit-icon svg {
+  width: 100%;
+  height: 100%;
+  transition: filter 0.4s ease;
+}
+
+[data-theme="dark"] .orbit-icon svg {
+  filter: drop-shadow(0 0 4px rgba(100, 150, 255, 0.3));
+}
+
+[data-theme="light"] .orbit-icon svg {
+  filter: drop-shadow(0 0 4px rgba(60, 110, 200, 0.4));
+}
+
+.orbit-icon:hover {
+  transform: scale(1.05);
+}
+
+[data-theme="dark"] .orbit-icon:hover {
+  filter: drop-shadow(0 0 8px rgba(100, 150, 255, 0.5));
+}
+
+[data-theme="light"] .orbit-icon:hover {
+  filter: drop-shadow(0 0 8px rgba(60, 110, 200, 0.6));
+}
+
+.orbit-icon.ai {
+  animation: icon-orbit-1 18s ease-in-out infinite;
+}
+
+.orbit-icon.blockchain {
+  animation: icon-orbit-2 22s ease-in-out infinite;
+}
+
+.orbit-icon.token {
+  animation: icon-orbit-3 16s ease-in-out infinite;
+}
+
+.orbit-icon.ecosystem {
+  animation: icon-orbit-4 20s ease-in-out infinite;
+}
+
+@keyframes icon-orbit-1 {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg) translateX(150px) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg) translateX(150px) rotate(-360deg);
+  }
+}
+
+@keyframes icon-orbit-2 {
+  from {
+    transform: translate(-50%, -50%) rotate(90deg) rotate(0deg) translateX(160px) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(90deg) rotate(360deg) translateX(160px) rotate(-360deg);
+  }
+}
+
+@keyframes icon-orbit-3 {
+  from {
+    transform: translate(-50%, -50%) rotate(180deg) rotate(0deg) translateX(145px) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(180deg) rotate(360deg) translateX(145px) rotate(-360deg);
+  }
+}
+
+@keyframes icon-orbit-4 {
+  from {
+    transform: translate(-50%, -50%) rotate(270deg) rotate(0deg) translateX(155px) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(270deg) rotate(360deg) translateX(155px) rotate(-360deg);
+  }
+}
+
+/* Ensure orbiting icons don't overflow - already handled by overflow: hidden on .hero-right */
+
+/* Blockchain Connector Lines */
+.blockchain-connectors {
+  transition: opacity 0.4s ease;
+}
+
+[data-theme="dark"] .blockchain-connectors {
+  opacity: 0.6;
+}
+
+[data-theme="light"] .blockchain-connectors {
+  opacity: 0.4;
+}
+
+/* Background Particles */
+.core-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  z-index: 1;
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+[data-theme="dark"] .core-particle {
+  background: rgba(100, 150, 255, 0.4);
+  box-shadow: 0 0 6px rgba(100, 150, 255, 0.6);
+}
+
+[data-theme="light"] .core-particle {
+  background: rgba(60, 110, 200, 0.5);
+  box-shadow: 0 0 6px rgba(60, 110, 200, 0.7);
+}
+
+.core-particle-1 {
+  top: 20%;
+  left: 30%;
+  animation: particle-drift-1 12s ease-in-out infinite;
+}
+
+.core-particle-2 {
+  top: 60%;
+  left: 20%;
+  animation: particle-drift-2 15s ease-in-out infinite;
+}
+
+.core-particle-3 {
+  top: 80%;
+  left: 50%;
+  animation: particle-drift-3 18s ease-in-out infinite;
+}
+
+.core-particle-4 {
+  top: 30%;
+  left: 70%;
+  animation: particle-drift-4 14s ease-in-out infinite;
+}
+
+.core-particle-5 {
+  top: 50%;
+  left: 80%;
+  animation: particle-drift-5 16s ease-in-out infinite;
+}
+
+.core-particle-6 {
+  top: 10%;
+  left: 60%;
+  animation: particle-drift-6 13s ease-in-out infinite;
+}
+
+.core-particle-7 {
+  top: 70%;
+  left: 40%;
+  animation: particle-drift-7 17s ease-in-out infinite;
+}
+
+.core-particle-8 {
+  top: 40%;
+  left: 10%;
+  animation: particle-drift-8 11s ease-in-out infinite;
+}
+
+@keyframes particle-drift-1 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.3; }
+  50% { transform: translate(20px, -30px); opacity: 0.6; }
+}
+
+@keyframes particle-drift-2 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.4; }
+  50% { transform: translate(-25px, 20px); opacity: 0.7; }
+}
+
+@keyframes particle-drift-3 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.3; }
+  50% { transform: translate(15px, 25px); opacity: 0.5; }
+}
+
+@keyframes particle-drift-4 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.4; }
+  50% { transform: translate(-20px, -15px); opacity: 0.6; }
+}
+
+@keyframes particle-drift-5 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.3; }
+  50% { transform: translate(30px, 10px); opacity: 0.5; }
+}
+
+@keyframes particle-drift-6 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.4; }
+  50% { transform: translate(-10px, -25px); opacity: 0.6; }
+}
+
+@keyframes particle-drift-7 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.3; }
+  50% { transform: translate(25px, -20px); opacity: 0.5; }
+}
+
+@keyframes particle-drift-8 {
+  0%, 100% { transform: translate(0, 0); opacity: 0.4; }
+  50% { transform: translate(-15px, 30px); opacity: 0.6; }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .hero-container {
+    gap: 60px;
+  }
+  
+  .neutron-core {
+    width: 350px;
+    height: 350px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 20px 20px;
+  }
+  
+  .hero-features {
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .hero-container {
+    flex-direction: column;
+    gap: 60px;
+    text-align: center;
+    padding: 0;
+  }
+
+  .hero-left {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .hero-actions {
+    justify-content: center;
+  }
+
+  .hero-right {
+    min-height: 400px;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .neutron-core {
+    width: 300px;
+    height: 300px;
+    max-width: 100%;
+  }
+
+  .core-orb {
+    width: 100px;
+    height: 100px;
+  }
+
+  .core-ring {
+    width: 180px;
+    height: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 20px 16px;
+  }
+  
+  .hero-features {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hero-title {
+    font-size: clamp(1.75rem, 6vw, 2.5rem);
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .hero-button {
+    width: 100%;
+  }
+
+  .neutron-core {
+    width: 250px;
+    height: 250px;
+  }
+}

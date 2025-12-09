@@ -46,7 +46,7 @@ npm run dev
 
 This starts both:
 - **Frontend**: http://localhost:5173 (Vite dev server)
-- **Backend**: http://localhost:4000 (Express server)
+- **Backend**: http://localhost:4000 (Express server) <!-- Backend + DB: OFFLINE -->
 
 ### Option 2: Run Frontend and Backend Separately
 
@@ -57,7 +57,7 @@ npm run dev
 ```
 Frontend will be available at: http://localhost:5173
 
-**Terminal 2 - Backend:**
+**Terminal 2 - Backend:** <!-- Backend + DB: OFFLINE -->
 ```powershell
 cd backend
 npm run dev

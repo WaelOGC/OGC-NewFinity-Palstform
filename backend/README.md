@@ -15,7 +15,7 @@ Seed:
 
 npm run seed
 
-Run:
+Run: <!-- Backend + DB: OFFLINE -->
 
 npm run dev
 
@@ -64,7 +64,7 @@ npx prisma generate
 npx prisma migrate dev --name init
 npm run seed
 
-Start the server:
+Start the server: <!-- Backend + DB: OFFLINE -->
 
 npm run dev
 

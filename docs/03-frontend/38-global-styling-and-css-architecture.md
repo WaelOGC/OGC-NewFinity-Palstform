@@ -378,7 +378,7 @@ These are optional but useful for layout tuning.
 
 ### Buttons:
 
-- Neon-glow hover  
+- Plasma internal glow hover with soft pulsing  
 
 - Token-based borders  
 
@@ -402,7 +402,7 @@ These are optional but useful for layout tuning.
 
 - Minimal border  
 
-- Neon focus ring  
+- Plasma focus ring with internal glow  
 
 - Error state: glow + message  
 
@@ -452,7 +452,7 @@ These are optional but useful for layout tuning.
 
 - Micro-shadow  
 
-- Neon underline at bottom  
+- Plasma underline at bottom with soft radiance  
 
 
 
@@ -544,7 +544,7 @@ Copy code
 
 - Strong focus ring:  
 
-outline: 2px solid var(--color-neon-teal);
+outline: 2px solid var(--color-plasma-teal);
 
 
 

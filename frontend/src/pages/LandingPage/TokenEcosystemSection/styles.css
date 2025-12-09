@@ -1,0 +1,692 @@
+/* Token Ecosystem Section - Tabbed Content + Contract Chain Blueprint */
+
+.token-ecosystem-section {
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+  overflow: hidden;
+  padding: 64px 24px;
+  transition: background 0.4s ease;
+  box-sizing: border-box;
+}
+
+/* Dark Mode Background */
+[data-theme="dark"] .token-ecosystem-section {
+  background: linear-gradient(135deg, #0a0e27 0%, #0d1b2a 25%, #1a1f3a 50%, #0d1b2a 75%, #0a0e27 100%);
+}
+
+/* Light Mode Background */
+[data-theme="light"] .token-ecosystem-section {
+  background: linear-gradient(135deg, #f0f4f8 0%, #e8f0f5 25%, #e0ecf1 50%, #e8f0f5 75%, #f0f4f8 100%);
+}
+
+.token-ecosystem-container {
+  max-width: 1140px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+  box-sizing: border-box;
+}
+
+/* Content (Left Side) */
+.token-ecosystem-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.tec-eyebrow {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .tec-eyebrow {
+  color: rgba(100, 200, 255, 0.8);
+}
+
+[data-theme="light"] .tec-eyebrow {
+  color: rgba(60, 120, 220, 0.9);
+}
+
+.tec-title {
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+  letter-spacing: -0.02em;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .tec-title {
+  color: #f7f7ff;
+}
+
+[data-theme="light"] .tec-title {
+  color: #111827;
+}
+
+.tec-description {
+  font-size: clamp(1rem, 1.5vw, 1.125rem);
+  line-height: 1.7;
+  margin: 0;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .tec-description {
+  color: rgba(247, 247, 255, 0.85);
+}
+
+[data-theme="light"] .tec-description {
+  color: rgba(17, 24, 39, 0.85);
+}
+
+/* Tabs - Single Row */
+.tec-tabs {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  flex-wrap: nowrap;
+  margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+  .tec-tabs {
+    flex-wrap: wrap;
+    overflow-x: auto;
+  }
+}
+
+.tec-tab {
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease, background 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+  background: transparent;
+  white-space: nowrap;
+}
+
+/* Tab inactive state */
+[data-theme="dark"] .tec-tab {
+  color: rgba(247, 247, 255, 0.7);
+  border: 1px solid rgba(100, 150, 255, 0.3);
+}
+
+[data-theme="light"] .tec-tab {
+  color: rgba(17, 24, 39, 0.7);
+  border: 1px solid rgba(60, 120, 220, 0.4);
+}
+
+[data-theme="dark"] .tec-tab:hover {
+  border-color: rgba(100, 150, 255, 0.5);
+  color: rgba(247, 247, 255, 0.9);
+  background: rgba(100, 150, 255, 0.1);
+}
+
+[data-theme="light"] .tec-tab:hover {
+  border-color: rgba(60, 120, 220, 0.6);
+  color: rgba(17, 24, 39, 0.9);
+  background: rgba(60, 120, 220, 0.1);
+}
+
+/* Tab active state */
+[data-theme="dark"] .tec-tab.active {
+  background: linear-gradient(135deg, rgba(100, 150, 255, 0.9) 0%, rgba(0, 255, 200, 0.9) 100%);
+  color: #0a0e27;
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(100, 150, 255, 0.3);
+}
+
+[data-theme="light"] .tec-tab.active {
+  background: linear-gradient(135deg, rgba(60, 120, 220, 0.95) 0%, rgba(0, 200, 170, 0.95) 100%);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(60, 120, 220, 0.4);
+}
+
+.tec-tab.active:hover {
+  transform: scale(1.02);
+}
+
+[data-theme="dark"] .tec-tab.active:hover {
+  box-shadow: 0 6px 20px rgba(100, 150, 255, 0.4);
+  filter: brightness(1.05);
+}
+
+[data-theme="light"] .tec-tab.active:hover {
+  box-shadow: 0 6px 20px rgba(60, 120, 220, 0.5);
+  filter: brightness(1.03);
+}
+
+/* Tab Panel */
+.tec-tab-panel {
+  padding: 20px 24px;
+  border-radius: 12px;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, color 0.4s ease;
+}
+
+[data-theme="dark"] .tec-tab-panel {
+  background: rgba(30, 50, 100, 0.3);
+  border: 1px solid rgba(100, 150, 255, 0.2);
+  box-shadow: 
+    0 4px 16px rgba(100, 150, 255, 0.15),
+    inset 0 0 20px rgba(100, 150, 255, 0.05);
+  color: rgba(247, 247, 255, 0.85);
+}
+
+[data-theme="light"] .tec-tab-panel {
+  background: rgba(220, 230, 245, 0.5);
+  border: 1px solid rgba(60, 120, 220, 0.3);
+  box-shadow: 
+    0 4px 16px rgba(60, 120, 220, 0.15),
+    inset 0 0 20px rgba(60, 120, 220, 0.08);
+  color: rgba(17, 24, 39, 0.85);
+}
+
+.tec-tab-panel p {
+  margin: 0;
+  font-size: clamp(1rem, 1.5vw, 1.125rem);
+  line-height: 1.7;
+}
+
+.tec-tab-panel p strong {
+  font-weight: 700;
+}
+
+/* CTA Button */
+.token-ecosystem-cta {
+  padding: 14px 32px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s ease, background 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
+  margin-top: 8px;
+  align-self: flex-start;
+}
+
+[data-theme="dark"] .token-ecosystem-cta {
+  background: linear-gradient(135deg, rgba(100, 150, 255, 0.9) 0%, rgba(0, 255, 200, 0.9) 100%);
+  color: #0a0e27;
+  box-shadow: 0 4px 20px rgba(100, 150, 255, 0.3);
+}
+
+[data-theme="light"] .token-ecosystem-cta {
+  background: linear-gradient(135deg, rgba(60, 120, 220, 0.95) 0%, rgba(0, 200, 170, 0.95) 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 20px rgba(60, 120, 220, 0.4);
+}
+
+.token-ecosystem-cta:hover {
+  transform: scale(1.05);
+}
+
+[data-theme="dark"] .token-ecosystem-cta:hover {
+  box-shadow: 0 6px 30px rgba(100, 150, 255, 0.5);
+  filter: brightness(1.1);
+}
+
+[data-theme="light"] .token-ecosystem-cta:hover {
+  box-shadow: 0 6px 30px rgba(60, 120, 220, 0.6);
+  filter: brightness(1.05);
+}
+
+/* Blueprint Chain (Right Side) */
+.token-ecosystem-blueprint {
+  flex: 0 0 360px;
+  max-width: 360px;
+  min-height: 500px;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* CSS Variables for Blueprint Theming */
+[data-theme="dark"] .token-ecosystem-blueprint {
+  --bp-bg: #071226;
+  --bp-grid: rgba(120, 190, 255, 0.16);
+  --bp-line: rgba(120, 190, 255, 0.7);
+  --bp-node: rgba(120, 190, 255, 0.9);
+  --bp-dot: rgba(100, 200, 255, 0.9);
+}
+
+[data-theme="light"] .token-ecosystem-blueprint {
+  --bp-bg: #e4edf7;
+  --bp-grid: rgba(70, 120, 200, 0.2);
+  --bp-line: rgba(70, 120, 200, 0.9);
+  --bp-node: rgba(70, 120, 200, 0.95);
+  --bp-dot: rgba(60, 130, 220, 0.9);
+}
+
+.blueprint-chain {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  border-radius: 12px;
+  padding: 32px 24px;
+  box-sizing: border-box;
+  background: 
+    repeating-linear-gradient(0deg, transparent, transparent 19px, var(--bp-grid) 20px),
+    repeating-linear-gradient(90deg, transparent, transparent 19px, var(--bp-grid) 20px),
+    var(--bp-bg);
+  border: 1px solid var(--bp-grid);
+  box-shadow: 
+    0 8px 32px rgba(100, 150, 255, 0.15),
+    inset 0 0 24px rgba(100, 150, 255, 0.05);
+  transition: background 0.4s ease, border-color 0.4s ease;
+}
+
+[data-theme="light"] .blueprint-chain {
+  box-shadow: 
+    0 8px 32px rgba(60, 120, 220, 0.2),
+    inset 0 0 24px rgba(60, 120, 220, 0.08);
+}
+
+/* Token Core (Top) */
+.bp-token-core {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  animation: bp-token-pulse 9s ease-in-out infinite;
+  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, color 0.4s ease;
+  z-index: 3;
+}
+
+[data-theme="dark"] .bp-token-core {
+  background: radial-gradient(circle at 30% 30%, rgba(150, 200, 255, 0.9) 0%, rgba(100, 150, 255, 0.7) 30%, rgba(0, 255, 200, 0.5) 60%, rgba(100, 50, 200, 0.3) 100%);
+  border: 2px solid rgba(100, 200, 255, 0.5);
+  box-shadow: 
+    inset 0 0 20px rgba(150, 200, 255, 0.4),
+    0 0 30px rgba(100, 150, 255, 0.3),
+    0 0 50px rgba(0, 255, 200, 0.2);
+  color: #0a0e27;
+}
+
+[data-theme="light"] .bp-token-core {
+  background: radial-gradient(circle at 30% 30%, rgba(80, 130, 220, 0.85) 0%, rgba(60, 110, 200, 0.7) 30%, rgba(0, 180, 160, 0.6) 60%, rgba(70, 50, 180, 0.4) 100%);
+  border: 2px solid rgba(60, 120, 220, 0.6);
+  box-shadow: 
+    inset 0 0 20px rgba(80, 130, 220, 0.4),
+    0 0 30px rgba(60, 110, 200, 0.35),
+    0 0 50px rgba(0, 180, 160, 0.25);
+  color: #ffffff;
+}
+
+@keyframes bp-token-pulse {
+  0%, 100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-50%) scale(1.04);
+    opacity: 0.96;
+  }
+}
+
+/* Contract Blocks */
+.bp-contract {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 60px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  box-sizing: border-box;
+  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+  z-index: 2;
+}
+
+.bp-contract::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  width: 24px;
+  height: 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 2v6h6'/%3E%3Cpath d='M16 13H8'/%3E%3Cpath d='M16 17H8'/%3E%3Cpath d='M10 9H8'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.6;
+  transition: opacity 0.4s ease;
+}
+
+[data-theme="dark"] .bp-contract {
+  background: rgba(30, 50, 100, 0.5);
+  border: 1px solid rgba(100, 150, 255, 0.4);
+  box-shadow: 
+    0 2px 8px rgba(100, 150, 255, 0.2),
+    inset 0 0 12px rgba(100, 150, 255, 0.1);
+}
+
+[data-theme="light"] .bp-contract {
+  background: rgba(220, 230, 245, 0.7);
+  border: 1px solid rgba(60, 120, 220, 0.5);
+  box-shadow: 
+    0 2px 8px rgba(60, 120, 220, 0.25),
+    inset 0 0 12px rgba(60, 120, 220, 0.15);
+}
+
+.bp-contract-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+  margin-left: 32px;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .bp-contract-label {
+  color: rgba(200, 220, 255, 0.95);
+}
+
+[data-theme="light"] .bp-contract-label {
+  color: rgba(17, 24, 39, 0.95);
+}
+
+.bp-contract-1 {
+  top: 160px;
+}
+
+.bp-contract-2 {
+  top: 240px;
+}
+
+.bp-contract-3 {
+  top: 320px;
+}
+
+.bp-contract-4 {
+  top: 400px;
+}
+
+/* Chain Line (Vertical) */
+.bp-chain-line {
+  position: absolute;
+  left: 50%;
+  top: 120px;
+  bottom: 60px;
+  width: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, var(--bp-line) 0%, var(--bp-line) 100%);
+  opacity: 0.6;
+  z-index: 1;
+  transition: background 0.4s ease;
+}
+
+/* Junction Nodes */
+.bp-contract::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -8px;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bp-node);
+  box-shadow: 0 0 8px var(--bp-node);
+  z-index: 3;
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* Animated Data Dot */
+.bp-data-dot {
+  position: absolute;
+  left: 50%;
+  top: 120px;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bp-dot);
+  box-shadow: 0 0 8px var(--bp-dot);
+  z-index: 2;
+  animation: bp-data-flow 3.5s ease-in-out infinite;
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+@keyframes bp-data-flow {
+  0% {
+    top: 120px;
+    opacity: 0.3;
+  }
+  50% {
+    top: 440px;
+    opacity: 1;
+  }
+  100% {
+    top: 120px;
+    opacity: 0.3;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .token-ecosystem-container {
+    gap: 32px;
+  }
+  
+  .token-ecosystem-blueprint {
+    flex: 0 0 320px;
+    max-width: 320px;
+    min-height: 450px;
+  }
+}
+
+@media (max-width: 768px) {
+  .token-ecosystem-section {
+    padding: 48px 20px;
+  }
+
+  .token-ecosystem-container {
+    flex-direction: column;
+    gap: 40px;
+    align-items: stretch;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .token-ecosystem-content {
+    text-align: center;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .tec-tabs {
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .token-ecosystem-cta {
+    align-self: center;
+  }
+
+  .token-ecosystem-blueprint {
+    flex: 1 1 auto;
+    max-width: 100%;
+    width: 100%;
+    min-height: 400px;
+  }
+
+  .bp-token-core {
+    width: 70px;
+    height: 70px;
+    font-size: 1.125rem;
+    top: 30px;
+  }
+
+  .bp-contract {
+    width: 180px;
+    height: 55px;
+  }
+
+  .bp-contract-1 {
+    top: 140px;
+  }
+
+  .bp-contract-2 {
+    top: 210px;
+  }
+
+  .bp-contract-3 {
+    top: 280px;
+  }
+
+  .bp-contract-4 {
+    top: 350px;
+  }
+
+  .bp-chain-line {
+    top: 100px;
+    bottom: 50px;
+  }
+
+  .bp-data-dot {
+    top: 100px;
+  }
+
+  @keyframes bp-data-flow {
+    0% {
+      top: 100px;
+      opacity: 0.3;
+    }
+    50% {
+      top: 390px;
+      opacity: 1;
+    }
+    100% {
+      top: 100px;
+      opacity: 0.3;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .token-ecosystem-section {
+    padding: 40px 16px;
+  }
+
+  .token-ecosystem-container {
+    gap: 32px;
+  }
+
+  .token-ecosystem-content {
+    gap: 20px;
+  }
+
+  .tec-tabs {
+    gap: 8px;
+  }
+
+  .tec-tab {
+    padding: 8px 16px;
+    font-size: 0.8125rem;
+  }
+
+  .tec-tab-panel {
+    padding: 16px 20px;
+    min-height: 70px;
+  }
+
+  .token-ecosystem-cta {
+    width: 100%;
+    max-width: 280px;
+    text-align: center;
+  }
+
+  .token-ecosystem-blueprint {
+    min-height: 350px;
+  }
+
+  .blueprint-chain {
+    padding: 24px 16px;
+  }
+
+  .bp-token-core {
+    width: 60px;
+    height: 60px;
+    font-size: 1rem;
+    top: 20px;
+  }
+
+  .bp-contract {
+    width: 160px;
+    height: 50px;
+  }
+
+  .bp-contract-label {
+    font-size: 0.8125rem;
+    margin-left: 28px;
+  }
+
+  .bp-contract-1 {
+    top: 120px;
+  }
+
+  .bp-contract-2 {
+    top: 180px;
+  }
+
+  .bp-contract-3 {
+    top: 240px;
+  }
+
+  .bp-contract-4 {
+    top: 300px;
+  }
+
+  .bp-chain-line {
+    top: 80px;
+    bottom: 40px;
+  }
+
+  .bp-data-dot {
+    top: 80px;
+  }
+
+  @keyframes bp-data-flow {
+    0% {
+      top: 80px;
+      opacity: 0.3;
+    }
+    50% {
+      top: 340px;
+      opacity: 1;
+    }
+    100% {
+      top: 80px;
+      opacity: 0.3;
+    }
+  }
+}

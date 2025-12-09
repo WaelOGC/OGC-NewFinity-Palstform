@@ -1,0 +1,140 @@
+/* CTA Section - Plasma Theme */
+
+.cta-section {
+  position: relative;
+  min-height: 280px;
+  padding: 60px 0;
+  background: radial-gradient(circle at top, rgba(0,255,198,0.12), transparent 55%),
+              radial-gradient(circle at bottom, rgba(88,100,255,0.15), transparent 60%),
+              #020618;
+  overflow: hidden;
+}
+
+/* Subtle holographic/particle layer */
+.cta-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 198, 0.015) 2px, rgba(0, 255, 198, 0.015) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(88, 100, 255, 0.015) 2px, rgba(88, 100, 255, 0.015) 4px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+.cta-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.cta-title {
+  font-size: clamp(26px, 4vw, 32px);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 16px 0;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.cta-subtitle {
+  font-size: clamp(14px, 1.8vw, 16px);
+  line-height: 1.6;
+  max-width: 720px;
+  margin: 0 auto 32px auto;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.cta-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-cta {
+  padding: 14px 32px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.18s ease;
+  display: inline-block;
+  border: none;
+  cursor: pointer;
+}
+
+/* Primary Button - Plasma Gradient */
+.btn-cta--primary {
+  background: linear-gradient(135deg, rgba(0, 255, 198, 0.9) 0%, rgba(88, 100, 255, 0.9) 100%);
+  color: #020618;
+  box-shadow: 0 4px 20px rgba(0, 255, 198, 0.3);
+}
+
+.btn-cta--primary:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 30px rgba(0, 255, 198, 0.5);
+  filter: brightness(1.1);
+}
+
+/* Secondary Button - Transparent with Neon Border */
+.btn-cta--secondary {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid rgba(0, 255, 198, 0.4);
+  box-shadow: 0 0 0 rgba(0, 255, 198, 0);
+}
+
+.btn-cta--secondary:hover {
+  background: rgba(0, 255, 198, 0.1);
+  border-color: rgba(0, 255, 198, 0.6);
+  box-shadow: 0 0 20px rgba(0, 255, 198, 0.3);
+  transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cta-section {
+    min-height: 260px;
+    padding: 48px 0;
+  }
+
+  .cta-inner {
+    padding: 0 24px;
+  }
+
+  .cta-title {
+    margin-bottom: 12px;
+  }
+
+  .cta-subtitle {
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+
+  .cta-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .btn-cta {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .cta-section {
+    padding: 40px 0;
+  }
+
+  .cta-inner {
+    padding: 0 20px;
+  }
+}
+

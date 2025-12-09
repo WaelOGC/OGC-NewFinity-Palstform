@@ -16,7 +16,10 @@ export default function Layout() {
       <main className="app-main" style={{ 
         minHeight: 'calc(100vh - 70px)',
         backgroundColor: 'var(--ogc-bg)',
-        transition: 'background-color 0.4s ease'
+        transition: 'background-color 0.4s ease',
+        width: '100%',
+        maxWidth: '100%',
+        overflowX: 'hidden'
       }}>
         <Outlet />
       </main>
