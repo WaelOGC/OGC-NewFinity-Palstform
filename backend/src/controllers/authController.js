@@ -1,5 +1,20 @@
+// DEPRECATED: This file uses old JWT configuration (JWT_SECRET, JWT_EXPIRES_IN)
+// Use auth.controller.js instead which uses the standardized JWT configuration
+// This file is kept for backward compatibility but should not be used in new code
+
 import { verifyUserCredentials, createUser } from "../services/userService.js";
 import jwt from "jsonwebtoken";
+
+// Use standardized JWT config (with fallback to old names for backward compatibility)
+const {
+  JWT_ACCESS_SECRET,
+  JWT_SECRET, // fallback for old code
+  JWT_ACCESS_EXPIRES_IN = '15m',
+  JWT_EXPIRES_IN, // fallback for old code
+} = process.env;
+
+const SECRET = JWT_ACCESS_SECRET || JWT_SECRET;
+const EXPIRES_IN = JWT_ACCESS_EXPIRES_IN || JWT_EXPIRES_IN || "1h";
 
 export async function login(req, res) {
   try {
@@ -21,13 +36,13 @@ export async function login(req, res) {
 
     const token = jwt.sign(
       {
-        id: user.id,
+        userId: user.id,
         email: user.email,
         fullName: user.fullName,
       },
-      process.env.JWT_SECRET,
+      SECRET,
       {
-        expiresIn: process.env.JWT_EXPIRES_IN || "1h",
+        expiresIn: EXPIRES_IN,
       }
     );
 
@@ -62,13 +77,13 @@ export async function register(req, res) {
 
     const token = jwt.sign(
       {
-        id: newUser.id,
+        userId: newUser.id,
         email: newUser.email,
         fullName: newUser.fullName,
       },
-      process.env.JWT_SECRET,
+      SECRET,
       {
-        expiresIn: process.env.JWT_EXPIRES_IN || "1h",
+        expiresIn: EXPIRES_IN,
       }
     );
 

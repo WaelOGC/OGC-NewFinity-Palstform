@@ -1,8 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { createBrowserRouter, RouterProvider, Navigate, useParams } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext.jsx';
-import { AppProvider, useApp } from './state/AppContext.jsx';
+import { AppProvider } from './state/AppContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import Layout from './components/layout/Layout.jsx';
 import LandingPage from './pages/LandingPage';
@@ -19,19 +19,8 @@ import ComingSoonPage from './pages/ComingSoonPage';
 import DashboardPage from './pages/DashboardPage';
 import InternalRouteGuard from './components/InternalRouteGuard.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import BlogSlugRedirect from './components/BlogSlugRedirect.jsx';
 import './index.css';
-
-function Protected({ children }) {
-  const { accessToken } = useApp();
-  if (!accessToken) return <Navigate to="/internal/login?key=DEV1234" replace />;
-  return <>{children}</>;
-}
-
-// Redirect component for blog slug routes
-function BlogSlugRedirect() {
-  const { slug } = useParams();
-  return <Navigate to={`/internal/blog/${slug}?key=DEV1234`} replace />;
-}
 
 const router = createBrowserRouter([
   // All routes with Header - Layout wraps everything
@@ -48,48 +37,33 @@ const router = createBrowserRouter([
       { path: '/community', element: <CommunityPage /> },
       { path: '/coming-soon', element: <ComingSoonPage /> },
       
-      // Protected dashboard route
+      // Auth-only routes - require authentication
       {
-        path: '/dashboard',
-        element: (
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        ),
+        element: <ProtectedRoute />,
+        children: [
+          { path: '/dashboard', element: <DashboardPage /> },
+        ],
       },
       
-      // Internal development routes - require ?key=DEV1234
-      { 
-        path: '/internal/landing', 
-        element: <InternalRouteGuard><LandingPage /></InternalRouteGuard> 
-      },
-      { 
-        path: '/internal/login', 
-        element: <InternalRouteGuard><LoginPage /></InternalRouteGuard> 
-      },
-      { 
-        path: '/internal/wallet', 
-        element: <InternalRouteGuard><Protected><WalletPage /></Protected></InternalRouteGuard> 
-      },
-      { 
-        path: '/internal/download', 
-        element: <InternalRouteGuard><DownloadPage /></InternalRouteGuard> 
-      },
-      { 
-        path: '/internal/contact', 
-        element: <InternalRouteGuard><ContactPage /></InternalRouteGuard> 
-      },
-      { 
-        path: '/internal/community', 
-        element: <InternalRouteGuard><CommunityPage /></InternalRouteGuard> 
-      },
-      { 
-        path: '/internal/blog', 
-        element: <InternalRouteGuard><BlogPage /></InternalRouteGuard> 
-      },
-      { 
-        path: '/internal/blog/:slug', 
-        element: <InternalRouteGuard><BlogPage /></InternalRouteGuard> 
+      // Internal/system-only routes - require ?key=DEV1234
+      {
+        element: <InternalRouteGuard />,
+        children: [
+          { path: '/internal/landing', element: <LandingPage /> },
+          { path: '/internal/login', element: <LoginPage /> },
+          { path: '/internal/download', element: <DownloadPage /> },
+          { path: '/internal/contact', element: <ContactPage /> },
+          { path: '/internal/community', element: <CommunityPage /> },
+          { path: '/internal/blog', element: <BlogPage /> },
+          { path: '/internal/blog/:slug', element: <BlogPage /> },
+          // Internal wallet route - requires both internal key AND authentication
+          {
+            element: <ProtectedRoute />,
+            children: [
+              { path: '/internal/wallet', element: <WalletPage /> },
+            ],
+          },
+        ],
       },
     ]
   },

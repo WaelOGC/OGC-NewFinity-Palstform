@@ -1,6 +1,6 @@
-// Default base URL for production: '/api'
+// Default base URL for production: '/api/v1'
 // Can be overridden with VITE_API_BASE_URL environment variable
-const BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+const BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 export function createClient(getToken) {
   async function request(path, opts = {}) {
@@ -12,18 +12,18 @@ export function createClient(getToken) {
     if (token) headers.Authorization = `Bearer ${token}`;
     
     // Fallback logic:
-    // - If full URL is passed (e.g., https://finityplatform.cloud/api) → keep it as is
-    // - If path only (e.g., /api) → prefix with BASE
+    // - If full URL is passed (e.g., https://finityplatform.cloud/api/v1) → keep it as is
+    // - If path only (e.g., /auth/login) → prefix with BASE (which is already /api/v1)
     let apiPath;
     if (path.startsWith('http://') || path.startsWith('https://')) {
       // Full URL provided, use as-is
       apiPath = path;
     } else if (BASE.startsWith('http://') || BASE.startsWith('https://')) {
-      // BASE is a full URL, append /api/v1
-      apiPath = `${BASE}/api/v1${path}`;
+      // BASE is a full URL, use it directly with path
+      apiPath = `${BASE}${path}`;
     } else {
-      // BASE is a path (e.g., /api), append /v1
-      apiPath = `${BASE}/v1${path}`;
+      // BASE is a path (e.g., /api/v1), append path directly
+      apiPath = `${BASE}${path}`;
     }
     
     const res = await fetch(apiPath, { ...opts, headers });

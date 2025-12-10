@@ -4,10 +4,22 @@
   position: relative;
   min-height: 280px;
   padding: 60px 0;
+  overflow: hidden;
+  transition: background 0.4s ease;
+}
+
+/* Dark Mode Background */
+[data-theme="dark"] .cta-section {
   background: radial-gradient(circle at top, rgba(0,255,198,0.12), transparent 55%),
               radial-gradient(circle at bottom, rgba(88,100,255,0.15), transparent 60%),
               #020618;
-  overflow: hidden;
+}
+
+/* Light Mode Background */
+[data-theme="light"] .cta-section {
+  background: radial-gradient(circle at top, rgba(0,200,160,0.12) 0%, transparent 55%),
+              radial-gradient(circle at bottom, rgba(60,80,220,0.12) 0%, transparent 60%),
+              linear-gradient(180deg, #f0f4f8 0%, #e8f0f5 50%, #f0f4f8 100%);
 }
 
 /* Subtle holographic/particle layer */
@@ -15,12 +27,22 @@
   content: '';
   position: absolute;
   inset: 0;
-  background-image: 
-    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 198, 0.015) 2px, rgba(0, 255, 198, 0.015) 4px),
-    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(88, 100, 255, 0.015) 2px, rgba(88, 100, 255, 0.015) 4px);
   pointer-events: none;
   z-index: 0;
   opacity: 0.4;
+  transition: background-image 0.4s ease;
+}
+
+[data-theme="dark"] .cta-section::before {
+  background-image: 
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 198, 0.015) 2px, rgba(0, 255, 198, 0.015) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(88, 100, 255, 0.015) 2px, rgba(88, 100, 255, 0.015) 4px);
+}
+
+[data-theme="light"] .cta-section::before {
+  background-image: 
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 200, 160, 0.015) 2px, rgba(0, 200, 160, 0.015) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(60, 80, 220, 0.015) 2px, rgba(60, 80, 220, 0.015) 4px);
 }
 
 .cta-inner {
@@ -37,8 +59,16 @@
   font-weight: 700;
   line-height: 1.2;
   margin: 0 0 16px 0;
-  color: #ffffff;
   letter-spacing: -0.02em;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .cta-title {
+  color: #ffffff;
+}
+
+[data-theme="light"] .cta-title {
+  color: rgba(17, 24, 39, 0.98);
 }
 
 .cta-subtitle {
@@ -46,7 +76,15 @@
   line-height: 1.6;
   max-width: 720px;
   margin: 0 auto 32px auto;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .cta-subtitle {
   color: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="light"] .cta-subtitle {
+  color: rgba(17, 24, 39, 0.85);
 }
 
 .cta-actions {
@@ -70,29 +108,63 @@
 
 /* Primary Button - Plasma Gradient */
 .btn-cta--primary {
+  transition: all 0.18s ease, background 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
+}
+
+[data-theme="dark"] .btn-cta--primary {
   background: linear-gradient(135deg, rgba(0, 255, 198, 0.9) 0%, rgba(88, 100, 255, 0.9) 100%);
   color: #020618;
   box-shadow: 0 4px 20px rgba(0, 255, 198, 0.3);
 }
 
+[data-theme="light"] .btn-cta--primary {
+  background: linear-gradient(135deg, rgba(60, 120, 220, 0.95) 0%, rgba(0, 200, 170, 0.95) 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 20px rgba(60, 120, 220, 0.4);
+}
+
 .btn-cta--primary:hover {
   transform: scale(1.05);
-  box-shadow: 0 6px 30px rgba(0, 255, 198, 0.5);
   filter: brightness(1.1);
+}
+
+[data-theme="dark"] .btn-cta--primary:hover {
+  box-shadow: 0 6px 30px rgba(0, 255, 198, 0.5);
+}
+
+[data-theme="light"] .btn-cta--primary:hover {
+  box-shadow: 0 6px 30px rgba(60, 120, 220, 0.6);
 }
 
 /* Secondary Button - Transparent with Neon Border */
 .btn-cta--secondary {
   background: transparent;
+  transition: all 0.18s ease, background 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+[data-theme="dark"] .btn-cta--secondary {
   color: #ffffff;
   border: 1px solid rgba(0, 255, 198, 0.4);
   box-shadow: 0 0 0 rgba(0, 255, 198, 0);
 }
 
-.btn-cta--secondary:hover {
+[data-theme="light"] .btn-cta--secondary {
+  color: rgba(17, 24, 39, 0.9);
+  border: 1px solid rgba(60, 120, 220, 0.4);
+  box-shadow: 0 0 0 rgba(60, 120, 220, 0);
+}
+
+[data-theme="dark"] .btn-cta--secondary:hover {
   background: rgba(0, 255, 198, 0.1);
   border-color: rgba(0, 255, 198, 0.6);
   box-shadow: 0 0 20px rgba(0, 255, 198, 0.3);
+  transform: scale(1.05);
+}
+
+[data-theme="light"] .btn-cta--secondary:hover {
+  background: rgba(60, 120, 220, 0.1);
+  border-color: rgba(60, 120, 220, 0.6);
+  box-shadow: 0 0 20px rgba(60, 120, 220, 0.3);
   transform: scale(1.05);
 }
 

@@ -17,7 +17,7 @@
 # This script automates backend deployment:
 # - Pulls latest code from Git
 # - Installs dependencies
-# - Applies Prisma migrations
+# - Database: MySQL via db.js (no Prisma)
 # - Restarts backend with PM2
 # - Validates backend is online
 # ============================================================================
@@ -79,31 +79,11 @@ fi
 echo ""
 
 # ============================================================================
-# STEP 3: Prisma Migrations (if Prisma exists)
+# STEP 3: Database (MySQL via db.js)
 # ============================================================================
-if [ -f "prisma/schema.prisma" ]; then
-    echo -e "${YELLOW}🗄️  STEP 3: Applying Prisma migrations...${NC}"
-    
-    # Generate Prisma Client
-    if npm run prisma:gen 2>&1; then
-        echo -e "${GREEN}✅ Prisma Client generated${NC}"
-    else
-        echo -e "${RED}❌ ERROR: Failed to generate Prisma Client${NC}"
-        exit 1
-    fi
-    
-    # Deploy migrations (production-safe)
-    if npm run prisma:deploy 2>&1; then
-        echo -e "${GREEN}✅ Prisma migrations applied successfully${NC}"
-    else
-        echo -e "${RED}❌ ERROR: Failed to apply Prisma migrations${NC}"
-        exit 1
-    fi
-    echo ""
-else
-    echo -e "${YELLOW}⏭️  STEP 3: Skipping Prisma (schema.prisma not found)${NC}"
-    echo ""
-fi
+echo -e "${YELLOW}⏭️  STEP 3: Skipping Prisma – backend is using MySQL via db.js${NC}"
+echo -e "${GREEN}✅ Database connection handled by db.js (MySQL)${NC}"
+echo ""
 
 # ============================================================================
 # STEP 4: Restart Backend with PM2

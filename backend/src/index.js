@@ -1,8 +1,12 @@
-import 'dotenv/config';
+// Load environment variables FIRST before any other imports
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import { rateLimiter } from './middleware/rateLimit.js';
 import { errorHandler } from './middleware/error.js';
 import routes from './routes/index.js';
@@ -11,18 +15,26 @@ const app = express();
 
 // Core middleware
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') || '*' }));
+app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') || '*', credentials: true }));
 app.use(express.json({ limit: '1mb' }));
+app.use(cookieParser());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(rateLimiter);
 
 // Routes
 app.use('/api/v1', routes);
 
-// Health
-app.get('/healthz', (_, res) => res.status(200).json({ ok: true }));
-
 // --- Platform status & health endpoints ---
+// Global health endpoint (before API routes)
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'OGC Backend is running',
+  });
+});
+
+// Legacy healthz endpoint (for backward compatibility)
+app.get('/healthz', (_, res) => res.status(200).json({ ok: true }));
 
 // Status endpoint
 app.get('/status', (req, res) => {
@@ -32,22 +44,6 @@ app.get('/status', (req, res) => {
     uptime: process.uptime(),
     timestamp: new Date().toISOString()
   });
-});
-
-// Health endpoint
-app.get('/health', (req, res) => {
-  const health = {
-    status: 'ok',
-    checks: {
-      backend: 'up'
-      // Leave TODO comments for DB or other services if they are not wired yet
-      // e.g. db: 'unknown'
-    },
-    version: '1.0.0',
-    timestamp: new Date().toISOString()
-  };
-
-  res.json(health);
 });
 
 // API-prefixed paths for nginx proxy

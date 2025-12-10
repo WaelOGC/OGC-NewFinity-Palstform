@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import systemRoutes from "./routes/systemRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -7,8 +8,9 @@ import authRoutes from "./routes/authRoutes.js";
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({ credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 // Routes
 app.use("/api/system", systemRoutes);

@@ -2,23 +2,26 @@
  * Internal Route Guard
  * 
  * Simple token-based protection for internal development routes.
- * Checks for ?key=DEV1234 query parameter.
+ * Checks for ?key=... query parameter.
+ * Uses VITE_INTERNAL_ROUTE_KEY environment variable or defaults to 'DEV1234'.
  */
 
-import React from 'react';
-import { useSearchParams, Navigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
-const INTERNAL_DEV_KEY = 'DEV1234'; // Simple dev key - can be changed
+const InternalRouteGuard = () => {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const key = params.get('key');
 
-export default function InternalRouteGuard({ children }) {
-  const [searchParams] = useSearchParams();
-  const key = searchParams.get('key');
+  // Reuse existing secret / key logic
+  const INTERNAL_KEY = import.meta.env.VITE_INTERNAL_ROUTE_KEY || 'DEV1234';
 
-  if (key === INTERNAL_DEV_KEY) {
-    return <>{children}</>;
+  if (key !== INTERNAL_KEY) {
+    return <Navigate to="/" replace />;
   }
 
-  // Redirect to coming soon page if key is missing or incorrect
-  return <Navigate to="/" replace />;
-}
+  return <Outlet />;
+};
+
+export default InternalRouteGuard;
 

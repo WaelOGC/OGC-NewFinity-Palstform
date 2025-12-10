@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+
 function SystemStatusBadge() {
   const [status, setStatus] = useState("checking");
   const [details, setDetails] = useState(null);
@@ -7,7 +9,7 @@ function SystemStatusBadge() {
   useEffect(() => {
     async function fetchStatus() {
       try {
-        const res = await fetch("http://localhost:3000/api/system/db-check");
+        const res = await fetch(`${API_BASE_URL}/system/db-check`);
         if (!res.ok) {
           throw new Error("Non-OK response");
         }
