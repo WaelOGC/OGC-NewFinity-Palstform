@@ -1,0 +1,246 @@
+/* Social Login Component - Plasma Theme */
+
+.social-login {
+  margin-top: 32px;
+}
+
+.social-login__divider {
+  position: relative;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.social-login__divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  transform: translateY(-50%);
+  transition: background 0.4s ease;
+}
+
+[data-theme="dark"] .social-login__divider::before {
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 198, 0.3), transparent);
+}
+
+[data-theme="light"] .social-login__divider::before {
+  background: linear-gradient(90deg, transparent, rgba(60, 120, 220, 0.3), transparent);
+}
+
+.social-login__divider-text {
+  position: relative;
+  display: inline-block;
+  padding: 0 16px;
+  font-size: 13px;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .social-login__divider-text {
+  color: rgba(255, 255, 255, 0.6);
+  background: var(--ogc-bg);
+}
+
+[data-theme="light"] .social-login__divider-text {
+  color: rgba(17, 24, 39, 0.6);
+  background: var(--ogc-bg);
+}
+
+.social-login__buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.social-login__button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 12px;
+  border-radius: 10px;
+  border: 1px solid;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease, background 0.4s ease, border-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .social-login__button {
+  border-color: rgba(0, 255, 198, 0.3);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="light"] .social-login__button {
+  border-color: rgba(60, 120, 220, 0.3);
+  color: rgba(17, 24, 39, 0.85);
+}
+
+[data-theme="dark"] .social-login__button:hover {
+  background: rgba(0, 255, 198, 0.08);
+  border-color: rgba(0, 255, 198, 0.5);
+  color: #00ffc6;
+  box-shadow: 0 4px 12px rgba(0, 255, 198, 0.2);
+  transform: translateY(-2px);
+}
+
+[data-theme="light"] .social-login__button:hover {
+  background: rgba(60, 120, 220, 0.08);
+  border-color: rgba(60, 120, 220, 0.5);
+  color: rgba(60, 120, 220, 0.95);
+  box-shadow: 0 4px 12px rgba(60, 120, 220, 0.2);
+  transform: translateY(-2px);
+}
+
+.social-login__button:active {
+  transform: translateY(0);
+}
+
+.social-login__button:focus {
+  outline: none;
+}
+
+[data-theme="dark"] .social-login__button:focus-visible {
+  outline: 2px solid rgba(0, 255, 198, 0.5);
+  outline-offset: 2px;
+}
+
+[data-theme="light"] .social-login__button:focus-visible {
+  outline: 2px solid rgba(60, 120, 220, 0.5);
+  outline-offset: 2px;
+}
+
+.social-login__icon {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  display: block;
+}
+
+.social-login__button:hover .social-login__icon {
+  transform: scale(1.1);
+}
+
+[data-theme="dark"] .social-login__button:hover .social-login__icon {
+  filter: drop-shadow(0 0 6px rgba(0, 255, 198, 0.5));
+}
+
+[data-theme="light"] .social-login__button:hover .social-login__icon {
+  filter: drop-shadow(0 0 6px rgba(60, 120, 220, 0.5));
+}
+
+.social-login__label {
+  font-size: 12px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+/* Terms note */
+.social-login__terms-note {
+  margin-top: 20px;
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .social-login__terms-note {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+[data-theme="light"] .social-login__terms-note {
+  color: rgba(17, 24, 39, 0.65);
+}
+
+.social-login__terms-link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: color 0.2s ease;
+}
+
+[data-theme="dark"] .social-login__terms-link {
+  color: rgba(0, 255, 198, 0.85);
+}
+
+[data-theme="light"] .social-login__terms-link {
+  color: rgba(60, 120, 220, 0.85);
+}
+
+[data-theme="dark"] .social-login__terms-link:hover {
+  color: #00ffc6;
+}
+
+[data-theme="light"] .social-login__terms-link:hover {
+  color: rgba(60, 120, 220, 1);
+}
+
+/* Coming soon message */
+.social-login__message {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  transition: all 0.4s ease;
+}
+
+[data-theme="dark"] .social-login__message {
+  background: rgba(255, 188, 37, 0.1);
+  border: 1px solid rgba(255, 188, 37, 0.3);
+}
+
+[data-theme="light"] .social-login__message {
+  background: rgba(255, 188, 37, 0.15);
+  border: 1px solid rgba(255, 188, 37, 0.4);
+}
+
+.social-login__message-text {
+  font-size: 13px;
+  margin: 0;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .social-login__message-text {
+  color: rgba(255, 188, 37, 0.9);
+}
+
+[data-theme="light"] .social-login__message-text {
+  color: rgba(200, 150, 0, 0.95);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .social-login__buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .social-login__button {
+    padding: 12px 10px;
+    gap: 6px;
+  }
+
+  .social-login__icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .social-login__label {
+    font-size: 11px;
+  }
+
+  .social-login__terms-note {
+    font-size: 11px;
+    margin-top: 16px;
+  }
+
+  .social-login__message {
+    padding: 10px 12px;
+  }
+
+  .social-login__message-text {
+    font-size: 12px;
+  }
+}
+

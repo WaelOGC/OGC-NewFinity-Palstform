@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
+import "./AuthForm.css";
 
 function RegisterForm() {
   const { register, loading, isAuthenticated, user, logout } = useAuth();
@@ -8,18 +9,21 @@ function RegisterForm() {
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [status, setStatus] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   if (isAuthenticated) {
     return (
-      <div className="mt-4 p-4 rounded-xl border border-emerald-500/50 bg-emerald-900/20 text-sm text-emerald-100 max-w-md">
-        <div className="font-semibold mb-1">You already have an active session</div>
-        <div>Email: {user?.email}</div>
-        {user?.fullName && <div>Name: {user.fullName}</div>}
+      <div className="auth-form-authenticated">
+        <div className="auth-form-authenticated-title">You already have an active session</div>
+        <div className="auth-form-authenticated-info">Email: {user?.email}</div>
+        {user?.fullName && (
+          <div className="auth-form-authenticated-info">Name: {user.fullName}</div>
+        )}
         <button
           type="button"
-          className="mt-3 inline-flex items-center rounded-md border border-emerald-400 px-3 py-1 text-xs font-medium hover:bg-emerald-500/20"
+          className="auth-form-logout-btn"
           onClick={logout}
         >
           Log out
@@ -32,6 +36,11 @@ function RegisterForm() {
     e.preventDefault();
     setStatus(null);
 
+    if (!termsAccepted) {
+      setStatus({ type: "error", message: "You must accept the Terms & Conditions to create an account" });
+      return;
+    }
+
     if (password !== confirm) {
       setStatus({ type: "error", message: "Passwords do not match" });
       return;
@@ -39,17 +48,25 @@ function RegisterForm() {
 
     setSubmitting(true);
     try {
-      await register(email, password, fullName || undefined);
-      setStatus({ type: "success", message: "Registration successful. You are now logged in." });
+      await register(email, password, fullName || undefined, termsAccepted);
+      // Registration successful - show activation message
+      setStatus({ 
+        type: "success", 
+        message: `We've sent an activation link to ${email}. Please check your inbox and click the link to activate your account.`,
+        requiresActivation: true
+      });
       setEmail("");
       setFullName("");
       setPassword("");
       setConfirm("");
+      setTermsAccepted(false);
     } catch (err) {
       console.error("Register error:", err);
+      // Use backendMessage if available, otherwise fall back to message
+      const errorMessage = err.backendMessage || err.message || "Registration failed";
       setStatus({
         type: "error",
-        message: err.message || "Registration failed",
+        message: errorMessage,
       });
     } finally {
       setSubmitting(false);
@@ -57,76 +74,109 @@ function RegisterForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="mt-4 max-w-md rounded-xl border border-slate-600/60 bg-slate-900/40 p-4 text-sm text-slate-100"
-    >
-      <div className="font-semibold mb-2">Create a new OGC account</div>
+    <form onSubmit={handleSubmit} className="auth-form">
+      <div className="auth-form-title">Create a new OGC account</div>
 
-      <label className="block mb-2">
-        <span className="block mb-1 text-xs uppercase tracking-wide text-slate-400">
-          Full name (optional)
-        </span>
+      <div className="auth-form-field">
+        <label htmlFor="register-name" className="auth-form-label">
+          Full name <span className="auth-form-label-optional">(optional)</span>
+        </label>
         <input
+          id="register-name"
           type="text"
-          className="w-full rounded-md border border-slate-600 bg-slate-950/70 px-2 py-1 text-sm outline-none focus:border-cyan-400"
+          className="auth-form-input"
+          placeholder="John Doe"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
         />
-      </label>
+      </div>
 
-      <label className="block mb-2">
-        <span className="block mb-1 text-xs uppercase tracking-wide text-slate-400">
+      <div className="auth-form-field">
+        <label htmlFor="register-email" className="auth-form-label">
           Email
-        </span>
+        </label>
         <input
+          id="register-email"
           type="email"
-          className="w-full rounded-md border border-slate-600 bg-slate-950/70 px-2 py-1 text-sm outline-none focus:border-cyan-400"
+          className="auth-form-input"
+          placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          aria-required="true"
         />
-      </label>
+      </div>
 
-      <label className="block mb-2">
-        <span className="block mb-1 text-xs uppercase tracking-wide text-slate-400">
+      <div className="auth-form-field">
+        <label htmlFor="register-password" className="auth-form-label">
           Password
-        </span>
+        </label>
         <input
+          id="register-password"
           type="password"
-          className="w-full rounded-md border border-slate-600 bg-slate-950/70 px-2 py-1 text-sm outline-none focus:border-cyan-400"
+          className="auth-form-input"
+          placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          aria-required="true"
         />
-      </label>
+      </div>
 
-      <label className="block mb-3">
-        <span className="block mb-1 text-xs uppercase tracking-wide text-slate-400">
+      <div className="auth-form-field">
+        <label htmlFor="register-confirm" className="auth-form-label">
           Confirm password
-        </span>
+        </label>
         <input
+          id="register-confirm"
           type="password"
-          className="w-full rounded-md border border-slate-600 bg-slate-950/70 px-2 py-1 text-sm outline-none focus:border-cyan-400"
+          className="auth-form-input"
+          placeholder="••••••••"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           required
+          aria-required="true"
         />
-      </label>
+      </div>
+
+      <div className="auth-form-field">
+        <label className="auth-form-checkbox-label">
+          <input
+            type="checkbox"
+            className="auth-form-checkbox"
+            checked={termsAccepted}
+            onChange={(e) => setTermsAccepted(e.target.checked)}
+            required
+            aria-required="true"
+          />
+          <span className="auth-form-checkbox-text">
+            I agree to the{" "}
+            <a href="/legal/terms" target="_blank" rel="noopener noreferrer" className="auth-form-link">
+              Terms & Conditions
+            </a>{" "}
+            and{" "}
+            <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="auth-form-link">
+              Privacy Policy
+            </a>
+            .
+          </span>
+        </label>
+      </div>
 
       <button
         type="submit"
-        disabled={submitting || loading}
-        className="inline-flex items-center rounded-md bg-emerald-500 px-3 py-1 text-xs font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-60"
+        disabled={submitting || loading || !termsAccepted}
+        className="auth-form-submit-btn"
+        aria-label="Create account"
       >
         {submitting || loading ? "Creating account..." : "Create account"}
       </button>
 
       {status && (
         <div
-          className={`mt-2 text-xs ${
-            status.type === "success" ? "text-emerald-300" : "text-red-300"
-          }`}
+          className={`auth-form-status auth-form-status--${status.type}`}
+          role="alert"
+          aria-live="polite"
         >
           {status.message}
         </div>

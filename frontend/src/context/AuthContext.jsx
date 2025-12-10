@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+import { api, API_BASE_URL } from "../utils/apiClient.js";
 
 const AuthContext = createContext(null);
 
@@ -19,17 +18,12 @@ export function AuthProvider({ children }) {
       }
 
       try {
-        const res = await fetch(`${API_BASE_URL}/auth/me`, {
+        const data = await api.get('/auth/me', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
-        if (!res.ok) {
-          throw new Error("Failed to fetch current user");
-        }
-
-        const data = await res.json();
         if (data.status === "OK") {
           setUser(data.user);
         } else {
@@ -52,43 +46,102 @@ export function AuthProvider({ children }) {
   }, [token]);
 
   async function login(email, password) {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const data = await api.post('/auth/login', { email, password });
 
-    const data = await res.json();
+      // Check for success (backend sends status: 'OK' or success: true)
+      if (data.status !== "OK" && data.success !== true) {
+        const error = new Error(data.message || data.error || "Login failed");
+        error.code = data.code;
+        error.backendCode = data.code;
+        error.backendMessage = data.message || data.error;
+        throw error;
+      }
 
-    if (!res.ok || data.status !== "OK") {
-      throw new Error(data.message || "Login failed");
+      // Store tokens from response or cookies
+      if (data.access) {
+        setToken(data.access);
+        window.localStorage.setItem("ogc_token", data.access);
+      }
+
+      // Fetch user info if available
+      if (data.user) {
+        setUser(data.user);
+      } else if (data.access) {
+        // If no user in response, fetch it
+        try {
+          const meData = await api.get('/auth/me', {
+            headers: {
+              Authorization: `Bearer ${data.access}`,
+            },
+          });
+          if (meData.status === "OK") {
+            setUser(meData.user);
+          }
+        } catch (err) {
+          console.error("Failed to fetch user after login:", err);
+        }
+      }
+
+      return data.user || user;
+    } catch (error) {
+      // Re-throw with backend message if available
+      if (error.backendMessage || error.backendCode) {
+        throw error;
+      }
+      // If error from apiClient doesn't have backendMessage, preserve what we have
+      throw error;
     }
-
-    setUser(data.user);
-    setToken(data.token);
-    window.localStorage.setItem("ogc_token", data.token);
-
-    return data.user;
   }
 
-  async function register(email, password, fullName) {
-    const res = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, fullName }),
-    });
+  async function register(email, password, fullName, termsAccepted) {
+    try {
+      const data = await api.post('/auth/register', { email, password, fullName, termsAccepted });
 
-    const data = await res.json();
+      // Check for success (backend sends status: 'OK' or success: true)
+      if (data.status !== "OK" && data.success !== true) {
+        const error = new Error(data.message || data.error || "Registration failed");
+        error.code = data.code;
+        error.backendCode = data.code;
+        error.backendMessage = data.message || data.error;
+        throw error;
+      }
 
-    if (!res.ok || data.status !== "OK") {
-      throw new Error(data.message || "Registration failed");
+      // Registration successful but user is NOT logged in (requires activation)
+      // Do not set user or token
+      return { success: true, requiresActivation: true, message: data.message };
+    } catch (error) {
+      // Re-throw with backend message if available
+      if (error.backendMessage || error.backendCode) {
+        throw error;
+      }
+      // If error from apiClient doesn't have backendMessage, preserve what we have
+      throw error;
     }
+  }
 
-    setUser(data.user);
-    setToken(data.token);
-    window.localStorage.setItem("ogc_token", data.token);
+  async function resendActivation(email) {
+    try {
+      const data = await api.post('/auth/resend-activation', { email });
 
-    return data.user;
+      // Check for success (backend sends status: 'OK' or success: true)
+      if (data.status !== "OK" && data.success !== true) {
+        const error = new Error(data.message || data.error || "Failed to resend activation email");
+        error.code = data.code;
+        error.backendCode = data.code;
+        error.backendMessage = data.message || data.error;
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      // Re-throw with backend message if available
+      if (error.backendMessage || error.backendCode) {
+        throw error;
+      }
+      // If error from apiClient doesn't have backendMessage, preserve what we have
+      throw error;
+    }
   }
 
   function logout() {
@@ -105,6 +158,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    resendActivation,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

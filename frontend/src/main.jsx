@@ -7,6 +7,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import Layout from './components/layout/Layout.jsx';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
+import ActivationPage from './pages/ActivationPage';
 import DocsPage from './pages/DocsPage';
 import DevDesignPage from './pages/DevDesignPage';
 import LoginPage from './pages/LoginPage';
@@ -31,6 +32,7 @@ const router = createBrowserRouter([
       // Public routes - accessible to everyone
       { path: '/', element: <LandingPage /> },
       { path: '/auth', element: <AuthPage /> },
+      { path: '/auth/activate', element: <ActivationPage /> },
       { path: '/docs', element: <DocsPage /> },
       { path: '/dev-design', element: <DevDesignPage /> },
       { path: '/download', element: <DownloadPage /> },

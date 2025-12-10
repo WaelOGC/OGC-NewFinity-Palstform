@@ -15,7 +15,20 @@ const app = express();
 
 // Core middleware
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') || '*', credentials: true }));
+
+// CORS configuration - explicitly allow frontend origin in development
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN 
+    ? process.env.CORS_ORIGIN.split(',')
+    : process.env.NODE_ENV === 'production'
+      ? false // In production, CORS_ORIGIN must be set
+      : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'], // Dev defaults
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
@@ -23,6 +36,16 @@ app.use(rateLimiter);
 
 // Routes
 app.use('/api/v1', routes);
+
+// Catch-all for unmatched API routes - return JSON instead of HTML
+app.use('/api', (req, res, next) => {
+  res.status(404).json({
+    status: 'ERROR',
+    success: false,
+    code: 'NOT_FOUND',
+    message: `API route not found: ${req.method} ${req.originalUrl}`,
+  });
+});
 
 // --- Platform status & health endpoints ---
 // Global health endpoint (before API routes)

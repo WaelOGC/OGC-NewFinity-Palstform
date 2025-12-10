@@ -1,23 +1,28 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
+import "./AuthForm.css";
 
 function LoginForm() {
-  const { login, loading, isAuthenticated, user, logout } = useAuth();
+  const { login, loading, isAuthenticated, user, logout, resendActivation } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [showResend, setShowResend] = useState(false);
 
   if (isAuthenticated) {
     return (
-      <div className="mt-4 p-4 rounded-xl border border-emerald-500/50 bg-emerald-900/20 text-sm text-emerald-100 max-w-md">
-        <div className="font-semibold mb-1">Signed in</div>
-        <div>Email: {user?.email}</div>
-        {user?.fullName && <div>Name: {user.fullName}</div>}
+      <div className="auth-form-authenticated">
+        <div className="auth-form-authenticated-title">Signed in</div>
+        <div className="auth-form-authenticated-info">Email: {user?.email}</div>
+        {user?.fullName && (
+          <div className="auth-form-authenticated-info">Name: {user.fullName}</div>
+        )}
         <button
           type="button"
-          className="mt-3 inline-flex items-center rounded-md border border-emerald-400 px-3 py-1 text-xs font-medium hover:bg-emerald-500/20"
+          className="auth-form-logout-btn"
           onClick={logout}
         >
           Log out
@@ -30,69 +35,120 @@ function LoginForm() {
     e.preventDefault();
     setSubmitting(true);
     setStatus(null);
+    setShowResend(false);
 
     try {
       await login(email, password);
       setStatus({ type: "success", message: "Login successful" });
     } catch (err) {
       console.error("Login error:", err);
+      const isNotVerified = err.code === 'ACCOUNT_NOT_VERIFIED' || err.backendCode === 'ACCOUNT_NOT_VERIFIED';
+      // Use backendMessage if available, otherwise fall back to message
+      const errorMessage = err.backendMessage || err.message || "Login failed";
       setStatus({
         type: "error",
-        message: err.message || "Login failed",
+        message: errorMessage,
+        code: err.backendCode || err.code,
       });
+      if (isNotVerified) {
+        setShowResend(true);
+      }
     } finally {
       setSubmitting(false);
     }
   }
 
-  return (
-    <form
-      onSubmit={handleSubmit}
-      className="mt-4 max-w-md rounded-xl border border-slate-600/60 bg-slate-900/40 p-4 text-sm text-slate-100"
-    >
-      <div className="font-semibold mb-2">Sign in to OGC NewFinity</div>
+  async function handleResendActivation() {
+    if (!email) {
+      setStatus({ type: "error", message: "Please enter your email address first" });
+      return;
+    }
 
-      <label className="block mb-2">
-        <span className="block mb-1 text-xs uppercase tracking-wide text-slate-400">
+    setResending(true);
+    setStatus(null);
+    try {
+      await resendActivation(email);
+      setStatus({ 
+        type: "success", 
+        message: "If an account exists for this email, a new activation link has been sent." 
+      });
+      setShowResend(false);
+    } catch (err) {
+      // Use backendMessage if available, otherwise fall back to message
+      const errorMessage = err.backendMessage || err.message || "Failed to resend activation email";
+      setStatus({ type: "error", message: errorMessage });
+    } finally {
+      setResending(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="auth-form">
+      <div className="auth-form-title">Sign in to OGC</div>
+
+      <div className="auth-form-field">
+        <label htmlFor="login-email" className="auth-form-label">
           Email
-        </span>
+        </label>
         <input
+          id="login-email"
           type="email"
-          className="w-full rounded-md border border-slate-600 bg-slate-950/70 px-2 py-1 text-sm outline-none focus:border-cyan-400"
+          className="auth-form-input"
+          placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          aria-required="true"
         />
-      </label>
+      </div>
 
-      <label className="block mb-3">
-        <span className="block mb-1 text-xs uppercase tracking-wide text-slate-400">
+      <div className="auth-form-field">
+        <label htmlFor="login-password" className="auth-form-label">
           Password
-        </span>
+        </label>
         <input
+          id="login-password"
           type="password"
-          className="w-full rounded-md border border-slate-600 bg-slate-950/70 px-2 py-1 text-sm outline-none focus:border-cyan-400"
+          className="auth-form-input"
+          placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          aria-required="true"
         />
-      </label>
+      </div>
 
       <button
         type="submit"
         disabled={submitting || loading}
-        className="inline-flex items-center rounded-md bg-cyan-500 px-3 py-1 text-xs font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-60"
+        className="auth-form-submit-btn"
+        aria-label="Sign in to OGC NewFinity"
       >
-        {submitting || loading ? "Signing in..." : "Sign in"}
+        {submitting || loading ? "Signing in..." : "Sign in to OGC"}
       </button>
 
       {status && (
         <div
-          className={`mt-2 text-xs ${
-            status.type === "success" ? "text-emerald-300" : "text-red-300"
-          }`}
+          className={`auth-form-status auth-form-status--${status.type}`}
+          role="alert"
+          aria-live="polite"
         >
           {status.message}
+          {showResend && status.type === "error" && (
+            <div className="auth-form-resend">
+              <p className="auth-form-resend-text">
+                Your account is not activated yet. Check your email for the activation link, or request a new one.
+              </p>
+              <button
+                type="button"
+                onClick={handleResendActivation}
+                disabled={resending}
+                className="auth-form-resend-btn"
+              >
+                {resending ? "Sending..." : "Resend activation email"}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </form>

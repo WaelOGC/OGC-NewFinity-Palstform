@@ -1,6 +1,12 @@
 export function errorHandler(err, req, res, next) {
+  // Ensure we always return JSON, never HTML
   if (err?.name === 'ZodError') {
-    return res.status(400).json({ error: 'Invalid request', details: err.errors });
+    return res.status(400).json({ 
+      status: 'ERROR',
+      message: 'Invalid request data',
+      code: 'VALIDATION_ERROR',
+      details: err.errors 
+    });
   }
   
   // Log the full error for debugging (always log in development)
@@ -18,9 +24,12 @@ export function errorHandler(err, req, res, next) {
   // In development, include error message; in production, use generic message
   const message = isDev ? err.message : 'Internal server error';
   
+  // Always return JSON with consistent format
   res.status(statusCode).json({ 
-    error: message,
-    ...(isDev && { details: err.message, code: err.code })
+    status: 'ERROR',
+    message: message,
+    code: err.code || 'INTERNAL_ERROR',
+    ...(isDev && { details: err.message })
   });
 }
 
