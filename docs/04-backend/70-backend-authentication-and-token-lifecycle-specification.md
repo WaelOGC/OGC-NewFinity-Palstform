@@ -678,7 +678,90 @@ All logs feed into:
 
 
 
-# 19. Conclusion
+# 19. Social Auth Implementation
+
+
+
+## 19.1 Overview
+
+The OGC NewFinity platform supports multiple OAuth providers for social login and registration. This section documents the implementation status and requirements for social authentication providers.
+
+## 19.2 Supported Providers
+
+### Active & Validated
+
+- **Google OAuth** — Fully implemented and validated
+- **LinkedIn OAuth** — Fully implemented and validated
+
+### Pending Validation
+
+The following providers are implemented in the backend but require final validation before production use:
+
+- **Discord OAuth**
+- **X (Twitter) OAuth**
+- **GitHub OAuth**
+
+## 19.3 ⚠️ Pending OAuth Integration Confirmation — Discord, X (Twitter), GitHub
+
+The OAuth strategies for Discord, X (Twitter), and GitHub are implemented in the backend but not fully validated. Current status:
+
+### 🔍 Key Issues Still Pending
+
+- Strategy registration requires final verification
+- Environment variables must be confirmed for each provider
+- Redirect URIs must be tested end-to-end
+- Callback responses are failing due to unverified tokens or incomplete configurations
+- Integration tests for all three providers have not yet been executed
+
+### 🧩 Impact
+
+- Social login & registration via Discord, X, and GitHub are currently disabled
+- These providers should not be exposed to production or demo environments
+- The onboarding flow must continue to rely on email/password + Google + LinkedIn until resolved
+
+### 📝 Required Actions (Assigned to Backend Team)
+
+- Validate all provider-specific environment variables
+- Re-run OAuth flow testing in local and staging environments
+- Confirm Passports strategies register without warnings
+- Test callback signatures and token validation
+- Enable providers only after full green-light confirmation
+
+### 📌 Deadline
+
+No strict deadline, but must be completed before Phase 2 Account Expansion begins.
+
+## 19.4 Implementation Details
+
+### OAuth Flow
+
+1. User initiates login via provider button
+2. Redirect to provider OAuth consent screen
+3. User authorizes application
+4. Provider redirects to callback endpoint with authorization code
+5. Backend exchanges code for access token
+6. Backend retrieves user profile from provider
+7. Backend creates or updates user account
+8. Backend generates session tokens (access + refresh)
+9. User redirected to frontend with success status
+
+### Endpoints
+
+All social auth endpoints follow the pattern:
+
+- `GET /api/v1/auth/{provider}` — Initiates OAuth flow
+- `GET /api/v1/auth/{provider}/callback` — Handles OAuth callback
+
+### Security Considerations
+
+- All OAuth callbacks must validate state parameters
+- Provider tokens must be verified before user creation
+- User email addresses must be verified when available
+- Failed OAuth attempts must be logged for security monitoring
+
+---
+
+# 20. Conclusion
 
 
 

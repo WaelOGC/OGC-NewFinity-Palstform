@@ -36,6 +36,25 @@
   gap: 16px;
 }
 
+.ogc-admin-console-btn {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 0.375rem;
+  background-color: rgba(0, 255, 198, 0.2);
+  border: 1px solid rgba(0, 255, 198, 0.5);
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(0, 255, 198, 0.9);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ogc-admin-console-btn:hover {
+  background-color: rgba(0, 255, 198, 0.3);
+  border-color: rgba(0, 255, 198, 0.7);
+}
+
 .ogc-logout-btn {
   display: inline-flex;
   align-items: center;
@@ -52,6 +71,60 @@
 
 .ogc-logout-btn:hover {
   background-color: #f87171;
+}
+
+/* Phase 5: Role badges */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.role-badge-founder {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #1f2937;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+}
+
+.role-badge-core-team {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.role-badge-admin {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.role-badge-moderator {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+}
+
+.role-badge-creator {
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.3);
+}
+
+.role-badge-suspended {
+  background: #6b7280;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+}
+
+.role-badge-banned {
+  background: #991b1b;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(153, 27, 27, 0.3);
 }
 
 .ogc-dashboard-body {

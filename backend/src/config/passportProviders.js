@@ -64,8 +64,9 @@ async function findOrCreateSocialUser({ provider, providerId, email, name, avata
       const existingUser = rows[0];
       
       // Update user with provider ID and authProvider if not set
+      // Phase 5: Ensure role is set if it's NULL (for users created before Phase 5 migration)
       await pool.query(
-        `UPDATE User SET ${providerColumn} = ?, authProvider = COALESCE(authProvider, ?), avatarUrl = COALESCE(avatarUrl, ?) WHERE id = ?`,
+        `UPDATE User SET ${providerColumn} = ?, authProvider = COALESCE(authProvider, ?), avatarUrl = COALESCE(avatarUrl, ?), role = COALESCE(role, 'STANDARD_USER') WHERE id = ?`,
         [providerId, provider, avatarUrl || existingUser.avatarUrl, existingUser.id]
       );
 
@@ -83,9 +84,10 @@ async function findOrCreateSocialUser({ provider, providerId, email, name, avata
   // Generate a placeholder email if not provided (some providers don't provide email)
   const userEmail = email || `${provider}_${providerId}@social.local`;
   
+  // Phase 5: Explicitly set role to STANDARD_USER for new social users
   const [result] = await pool.query(
-    `INSERT INTO User (email, password, fullName, status, authProvider, ${providerColumn}, avatarUrl, termsAccepted, termsAcceptedAt, termsVersion, termsSource) 
-     VALUES (?, NULL, ?, 'active', ?, ?, ?, 1, ?, ?, ?)`,
+    `INSERT INTO User (email, password, fullName, status, authProvider, ${providerColumn}, avatarUrl, termsAccepted, termsAcceptedAt, termsVersion, termsSource, role) 
+     VALUES (?, NULL, ?, 'active', ?, ?, ?, 1, ?, ?, ?, 'STANDARD_USER')`,
     [userEmail, name || null, provider, providerId, avatarUrl || null, now, termsVersion, provider]
   );
 

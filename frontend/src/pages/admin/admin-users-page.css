@@ -1,0 +1,230 @@
+.admin-users-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.admin-users-header {
+  margin-bottom: 2rem;
+}
+
+.admin-users-header h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 0.5rem 0;
+}
+
+.admin-users-subtitle {
+  color: #666;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.admin-users-filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.admin-users-search {
+  flex: 1;
+  min-width: 250px;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.admin-users-filter {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  background: white;
+  cursor: pointer;
+}
+
+.admin-users-loading,
+.admin-users-error,
+.admin-users-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.admin-users-error {
+  color: #d32f2f;
+  background: #ffebee;
+  border-color: #ffcdd2;
+}
+
+.admin-users-table-container {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.admin-users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-users-table thead {
+  background: #f5f5f5;
+}
+
+.admin-users-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.admin-users-table-row {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.admin-users-table-row:hover {
+  background: #f9f9f9;
+}
+
+.admin-users-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.admin-users-name {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-users-name strong {
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.admin-users-email {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.admin-users-username {
+  color: #999;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.role-badge-founder {
+  background: #ffd700;
+  color: #333;
+}
+
+.role-badge-core-team {
+  background: #4caf50;
+  color: white;
+}
+
+.role-badge-admin {
+  background: #2196f3;
+  color: white;
+}
+
+.role-badge-moderator {
+  background: #ff9800;
+  color: white;
+}
+
+.role-badge-creator {
+  background: #9c27b0;
+  color: white;
+}
+
+.role-badge-suspended {
+  background: #ff9800;
+  color: white;
+}
+
+.role-badge-banned {
+  background: #f44336;
+  color: white;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge-active {
+  background: #4caf50;
+  color: white;
+}
+
+.status-badge-suspended {
+  background: #ff9800;
+  color: white;
+}
+
+.status-badge-banned {
+  background: #f44336;
+  color: white;
+}
+
+.admin-users-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.admin-users-pagination-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.admin-users-pagination-btn:hover:not(:disabled) {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+.admin-users-pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-users-pagination-info {
+  color: #666;
+  font-size: 0.9rem;
+}

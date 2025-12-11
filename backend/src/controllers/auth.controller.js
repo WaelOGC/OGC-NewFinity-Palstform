@@ -5,6 +5,8 @@ import pool from '../db.js';
 import { createActivationToken, getTermsVersion } from '../services/activationService.js';
 import { sendActivationEmail, sendPasswordResetEmail } from '../services/emailService.js';
 import { createAuthSessionForUser } from '../utils/authSession.js';
+import { getTwoFactorStatus, verifyTwoFactorCode } from '../services/userService.js';
+import { recordUserActivity } from '../services/userService.js';
 
 // Note: JWT configuration and session creation logic moved to utils/authSession.js
 // This keeps the code DRY and allows both email/password and social login to share the same session logic
@@ -140,6 +142,14 @@ export async function login({ email, password }, res) {
         error.code = dbError.code;
         throw error;
       }
+      // Handle missing column errors (Phase 5 migration not run)
+      if (dbError.code === 'ER_BAD_FIELD_ERROR' || (dbError.message && dbError.message.includes('Unknown column'))) {
+        const error = new Error('Database schema error. Please ensure the Phase 5 migration has been run.');
+        error.statusCode = 500;
+        error.code = 'DATABASE_SCHEMA_ERROR';
+        error.originalError = dbError;
+        throw error;
+      }
       throw dbError;
     }
     const user = rows[0];
@@ -173,6 +183,24 @@ export async function login({ email, password }, res) {
       throw error;
     }
 
+    // Phase 3: Check if 2FA is enabled
+    const twoFactorStatus = await getTwoFactorStatus(user.id);
+    
+    if (twoFactorStatus.enabled) {
+      // Generate a short-lived challenge token (5 minutes)
+      const challengeToken = jwt.sign(
+        { userId: user.id, type: '2fa_challenge' },
+        process.env.JWT_ACCESS_SECRET,
+        { expiresIn: '5m' }
+      );
+      
+      // Return challenge token instead of full login
+      return {
+        twoFactorRequired: true,
+        challengeToken
+      };
+    }
+
     // Use shared session creation helper (same logic for email/password and social login)
     return await createAuthSessionForUser(res, user);
   } catch (error) {
@@ -182,8 +210,16 @@ export async function login({ email, password }, res) {
     }
     // Wrap database errors
     if (error.code && error.code.startsWith('ER_')) {
+      // If it's a schema error (missing column), provide helpful message
+      if (error.code === 'ER_BAD_FIELD_ERROR' || (error.message && error.message.includes('Unknown column'))) {
+        const dbError = new Error('Database schema error. Please ensure the Phase 5 migration has been run.');
+        dbError.statusCode = 500;
+        dbError.code = 'DATABASE_SCHEMA_ERROR';
+        throw dbError;
+      }
       const dbError = new Error(`Database error: ${error.message}`);
       dbError.statusCode = 500;
+      dbError.code = error.code;
       throw dbError;
     }
     throw error;
@@ -568,6 +604,141 @@ export async function resetPassword({ token, password, confirmPassword }) {
       dbError.statusCode = 500;
       dbError.code = error.code;
       throw dbError;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Verify 2FA code during login and complete authentication
+ * @param {Object} req - Express request with challengeToken and token
+ * @param {Object} res - Express response
+ */
+export async function verifyTwoFactorLogin(req, res) {
+  try {
+    const { challengeToken, token } = req.body;
+
+    if (!challengeToken || !token) {
+      const error = new Error('Challenge token and 2FA code are required');
+      error.statusCode = 400;
+      error.code = 'MISSING_FIELDS';
+      throw error;
+    }
+
+    if (!/^\d{6}$/.test(token)) {
+      const error = new Error('Invalid token format. Please enter a 6-digit code.');
+      error.statusCode = 400;
+      error.code = 'INVALID_TOKEN_FORMAT';
+      throw error;
+    }
+
+    // Verify and decode challenge token
+    let decoded;
+    try {
+      decoded = jwt.verify(challengeToken, process.env.JWT_ACCESS_SECRET);
+    } catch (jwtError) {
+      const error = new Error('Invalid or expired challenge token');
+      error.statusCode = 401;
+      error.code = 'INVALID_CHALLENGE_TOKEN';
+      throw error;
+    }
+
+    if (decoded.type !== '2fa_challenge' || !decoded.userId) {
+      const error = new Error('Invalid challenge token');
+      error.statusCode = 401;
+      error.code = 'INVALID_CHALLENGE_TOKEN';
+      throw error;
+    }
+
+    const userId = decoded.userId;
+
+    // Verify the TOTP code
+    try {
+      await verifyTwoFactorCode({ userId, token });
+    } catch (verifyError) {
+      // Record failed 2FA attempt
+      const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+      const userAgent = req.headers['user-agent'];
+      try {
+        await recordUserActivity({
+          userId,
+          type: 'TWO_FACTOR_FAILED',
+          ipAddress,
+          userAgent,
+          metadata: {}
+        });
+      } catch (activityError) {
+        console.error('Failed to record 2FA failure activity:', activityError);
+      }
+
+      const error = new Error('Invalid 2FA code. Please try again.');
+      error.statusCode = 401;
+      error.code = 'TWO_FACTOR_INVALID_TOKEN';
+      throw error;
+    }
+
+    // Get user data for session creation
+    const [userRows] = await pool.query(
+      'SELECT id, email, fullName, role, status FROM User WHERE id = ?',
+      [userId]
+    );
+
+    if (userRows.length === 0) {
+      const error = new Error('User not found');
+      error.statusCode = 404;
+      error.code = 'USER_NOT_FOUND';
+      throw error;
+    }
+
+    const user = userRows[0];
+
+    // Check account status
+    if (user.status === 'disabled') {
+      const error = new Error('Account is disabled');
+      error.statusCode = 403;
+      error.code = 'ACCOUNT_DISABLED';
+      throw error;
+    }
+
+    if (user.status === 'pending_verification') {
+      const error = new Error('Account not activated');
+      error.statusCode = 403;
+      error.code = 'ACCOUNT_NOT_VERIFIED';
+      throw error;
+    }
+
+    // Create auth session
+    const sessionResult = await createAuthSessionForUser(res, user);
+
+    // Record successful 2FA login
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    try {
+      await recordUserActivity({
+        userId,
+        type: 'LOGIN_SUCCESS_2FA',
+        ipAddress,
+        userAgent,
+        metadata: { loginMethod: 'email_password_2fa' }
+      });
+    } catch (activityError) {
+      console.error('Failed to record 2FA login activity:', activityError);
+    }
+
+    return {
+      access: sessionResult.access,
+      refresh: sessionResult.refresh,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role || 'user',
+        status: user.status
+      }
+    };
+  } catch (error) {
+    if (error.statusCode) {
+      throw error;
     }
     throw error;
   }

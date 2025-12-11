@@ -11,6 +11,7 @@ import { rateLimiter } from './middleware/rateLimit.js';
 import { errorHandler } from './middleware/error.js';
 import routes from './routes/index.js';
 import { initEmailService } from './services/emailService.js';
+import { ensureDefaultAdmin } from './utils/ensureDefaultAdmin.js';
 
 // Import Passport providers configuration (registers all OAuth strategies)
 import './config/passportProviders.js';
@@ -109,6 +110,9 @@ const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '127.0
 (async () => {
   try {
     await initEmailService();
+    
+    // Dev-only: Ensure default admin user exists (runs only in non-production)
+    await ensureDefaultAdmin();
     
     app.listen(PORT, HOST, () => {
       console.log(`OGC NewFinity backend listening on ${HOST}:${PORT}`);

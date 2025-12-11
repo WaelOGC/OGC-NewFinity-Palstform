@@ -32,6 +32,30 @@ const ALLOWED_ROUTES = {
   'POST /api/v1/auth/forgot-password': true,
   'POST /api/v1/auth/reset-password/validate': true,
   'POST /api/v1/auth/reset-password': true,
+  // Account System Expansion (Phase 1) - User Profile Routes
+  'GET /api/v1/user/profile': true,
+  'PUT /api/v1/user/profile': true,
+  'PUT /api/v1/user/change-password': true,
+  // Account System Expansion (Phase 2) - Security Routes
+  'GET /api/v1/user/security/activity': true,
+  'GET /api/v1/user/security/devices': true,
+  // DELETE /api/v1/user/security/devices/:deviceId is handled by pattern matching
+  'GET /api/v1/user/security/2fa/status': true,
+  'POST /api/v1/user/security/2fa/setup': true,
+  'POST /api/v1/user/security/2fa/disable': true,
+  // Phase 3: 2FA verification for login flow
+  'POST /api/v1/auth/2fa/verify': true,
+  // Phase 5: Role, permissions, and feature flags
+  'GET /api/v1/user/role': true,
+  'GET /api/v1/user/features': true,
+  // Phase 6: Admin Console routes
+  'GET /api/v1/admin/users': true,
+  'GET /api/v1/admin/users/:userId': true,
+  'PUT /api/v1/admin/users/:userId/role': true,
+  'PUT /api/v1/admin/users/:userId/status': true,
+  'PUT /api/v1/admin/users/:userId/feature-flags': true,
+  'GET /api/v1/admin/users/:userId/activity': true,
+  'GET /api/v1/admin/users/:userId/devices': true,
 };
 
 /**
@@ -109,13 +133,33 @@ export async function apiRequest(endpoint, options = {}) {
   
   // Check if route is in whitelist
   const routeKey = `${method} ${url}`;
-  if (!ALLOWED_ROUTES[routeKey]) {
-    const error = new Error(`API route not found: ${method} ${url}`);
-    error.statusCode = 404;
-    error.status = 404;
-    error.backendMessage = `API route not found: ${method} ${url}`;
-    error.backendCode = 'NOT_FOUND';
-    throw error;
+  
+  // Check exact match first
+  if (ALLOWED_ROUTES[routeKey]) {
+    // Route is allowed
+  } else {
+    // Check for dynamic routes (e.g., DELETE /api/v1/user/security/devices/:deviceId)
+    // Also check for admin routes with userId parameter
+    const isDynamicRoute = Object.keys(ALLOWED_ROUTES).some(allowedRoute => {
+      // For DELETE routes with deviceId, check if it matches the pattern
+      if (method === 'DELETE' && url.includes('/user/security/devices/')) {
+        return allowedRoute.includes('/user/security/devices');
+      }
+      // For admin routes with userId, check if it matches the pattern
+      if (url.includes('/admin/users/') && !url.endsWith('/admin/users')) {
+        return allowedRoute.includes('/admin/users/');
+      }
+      return false;
+    });
+    
+    if (!isDynamicRoute) {
+      const error = new Error(`API route not found: ${method} ${url}`);
+      error.statusCode = 404;
+      error.status = 404;
+      error.backendMessage = `API route not found: ${method} ${url}`;
+      error.backendCode = 'NOT_FOUND';
+      throw error;
+    }
   }
   
   // Log the final URL in development

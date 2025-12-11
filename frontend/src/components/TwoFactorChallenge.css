@@ -1,0 +1,56 @@
+/* Two-Factor Authentication Challenge Screen - Plasma Theme */
+
+/* 2FA Challenge Container - reuses auth-form classes, minimal additions */
+.auth-form {
+  /* Container already styled in AuthForm.css */
+}
+
+/* 2FA Subtitle/Description */
+.auth-form p {
+  /* Inline styles handle most of this, but ensure consistency */
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .auth-form p {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="light"] .auth-form p {
+  color: rgba(17, 24, 39, 0.8);
+}
+
+/* 2FA Code Input - Enhanced styling for 6-digit code */
+#two-factor-code {
+  /* Inline styles handle text-align, fontSize, letterSpacing, fontFamily */
+  /* Additional focus enhancement for 2FA code input */
+}
+
+[data-theme="dark"] #two-factor-code:focus {
+  box-shadow: 0 0 0 3px rgba(0, 255, 198, 0.15);
+  border-color: rgba(0, 255, 198, 0.6);
+}
+
+[data-theme="light"] #two-factor-code:focus {
+  box-shadow: 0 0 0 3px rgba(60, 120, 220, 0.15);
+  border-color: rgba(60, 120, 220, 0.6);
+}
+
+/* Back to login link - already styled via auth-form-link, but ensure proper spacing */
+.auth-form-link {
+  /* Already styled in AuthForm.css */
+  display: block;
+  text-align: center;
+}
+
+/* Responsive adjustments for 2FA screen */
+@media (max-width: 640px) {
+  .auth-form p {
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  #two-factor-code {
+    font-size: 1.3em !important;
+    letter-spacing: 0.2em !important;
+  }
+}

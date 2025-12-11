@@ -2,8 +2,11 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const ProtectedRoute = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
+
+  // Temporary debug log
+  console.log('[ProtectedRoute] path:', location.pathname, 'isAuthenticated:', isAuthenticated, 'user:', user);
 
   if (loading) {
     return (

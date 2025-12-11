@@ -28,7 +28,7 @@ export function requireAuth(req, res, next) {
     const userId = decoded.userId || decoded.sub;
     req.user = { 
       id: userId, 
-      role: decoded.role || 'user' 
+      role: decoded.role || 'STANDARD_USER' // Phase 5: Default to STANDARD_USER
     };
 
     return next();

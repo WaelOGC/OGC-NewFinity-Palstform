@@ -24,8 +24,11 @@ import DashboardLayout from './layouts/DashboardLayout.jsx';
 import Overview from './pages/dashboard/Overview.jsx';
 import Profile from './pages/dashboard/Profile.jsx';
 import Security from './pages/dashboard/Security.jsx';
+import AdminLayout from './components/admin/AdminLayout.jsx';
+import AdminUsersPage from './pages/admin/AdminUsersPage.jsx';
 import InternalRouteGuard from './components/InternalRouteGuard.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import AdminRouteGuard from './components/AdminRouteGuard.jsx';
 import BlogSlugRedirect from './components/BlogSlugRedirect.jsx';
 import './index.css';
 
@@ -83,6 +86,23 @@ const router = createBrowserRouter([
           { path: 'overview', element: <Overview /> },
           { path: 'profile', element: <Profile /> },
           { path: 'security', element: <Security /> },
+        ],
+      },
+    ],
+  },
+  
+  // Admin Console routes - requires admin role (Phase 6)
+  // Note: AdminRouteGuard handles both authentication AND authorization
+  // It redirects unauthenticated users to /auth and non-admin users to /dashboard
+  {
+    element: <AdminRouteGuard />,
+    children: [
+      {
+        path: '/admin',
+        element: <AdminLayout />,
+        children: [
+          { index: true, element: <Navigate to="/admin/users" replace /> },
+          { path: 'users', element: <AdminUsersPage /> },
         ],
       },
     ],
