@@ -20,7 +20,10 @@ import ContactPage from './pages/ContactPage';
 import CommunityPage from './pages/CommunityPage';
 import BlogPage from './pages/BlogPage';
 import ComingSoonPage from './pages/ComingSoonPage';
-import DashboardPage from './pages/DashboardPage';
+import DashboardLayout from './layouts/DashboardLayout.jsx';
+import Overview from './pages/dashboard/Overview.jsx';
+import Profile from './pages/dashboard/Profile.jsx';
+import Security from './pages/dashboard/Security.jsx';
 import InternalRouteGuard from './components/InternalRouteGuard.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import BlogSlugRedirect from './components/BlogSlugRedirect.jsx';
@@ -45,14 +48,6 @@ const router = createBrowserRouter([
       { path: '/community', element: <CommunityPage /> },
       { path: '/coming-soon', element: <ComingSoonPage /> },
       
-      // Auth-only routes - require authentication
-      {
-        element: <ProtectedRoute />,
-        children: [
-          { path: '/dashboard', element: <DashboardPage /> },
-        ],
-      },
-      
       // Internal/system-only routes - require ?key=DEV1234
       {
         element: <InternalRouteGuard />,
@@ -74,6 +69,23 @@ const router = createBrowserRouter([
         ],
       },
     ]
+  },
+  
+  // Dashboard routes - separate layout with DashboardLayout (outside main Layout)
+  {
+    element: <ProtectedRoute />,
+    children: [
+      {
+        path: '/dashboard',
+        element: <DashboardLayout />,
+        children: [
+          { index: true, element: <Overview /> },
+          { path: 'overview', element: <Overview /> },
+          { path: 'profile', element: <Profile /> },
+          { path: 'security', element: <Security /> },
+        ],
+      },
+    ],
   },
   
   // Legacy routes - redirect to internal (for backward compatibility during transition)
