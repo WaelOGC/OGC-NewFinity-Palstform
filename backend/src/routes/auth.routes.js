@@ -70,7 +70,7 @@ router.post('/register', async (req, res, next) => {
 router.post('/login', async (req, res, next) => {
   try {
     const body = loginSchema.parse(req.body);
-    const result = await login(body, res);
+    const result = await login(body, res, req);
     
     // Phase 3: Check if 2FA is required
     if (result.twoFactorRequired) {
@@ -177,9 +177,16 @@ router.post('/login', async (req, res, next) => {
     }
     // Wrap database errors to ensure they're handled as JSON
     if (err.code && err.code.startsWith('ER_')) {
+      console.error('[AuthRoutes] Database error during login:', {
+        code: err.code,
+        message: err.message,
+        sqlState: err.sqlState,
+        sqlMessage: err.sqlMessage,
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      });
       err.statusCode = 500;
       err.code = 'DATABASE_ERROR';
-      err.message = 'Database error occurred. Please ensure the Phase 5 migration has been run.';
+      err.message = 'Database error occurred. Please try again later.';
     }
     next(err); 
   }
@@ -444,7 +451,7 @@ router.get('/google/callback',
         return res.redirect(SOCIAL_FAILURE_REDIRECT + '&provider=google&error=authentication_failed');
       }
       
-      await createAuthSessionForUser(res, user);
+      await createAuthSessionForUser(res, user, req);
       
       // Phase 2: Record login activity and register device for social login
       const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -494,7 +501,7 @@ router.get(
   async (req, res, next) => {
     try {
       const user = req.user; // set by passport verify callback
-      await createAuthSessionForUser(res, user);
+      await createAuthSessionForUser(res, user, req);
       
       // Phase 2: Record login activity and register device for social login
       const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -532,7 +539,7 @@ router.get('/twitter/callback',
   async (req, res, next) => {
     try {
       const user = req.user;
-      await createAuthSessionForUser(res, user);
+      await createAuthSessionForUser(res, user, req);
       
       // Phase 2: Record login activity and register device for social login
       const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -595,7 +602,7 @@ router.get('/linkedin/callback',
         return res.redirect(SOCIAL_FAILURE_REDIRECT + '&provider=linkedin&error=authentication_failed');
       }
       
-      await createAuthSessionForUser(res, user);
+      await createAuthSessionForUser(res, user, req);
       
       // Phase 2: Record login activity and register device for social login
       const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -641,7 +648,7 @@ router.get('/discord/callback',
   async (req, res, next) => {
     try {
       const user = req.user;
-      await createAuthSessionForUser(res, user);
+      await createAuthSessionForUser(res, user, req);
       
       // Phase 2: Record login activity and register device for social login
       const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;

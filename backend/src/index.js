@@ -12,6 +12,7 @@ import { errorHandler } from './middleware/error.js';
 import routes from './routes/index.js';
 import { initEmailService } from './services/emailService.js';
 import { ensureDefaultAdmin } from './utils/ensureDefaultAdmin.js';
+import { ensurePhase5Migration } from './utils/ensurePhase5Migration.js';
 
 // Import Passport providers configuration (registers all OAuth strategies)
 import './config/passportProviders.js';
@@ -110,6 +111,9 @@ const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '127.0
 (async () => {
   try {
     await initEmailService();
+    
+    // Dev-only: Ensure Phase 5 migration is applied (runs only in non-production)
+    await ensurePhase5Migration();
     
     // Dev-only: Ensure default admin user exists (runs only in non-production)
     await ensureDefaultAdmin();

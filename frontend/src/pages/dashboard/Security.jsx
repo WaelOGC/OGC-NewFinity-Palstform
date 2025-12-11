@@ -8,7 +8,7 @@ import "./dashboard-pages.css";
 // TODO: Expand in Phase 3 (IP risk scoring, geo checks, proper TOTP, advanced device fingerprinting)
 
 function Security() {
-  const { token } = useAuth();
+  const { user } = useAuth();
   
   // Password change state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -28,6 +28,13 @@ function Security() {
   const [devicesLoading, setDevicesLoading] = useState(true);
   const [devicesError, setDevicesError] = useState(null);
   const [revokingDevice, setRevokingDevice] = useState(null);
+
+  // Sessions state (Phase 7.1)
+  const [sessions, setSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionsError, setSessionsError] = useState(null);
+  const [revokingSession, setRevokingSession] = useState(null);
+  const [revokingAllOthers, setRevokingAllOthers] = useState(false);
 
   // 2FA state
   const [twoFactorStatus, setTwoFactorStatus] = useState({ enabled: false });
@@ -49,6 +56,11 @@ function Security() {
     fetchDevices();
   }, []);
 
+  // Fetch sessions on mount (Phase 7.1)
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
   // Fetch 2FA status on mount
   useEffect(() => {
     fetchTwoFactorStatus();
@@ -58,18 +70,20 @@ function Security() {
     try {
       setActivitiesLoading(true);
       setActivitiesError(null);
-      const response = await api.get('/user/security/activity', token ? {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      } : {});
+      // apiClient handles authentication via cookies
+      const response = await api.get('/user/security/activity');
       
       if (response.status === "OK" && response.data?.items) {
-        setActivities(response.data.items);
+        setActivities(Array.isArray(response.data.items) ? response.data.items : []);
+      } else {
+        // If no items, set empty array instead of error
+        setActivities([]);
       }
     } catch (err) {
       console.error("Failed to fetch activities:", err);
-      setActivitiesError(err.backendMessage || err.message || "Failed to load activity");
+      // Don't show error - just show empty state
+      setActivities([]);
+      setActivitiesError(null);
     } finally {
       setActivitiesLoading(false);
     }
@@ -79,20 +93,45 @@ function Security() {
     try {
       setDevicesLoading(true);
       setDevicesError(null);
-      const response = await api.get('/user/security/devices', token ? {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      } : {});
+      // apiClient handles authentication via cookies
+      const response = await api.get('/user/security/devices');
       
       if (response.status === "OK" && response.data?.devices) {
-        setDevices(response.data.devices);
+        setDevices(Array.isArray(response.data.devices) ? response.data.devices : []);
+      } else {
+        // If no devices, set empty array instead of error
+        setDevices([]);
       }
     } catch (err) {
       console.error("Failed to fetch devices:", err);
-      setDevicesError(err.backendMessage || err.message || "Failed to load devices");
+      // Don't show error - just show empty state
+      setDevices([]);
+      setDevicesError(null);
     } finally {
       setDevicesLoading(false);
+    }
+  };
+
+  const fetchSessions = async () => {
+    try {
+      setSessionsLoading(true);
+      setSessionsError(null);
+      // apiClient handles authentication via cookies
+      const response = await api.get('/user/security/sessions');
+      
+      if (response.status === "OK" && response.data?.sessions) {
+        setSessions(Array.isArray(response.data.sessions) ? response.data.sessions : []);
+      } else {
+        // If no sessions, set empty array instead of error
+        setSessions([]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch sessions:", err);
+      // Don't show error - just show empty state
+      setSessions([]);
+      setSessionsError(null);
+    } finally {
+      setSessionsLoading(false);
     }
   };
 
@@ -100,18 +139,20 @@ function Security() {
     try {
       setTwoFactorLoading(true);
       setTwoFactorError(null);
-      const response = await api.get('/user/security/2fa/status', token ? {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      } : {});
+      // apiClient handles authentication via cookies
+      const response = await api.get('/user/security/2fa/status');
       
       if (response.status === "OK" && response.data) {
         setTwoFactorStatus(response.data);
+      } else {
+        // Default to disabled if status not available
+        setTwoFactorStatus({ enabled: false });
       }
     } catch (err) {
       console.error("Failed to fetch 2FA status:", err);
-      setTwoFactorError(err.backendMessage || err.message || "Failed to load 2FA status");
+      // Default to disabled on error
+      setTwoFactorStatus({ enabled: false });
+      setTwoFactorError(null); // Don't show error, just default to disabled
     } finally {
       setTwoFactorLoading(false);
     }
@@ -134,18 +175,11 @@ function Security() {
 
     try {
       setPasswordLoading(true);
-      const response = await api.put(
-        '/user/change-password',
-        {
-          currentPassword,
-          newPassword,
-        },
-        token ? {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        } : {}
-      );
+      // apiClient handles authentication via cookies
+      const response = await api.put('/user/change-password', {
+        currentPassword,
+        newPassword,
+      });
 
       if (response.status === "OK") {
         setPasswordSuccess(true);
@@ -171,14 +205,8 @@ function Security() {
 
     try {
       setRevokingDevice(deviceId);
-      const response = await api.delete(
-        `/user/security/devices/${deviceId}`,
-        token ? {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        } : {}
-      );
+      // apiClient handles authentication via cookies
+      const response = await api.delete(`/user/security/devices/${deviceId}`);
 
       if (response.status === "OK") {
         // Refresh devices list
@@ -194,21 +222,63 @@ function Security() {
     }
   };
 
+  const handleRevokeSession = async (sessionId) => {
+    if (!confirm("Are you sure you want to log out from this device? You will need to log in again from that device.")) {
+      return;
+    }
+
+    try {
+      setRevokingSession(sessionId);
+      // apiClient handles authentication via cookies
+      const response = await api.post('/user/security/sessions/revoke', { sessionId });
+
+      if (response.status === "OK") {
+        // Refresh sessions list
+        await fetchSessions();
+        // Refresh activities
+        await fetchActivities();
+      }
+    } catch (err) {
+      console.error("Failed to revoke session:", err);
+      alert(err.backendMessage || err.message || "Failed to revoke session");
+    } finally {
+      setRevokingSession(null);
+    }
+  };
+
+  const handleRevokeAllOtherSessions = async () => {
+    if (!confirm("Are you sure you want to log out from all other devices? You will remain logged in on this device only.")) {
+      return;
+    }
+
+    try {
+      setRevokingAllOthers(true);
+      // apiClient handles authentication via cookies
+      const response = await api.post('/user/security/sessions/revoke-all-others', {});
+
+      if (response.status === "OK") {
+        // Refresh sessions list
+        await fetchSessions();
+        // Refresh activities
+        await fetchActivities();
+        alert(`Successfully logged out from ${response.data?.revokedCount || 0} other device(s).`);
+      }
+    } catch (err) {
+      console.error("Failed to revoke all other sessions:", err);
+      alert(err.backendMessage || err.message || "Failed to revoke sessions");
+    } finally {
+      setRevokingAllOthers(false);
+    }
+  };
+
   const handleTwoFactorSetup = async () => {
     try {
       setTwoFactorError(null);
       setTwoFactorMessage(null);
       setTwoFactorSetupMode('qr');
       
-      const response = await api.post(
-        '/user/security/2fa/setup',
-        { step: 'start' },
-        token ? {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        } : {}
-      );
+      // apiClient handles authentication via cookies
+      const response = await api.post('/user/security/2fa/setup', { step: 'start' });
 
       if (response.status === "OK" && response.data?.otpauthUrl) {
         setTwoFactorQrUrl(response.data.otpauthUrl);
@@ -233,15 +303,11 @@ function Security() {
       setTwoFactorVerifying(true);
       setTwoFactorError(null);
       
-      const response = await api.post(
-        '/user/security/2fa/setup',
-        { step: 'verify', token: twoFactorVerifyCode },
-        token ? {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        } : {}
-      );
+      // apiClient handles authentication via cookies
+      const response = await api.post('/user/security/2fa/setup', { 
+        step: 'verify', 
+        token: twoFactorVerifyCode 
+      });
 
       if (response.status === "OK") {
         setTwoFactorStatus({ enabled: true, method: 'totp' });
@@ -277,15 +343,8 @@ function Security() {
 
     try {
       setTwoFactorMessage(null);
-      const response = await api.post(
-        '/user/security/2fa/disable',
-        {},
-        token ? {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        } : {}
-      );
+      // apiClient handles authentication via cookies
+      const response = await api.post('/user/security/2fa/disable', {});
 
       if (response.status === "OK") {
         setTwoFactorStatus({ enabled: false });
@@ -440,12 +499,8 @@ function Security() {
         
         {activitiesLoading ? (
           <p style={{ opacity: 0.8 }}>Loading activity...</p>
-        ) : activitiesError ? (
-          <div className="ogc-form-error">
-            {activitiesError}
-          </div>
         ) : activities.length === 0 ? (
-          <p style={{ opacity: 0.8 }}>No activity yet.</p>
+          <p style={{ opacity: 0.8 }}>No activity recorded yet.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {activities.map((activity) => (
@@ -485,16 +540,101 @@ function Security() {
         )}
       </div>
 
-      {/* Devices & Sessions Section */}
+      {/* Active Sessions Section (Phase 7.1) */}
+      <div className="ogc-dashboard-card" style={{ marginTop: "24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h2 className="ogc-dashboard-card-title">Active Sessions</h2>
+          {sessions.length > 1 && (
+            <button
+              onClick={handleRevokeAllOtherSessions}
+              disabled={revokingAllOthers}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "rgba(255, 0, 0, 0.2)",
+                border: "1px solid rgba(255, 0, 0, 0.3)",
+                borderRadius: "4px",
+                color: "#fff",
+                cursor: revokingAllOthers ? "not-allowed" : "pointer",
+                opacity: revokingAllOthers ? 0.5 : 1,
+                fontSize: "0.9em",
+              }}
+            >
+              {revokingAllOthers ? "Logging out..." : "Log out from all other devices"}
+            </button>
+          )}
+        </div>
+        
+        {sessionsLoading ? (
+          <p style={{ opacity: 0.8 }}>Loading sessions...</p>
+        ) : sessions.length === 0 ? (
+          <p style={{ opacity: 0.8 }}>No active sessions.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {sessions.map((session) => (
+              <div
+                key={session.id}
+                style={{
+                  padding: "12px",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: "8px",
+                  backgroundColor: "rgba(255, 255, 255, 0.02)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                    <strong>{parseUserAgent(session.userAgent)}</strong>
+                    {session.isCurrent && (
+                      <span style={{ fontSize: "0.75em", padding: "2px 6px", backgroundColor: "rgba(0, 255, 0, 0.2)", borderRadius: "4px" }}>
+                        This device
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: "0.85em", opacity: 0.7 }}>
+                    Last seen: {formatDateTime(session.lastSeenAt)}
+                  </div>
+                  {session.ipAddress && (
+                    <div style={{ fontSize: "0.85em", opacity: 0.7 }}>
+                      IP: {session.ipAddress}
+                    </div>
+                  )}
+                  {session.createdAt && (
+                    <div style={{ fontSize: "0.85em", opacity: 0.7 }}>
+                      Created: {formatDateTime(session.createdAt)}
+                    </div>
+                  )}
+                </div>
+                {!session.isCurrent && (
+                  <button
+                    onClick={() => handleRevokeSession(session.id)}
+                    disabled={revokingSession === session.id}
+                    style={{
+                      padding: "6px 12px",
+                      backgroundColor: "rgba(255, 0, 0, 0.2)",
+                      border: "1px solid rgba(255, 0, 0, 0.3)",
+                      borderRadius: "4px",
+                      color: "#fff",
+                      cursor: revokingSession === session.id ? "not-allowed" : "pointer",
+                      opacity: revokingSession === session.id ? 0.5 : 1,
+                    }}
+                  >
+                    {revokingSession === session.id ? "Logging out..." : "Log out"}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Devices & Sessions Section (Legacy - keeping for backward compatibility) */}
       <div className="ogc-dashboard-card" style={{ marginTop: "24px" }}>
         <h2 className="ogc-dashboard-card-title">Devices & Sessions</h2>
         
         {devicesLoading ? (
           <p style={{ opacity: 0.8 }}>Loading devices...</p>
-        ) : devicesError ? (
-          <div className="ogc-form-error">
-            {devicesError}
-          </div>
         ) : devices.length === 0 ? (
           <p style={{ opacity: 0.8 }}>No devices registered yet.</p>
         ) : (

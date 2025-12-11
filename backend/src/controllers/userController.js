@@ -20,6 +20,11 @@ import {
   mergeFeatureFlags,
   getDefaultFeatureFlags,
 } from "../services/userService.js";
+import {
+  getUserSessions,
+  revokeSession,
+  revokeAllOtherSessions,
+} from "../services/sessionService.js";
 import pool from "../db.js";
 
 export async function listUsers(req, res) {
@@ -325,9 +330,10 @@ export async function getSecurityActivity(req, res) {
     const limit = parseInt(req.query.limit) || 20;
     const activities = await getUserActivityLog(userId, { limit });
     
+    // Ensure we always return an array, even if empty
     return res.json({ 
       status: "OK", 
-      data: { items: activities }
+      data: { items: Array.isArray(activities) ? activities : [] }
     });
   } catch (error) {
     console.error("getSecurityActivity error:", error);
@@ -355,9 +361,10 @@ export async function getSecurityDevices(req, res) {
 
     const devices = await getUserDevices(userId);
     
+    // Ensure we always return an array, even if empty
     return res.json({ 
       status: "OK", 
-      data: { devices }
+      data: { devices: Array.isArray(devices) ? devices : [] }
     });
   } catch (error) {
     console.error("getSecurityDevices error:", error);
@@ -608,6 +615,175 @@ export async function disableTwoFactorHandler(req, res) {
     return res.status(500).json({
       status: "ERROR",
       message: "Failed to disable 2FA",
+      error: error.message,
+    });
+  }
+}
+
+// ============================================================================
+// Phase 7.1 - Active Sessions & Device Security Controllers
+// ============================================================================
+
+/**
+ * GET /api/v1/security/sessions
+ * Get all active sessions for the current user
+ */
+export async function getSecuritySessions(req, res) {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        status: "ERROR",
+        message: "Authentication required"
+      });
+    }
+
+    // Get current token to identify current session
+    const {
+      JWT_COOKIE_ACCESS_NAME = 'ogc_access',
+    } = process.env;
+    const tokenFromCookie = req.cookies && req.cookies[JWT_COOKIE_ACCESS_NAME];
+    const authHeader = req.headers.authorization || '';
+    const tokenFromHeader = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const currentToken = tokenFromCookie || tokenFromHeader;
+
+    const sessions = await getUserSessions(userId, currentToken);
+    
+    // Ensure we always return an array, even if empty
+    return res.json({
+      status: "OK",
+      data: { sessions: Array.isArray(sessions) ? sessions : [] }
+    });
+  } catch (error) {
+    console.error("getSecuritySessions error:", error);
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Failed to fetch sessions",
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * POST /api/v1/security/sessions/revoke
+ * Revoke a specific session
+ */
+export async function revokeSecuritySession(req, res) {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        status: "ERROR",
+        message: "Authentication required"
+      });
+    }
+
+    const { sessionId } = req.body;
+    if (!sessionId) {
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Session ID is required",
+        code: "MISSING_SESSION_ID"
+      });
+    }
+
+    const revoked = await revokeSession(sessionId, userId);
+    
+    if (!revoked) {
+      return res.status(404).json({
+        status: "ERROR",
+        message: "Session not found",
+        code: "SESSION_NOT_FOUND"
+      });
+    }
+
+    // Record activity
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    try {
+      await recordUserActivity({
+        userId,
+        type: 'SESSION_REVOKED',
+        ipAddress,
+        userAgent,
+        metadata: { sessionId }
+      });
+    } catch (activityError) {
+      console.error('Failed to record session revocation activity:', activityError);
+    }
+    
+    return res.json({
+      status: "OK",
+      message: "Session revoked successfully"
+    });
+  } catch (error) {
+    console.error("revokeSecuritySession error:", error);
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Failed to revoke session",
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * POST /api/v1/security/sessions/revoke-all-others
+ * Revoke all sessions except the current one
+ */
+export async function revokeAllOtherSecuritySessions(req, res) {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        status: "ERROR",
+        message: "Authentication required"
+      });
+    }
+
+    // Get current token
+    const {
+      JWT_COOKIE_ACCESS_NAME = 'ogc_access',
+    } = process.env;
+    const tokenFromCookie = req.cookies && req.cookies[JWT_COOKIE_ACCESS_NAME];
+    const authHeader = req.headers.authorization || '';
+    const tokenFromHeader = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const currentToken = tokenFromCookie || tokenFromHeader;
+
+    if (!currentToken) {
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Current session token not found",
+        code: "MISSING_CURRENT_TOKEN"
+      });
+    }
+
+    const revokedCount = await revokeAllOtherSessions(userId, currentToken);
+
+    // Record activity
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    try {
+      await recordUserActivity({
+        userId,
+        type: 'SESSIONS_REVOKED_ALL_OTHERS',
+        ipAddress,
+        userAgent,
+        metadata: { revokedCount }
+      });
+    } catch (activityError) {
+      console.error('Failed to record sessions revocation activity:', activityError);
+    }
+    
+    return res.json({
+      status: "OK",
+      message: `Revoked ${revokedCount} session(s)`,
+      data: { revokedCount }
+    });
+  } catch (error) {
+    console.error("revokeAllOtherSecuritySessions error:", error);
+    return res.status(500).json({
+      status: "ERROR",
+      message: "Failed to revoke sessions",
       error: error.message,
     });
   }

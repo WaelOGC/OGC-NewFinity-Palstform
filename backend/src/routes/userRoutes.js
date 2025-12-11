@@ -11,6 +11,9 @@ import {
   getSecurityActivity,
   getSecurityDevices,
   revokeSecurityDevice,
+  getSecuritySessions,
+  revokeSecuritySession,
+  revokeAllOtherSecuritySessions,
   getTwoFactorStatusHandler,
   setupTwoFactorHandler,
   disableTwoFactorHandler,
@@ -115,6 +118,24 @@ router.get("/security/devices", requireAuth, getSecurityDevices);
  * Revoke a device
  */
 router.delete("/security/devices/:deviceId", requireAuth, revokeSecurityDevice);
+
+/**
+ * GET /api/v1/security/sessions
+ * Get all active sessions for the current user
+ */
+router.get("/security/sessions", requireAuth, getSecuritySessions);
+
+/**
+ * POST /api/v1/security/sessions/revoke
+ * Revoke a specific session
+ */
+router.post("/security/sessions/revoke", requireAuth, revokeSecuritySession);
+
+/**
+ * POST /api/v1/security/sessions/revoke-all-others
+ * Revoke all sessions except the current one
+ */
+router.post("/security/sessions/revoke-all-others", requireAuth, revokeAllOtherSecuritySessions);
 
 /**
  * GET /api/v1/user/security/2fa/status

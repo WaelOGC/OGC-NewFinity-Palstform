@@ -126,7 +126,7 @@ export async function register({ email, password, fullName, termsAccepted }, res
   }
 }
 
-export async function login({ email, password }, res) {
+export async function login({ email, password }, res, req = null) {
   try {
     let rows;
     try {
@@ -142,9 +142,15 @@ export async function login({ email, password }, res) {
         error.code = dbError.code;
         throw error;
       }
-      // Handle missing column errors (Phase 5 migration not run)
+      // Handle missing column errors (log detailed error for debugging)
       if (dbError.code === 'ER_BAD_FIELD_ERROR' || (dbError.message && dbError.message.includes('Unknown column'))) {
-        const error = new Error('Database schema error. Please ensure the Phase 5 migration has been run.');
+        console.error('[AuthLogin] Database schema error during login:', {
+          code: dbError.code,
+          message: dbError.message,
+          sqlState: dbError.sqlState,
+          sqlMessage: dbError.sqlMessage
+        });
+        const error = new Error('Database error occurred. Please try again later.');
         error.statusCode = 500;
         error.code = 'DATABASE_SCHEMA_ERROR';
         error.originalError = dbError;
@@ -202,7 +208,7 @@ export async function login({ email, password }, res) {
     }
 
     // Use shared session creation helper (same logic for email/password and social login)
-    return await createAuthSessionForUser(res, user);
+    return await createAuthSessionForUser(res, user, req);
   } catch (error) {
     // Re-throw with status code if already set
     if (error.statusCode) {
@@ -210,9 +216,15 @@ export async function login({ email, password }, res) {
     }
     // Wrap database errors
     if (error.code && error.code.startsWith('ER_')) {
-      // If it's a schema error (missing column), provide helpful message
+      // If it's a schema error (missing column), log detailed error
       if (error.code === 'ER_BAD_FIELD_ERROR' || (error.message && error.message.includes('Unknown column'))) {
-        const dbError = new Error('Database schema error. Please ensure the Phase 5 migration has been run.');
+        console.error('[AuthLogin] Database schema error during login:', {
+          code: error.code,
+          message: error.message,
+          sqlState: error.sqlState,
+          sqlMessage: error.sqlMessage
+        });
+        const dbError = new Error('Database error occurred. Please try again later.');
         dbError.statusCode = 500;
         dbError.code = 'DATABASE_SCHEMA_ERROR';
         throw dbError;
@@ -708,7 +720,7 @@ export async function verifyTwoFactorLogin(req, res) {
     }
 
     // Create auth session
-    const sessionResult = await createAuthSessionForUser(res, user);
+    const sessionResult = await createAuthSessionForUser(res, user, req);
 
     // Record successful 2FA login
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;

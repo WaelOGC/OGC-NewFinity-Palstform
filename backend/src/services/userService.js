@@ -240,6 +240,11 @@ export async function recordUserActivity({ userId, type, ipAddress, userAgent, m
     STATUS_CHANGED: 'Account status changed',
     FEATURE_FLAGS_UPDATED: 'Feature flags updated',
     ACCESS_DENIED_ADMIN: 'Access denied to admin console',
+    // Phase 7.1: Session management activity types
+    SESSION_REVOKED: 'Session revoked',
+    SESSIONS_REVOKED_ALL_OTHERS: 'All other sessions revoked',
+    ADMIN_SESSION_REVOKED: 'Admin revoked session',
+    ADMIN_SESSIONS_REVOKED_ALL: 'Admin revoked all sessions',
   };
 
   const description = activityDescriptions[type] || type;

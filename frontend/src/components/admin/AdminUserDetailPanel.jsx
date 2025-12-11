@@ -6,6 +6,10 @@ function AdminUserDetailPanel({ userData, onClose, onUserUpdated }) {
   const [user, setUser] = useState(userData?.user || null);
   const [activities, setActivities] = useState(userData?.recentActivity || []);
   const [devices, setDevices] = useState(userData?.devices || []);
+  const [sessions, setSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [revokingSession, setRevokingSession] = useState(null);
+  const [revokingAllSessions, setRevokingAllSessions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -23,8 +27,82 @@ function AdminUserDetailPanel({ userData, onClose, onUserUpdated }) {
       setRole(userData.user?.role || "");
       setAccountStatus(userData.user?.accountStatus || "ACTIVE");
       setFeatureFlags(userData.user?.featureFlags || {});
+      
+      // Fetch sessions when user data is available (Phase 7.1)
+      if (userData.user?.id) {
+        fetchSessions(userData.user.id);
+      }
     }
   }, [userData]);
+
+  const fetchSessions = async (userId) => {
+    try {
+      setSessionsLoading(true);
+      const response = await api.get(`/admin/users/${userId}/sessions`);
+      if (response.status === "OK" && response.data?.sessions) {
+        setSessions(response.data.sessions);
+      }
+    } catch (err) {
+      console.error("Failed to fetch sessions:", err);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  const handleRevokeSession = async (sessionId) => {
+    if (!user) return;
+    
+    if (!confirm("Are you sure you want to revoke this session? The user will be logged out from that device.")) {
+      return;
+    }
+
+    try {
+      setRevokingSession(sessionId);
+      const response = await api.post(`/admin/users/${user.id}/sessions/revoke`, { sessionId });
+      
+      if (response.status === "OK") {
+        setSuccess("Session revoked successfully");
+        await fetchSessions(user.id);
+        if (onUserUpdated) onUserUpdated();
+      } else {
+        setError("Failed to revoke session");
+      }
+    } catch (err) {
+      console.error("Error revoking session:", err);
+      setError(err.backendMessage || "Failed to revoke session");
+    } finally {
+      setRevokingSession(null);
+    }
+  };
+
+  const handleRevokeAllSessions = async () => {
+    if (!user) return;
+    
+    if (!confirm("Are you sure you want to log out this user from all devices? This will force them to log in again.")) {
+      return;
+    }
+
+    try {
+      setRevokingAllSessions(true);
+      setError(null);
+      setSuccess(null);
+      
+      const response = await api.post(`/admin/users/${user.id}/sessions/revoke-all`, {});
+      
+      if (response.status === "OK") {
+        setSuccess(`Successfully logged out user from ${response.data?.revokedCount || 0} device(s)`);
+        await fetchSessions(user.id);
+        if (onUserUpdated) onUserUpdated();
+      } else {
+        setError("Failed to revoke sessions");
+      }
+    } catch (err) {
+      console.error("Error revoking all sessions:", err);
+      setError(err.backendMessage || "Failed to revoke sessions");
+    } finally {
+      setRevokingAllSessions(false);
+    }
+  };
 
   const handleSaveRole = async () => {
     if (!user) return;
@@ -302,6 +380,91 @@ function AdminUserDetailPanel({ userData, onClose, onUserUpdated }) {
                       <div>Last seen: {formatDate(device.lastSeenAt)}</div>
                       {device.ipAddress && <div>IP: {device.ipAddress}</div>}
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Sessions (Phase 7.1) */}
+          <section className="admin-detail-section">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+              <h3>Active Sessions</h3>
+              {sessions.length > 0 && (
+                <button
+                  onClick={handleRevokeAllSessions}
+                  disabled={revokingAllSessions}
+                  style={{
+                    padding: "6px 12px",
+                    backgroundColor: "rgba(255, 0, 0, 0.2)",
+                    border: "1px solid rgba(255, 0, 0, 0.3)",
+                    borderRadius: "4px",
+                    color: "#fff",
+                    cursor: revokingAllSessions ? "not-allowed" : "pointer",
+                    opacity: revokingAllSessions ? 0.5 : 1,
+                    fontSize: "0.85em",
+                  }}
+                >
+                  {revokingAllSessions ? "Logging out..." : "Log out from all devices"}
+                </button>
+              )}
+            </div>
+            {sessionsLoading ? (
+              <p className="admin-detail-empty">Loading sessions...</p>
+            ) : sessions.length === 0 ? (
+              <p className="admin-detail-empty">No active sessions</p>
+            ) : (
+              <div className="admin-detail-devices-list">
+                {sessions.map((session) => (
+                  <div key={session.id} className="admin-detail-device-item" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ flex: 1 }}>
+                      <div className="admin-detail-device-name">
+                        {session.userAgent ? (() => {
+                          let browser = "Unknown";
+                          let os = "Unknown";
+                          const ua = session.userAgent;
+                          if (ua.includes("Chrome")) browser = "Chrome";
+                          else if (ua.includes("Firefox")) browser = "Firefox";
+                          else if (ua.includes("Safari")) browser = "Safari";
+                          else if (ua.includes("Edge")) browser = "Edge";
+                          if (ua.includes("Windows")) os = "Windows";
+                          else if (ua.includes("Mac")) os = "macOS";
+                          else if (ua.includes("Linux")) os = "Linux";
+                          else if (ua.includes("Android")) os = "Android";
+                          else if (ua.includes("iOS")) os = "iOS";
+                          return `${browser} on ${os}`;
+                        })() : "Unknown device"}
+                        {session.isCurrent && (
+                          <span style={{ fontSize: "0.75em", marginLeft: "8px", padding: "2px 6px", backgroundColor: "rgba(0, 255, 0, 0.2)", borderRadius: "4px" }}>
+                            Current
+                          </span>
+                        )}
+                      </div>
+                      <div className="admin-detail-device-info">
+                        <div>Last seen: {formatDate(session.lastSeenAt)}</div>
+                        {session.ipAddress && <div>IP: {session.ipAddress}</div>}
+                        {session.createdAt && <div>Created: {formatDate(session.createdAt)}</div>}
+                      </div>
+                    </div>
+                    {!session.isCurrent && (
+                      <button
+                        onClick={() => handleRevokeSession(session.id)}
+                        disabled={revokingSession === session.id}
+                        style={{
+                          padding: "4px 8px",
+                          backgroundColor: "rgba(255, 0, 0, 0.2)",
+                          border: "1px solid rgba(255, 0, 0, 0.3)",
+                          borderRadius: "4px",
+                          color: "#fff",
+                          cursor: revokingSession === session.id ? "not-allowed" : "pointer",
+                          opacity: revokingSession === session.id ? 0.5 : 1,
+                          fontSize: "0.8em",
+                          marginLeft: "12px",
+                        }}
+                      >
+                        {revokingSession === session.id ? "Revoking..." : "Revoke"}
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

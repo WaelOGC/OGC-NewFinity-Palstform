@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { updateSessionLastSeen } from '../services/sessionService.js';
 
 // Standardized JWT configuration
 const {
@@ -30,6 +31,12 @@ export function requireAuth(req, res, next) {
       id: userId, 
       role: decoded.role || 'STANDARD_USER' // Phase 5: Default to STANDARD_USER
     };
+
+    // Phase 7.1: Update session lastSeenAt (async, don't block request)
+    updateSessionLastSeen(token).catch(err => {
+      // Log but don't fail request if session update fails
+      console.error('Failed to update session lastSeenAt:', err);
+    });
 
     return next();
   } catch (err) {

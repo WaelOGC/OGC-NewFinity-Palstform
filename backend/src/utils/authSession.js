@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import pool from '../db.js';
+import { createSession } from '../services/sessionService.js';
 
 // Standardized JWT configuration
 const {
@@ -26,9 +27,10 @@ function parseExpiresIn(expiresIn) {
  * 
  * @param {Object} res - Express response object
  * @param {Object} user - User object with at least { id, role }
+ * @param {Object} [req] - Express request object (optional, for session tracking)
  * @returns {Object} - Object with access and refresh tokens
  */
-export async function createAuthSessionForUser(res, user) {
+export async function createAuthSessionForUser(res, user, req = null) {
   // Validate JWT secrets before signing
   if (!JWT_ACCESS_SECRET || !JWT_REFRESH_SECRET) {
     const error = new Error('JWT secrets not configured');
@@ -85,6 +87,24 @@ export async function createAuthSessionForUser(res, user) {
       sameSite: isProd ? 'strict' : 'lax',
       maxAge: parseExpiresIn(JWT_REFRESH_EXPIRES_IN),
     });
+  }
+
+  // Phase 7.1: Create session record if request is provided
+  if (req) {
+    try {
+      const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress;
+      const userAgent = req.headers['user-agent'];
+      await createSession({
+        userId: user.id,
+        accessToken,
+        userAgent,
+        ipAddress,
+        deviceLabel: null // Can be set later by user
+      });
+    } catch (sessionError) {
+      // Log but don't fail login if session creation fails
+      console.error('Failed to create session record:', sessionError);
+    }
   }
 
   return { access: accessToken, refresh: refreshToken };

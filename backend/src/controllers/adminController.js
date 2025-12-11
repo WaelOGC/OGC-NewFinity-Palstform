@@ -25,6 +25,11 @@ import {
   updateUserStatus,
   updateUserFeatureFlags,
 } from '../services/userService.js';
+import {
+  getUserSessions,
+  revokeSession,
+  revokeAllUserSessions,
+} from '../services/sessionService.js';
 import pool from '../db.js';
 
 /**
@@ -514,6 +519,158 @@ export async function getAdminUserDevices(req, res) {
     return res.status(500).json({
       status: 'ERROR',
       message: 'Failed to fetch user devices',
+      code: 'INTERNAL_ERROR',
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * GET /api/v1/admin/users/:userId/sessions
+ * Get all sessions for a user (admin)
+ */
+export async function getAdminUserSessions(req, res) {
+  try {
+    const userId = parseInt(req.params.userId);
+
+    if (!userId || isNaN(userId)) {
+      return res.status(400).json({
+        status: 'ERROR',
+        message: 'Invalid user ID',
+        code: 'INVALID_USER_ID',
+      });
+    }
+
+    const sessions = await getUserSessions(userId);
+
+    // Ensure we always return an array, even if empty
+    return res.json({
+      status: 'OK',
+      data: {
+        sessions: Array.isArray(sessions) ? sessions : [],
+      },
+    });
+  } catch (error) {
+    console.error('getAdminUserSessions error:', error);
+    return res.status(500).json({
+      status: 'ERROR',
+      message: 'Failed to fetch user sessions',
+      code: 'INTERNAL_ERROR',
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * POST /api/v1/admin/users/:userId/sessions/revoke
+ * Revoke a specific session for a user (admin)
+ */
+export async function revokeAdminUserSession(req, res) {
+  try {
+    const userId = parseInt(req.params.userId);
+    const { sessionId } = req.body;
+
+    if (!userId || isNaN(userId)) {
+      return res.status(400).json({
+        status: 'ERROR',
+        message: 'Invalid user ID',
+        code: 'INVALID_USER_ID',
+      });
+    }
+
+    if (!sessionId) {
+      return res.status(400).json({
+        status: 'ERROR',
+        message: 'Session ID is required',
+        code: 'MISSING_SESSION_ID',
+      });
+    }
+
+    const revoked = await revokeSession(sessionId, userId);
+
+    if (!revoked) {
+      return res.status(404).json({
+        status: 'ERROR',
+        message: 'Session not found',
+        code: 'SESSION_NOT_FOUND',
+      });
+    }
+
+    // Record admin activity
+    const adminUserId = req.user?.id;
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    try {
+      await recordUserActivity({
+        userId: adminUserId,
+        type: 'ADMIN_SESSION_REVOKED',
+        ipAddress,
+        userAgent,
+        metadata: { targetUserId: userId, sessionId }
+      });
+    } catch (activityError) {
+      console.error('Failed to record admin session revocation activity:', activityError);
+    }
+
+    return res.json({
+      status: 'OK',
+      message: 'Session revoked successfully',
+    });
+  } catch (error) {
+    console.error('revokeAdminUserSession error:', error);
+    return res.status(500).json({
+      status: 'ERROR',
+      message: 'Failed to revoke session',
+      code: 'INTERNAL_ERROR',
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * POST /api/v1/admin/users/:userId/sessions/revoke-all
+ * Revoke all sessions for a user (admin)
+ */
+export async function revokeAllAdminUserSessions(req, res) {
+  try {
+    const userId = parseInt(req.params.userId);
+
+    if (!userId || isNaN(userId)) {
+      return res.status(400).json({
+        status: 'ERROR',
+        message: 'Invalid user ID',
+        code: 'INVALID_USER_ID',
+      });
+    }
+
+    const revokedCount = await revokeAllUserSessions(userId);
+
+    // Record admin activity
+    const adminUserId = req.user?.id;
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    try {
+      await recordUserActivity({
+        userId: adminUserId,
+        type: 'ADMIN_SESSIONS_REVOKED_ALL',
+        ipAddress,
+        userAgent,
+        metadata: { targetUserId: userId, revokedCount }
+      });
+    } catch (activityError) {
+      console.error('Failed to record admin sessions revocation activity:', activityError);
+    }
+
+    return res.json({
+      status: 'OK',
+      message: `Revoked ${revokedCount} session(s)`,
+      data: { revokedCount },
+    });
+  } catch (error) {
+    console.error('revokeAllAdminUserSessions error:', error);
+    return res.status(500).json({
+      status: 'ERROR',
+      message: 'Failed to revoke sessions',
       code: 'INTERNAL_ERROR',
       error: error.message,
     });

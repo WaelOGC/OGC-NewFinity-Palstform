@@ -34,8 +34,8 @@ function AdminUsersPage() {
 
       const response = await api.get(`/admin/users?${params.toString()}`);
       
-      if (response.status === "OK") {
-        setUsers(response.data.items || []);
+      if (response.status === "OK" && response.data) {
+        setUsers(Array.isArray(response.data.items) ? response.data.items : []);
         setPagination(response.data.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
       } else {
         setError("Failed to load users");
@@ -53,11 +53,17 @@ function AdminUsersPage() {
   }, [search, roleFilter, statusFilter]);
 
   const handleUserClick = async (user) => {
+    if (!user || !user.id) {
+      console.error("Invalid user object:", user);
+      return;
+    }
     try {
       const response = await api.get(`/admin/users/${user.id}`);
-      if (response.status === "OK") {
+      if (response.status === "OK" && response.data) {
         setSelectedUser(response.data);
         setShowDetailPanel(true);
+      } else {
+        alert("Failed to load user details");
       }
     } catch (err) {
       console.error("Error fetching user details:", err);
@@ -74,7 +80,7 @@ function AdminUsersPage() {
     // Refresh users list
     fetchUsers(pagination.page);
     // Refresh selected user if open
-    if (selectedUser) {
+    if (selectedUser && selectedUser.user && selectedUser.user.id) {
       handleUserClick({ id: selectedUser.user.id });
     }
   };
@@ -189,37 +195,42 @@ function AdminUsersPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((user) => (
-                      <tr
-                        key={user.id}
-                        onClick={() => handleUserClick(user)}
-                        className="admin-users-table-row"
-                      >
-                        <td>
-                          <div className="admin-users-name">
-                            <strong>{user.fullName || "No name"}</strong>
-                            <span className="admin-users-email">{user.email}</span>
-                            {user.username && (
-                              <span className="admin-users-username">@{user.username}</span>
+                    {users.map((user) => {
+                      if (!user || !user.id) {
+                        return null; // Skip invalid users
+                      }
+                      return (
+                        <tr
+                          key={user.id}
+                          onClick={() => handleUserClick(user)}
+                          className="admin-users-table-row"
+                        >
+                          <td>
+                            <div className="admin-users-name">
+                              <strong>{user.fullName || "No name"}</strong>
+                              <span className="admin-users-email">{user.email || "No email"}</span>
+                              {user.username && (
+                                <span className="admin-users-username">@{user.username}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            {user.role && (
+                              <span className={`role-badge ${getRoleBadgeClass(user.role)}`}>
+                                {getRoleLabel(user.role)}
+                              </span>
                             )}
-                          </div>
-                        </td>
-                        <td>
-                          {user.role && (
-                            <span className={`role-badge ${getRoleBadgeClass(user.role)}`}>
-                              {getRoleLabel(user.role)}
+                          </td>
+                          <td>
+                            <span className={`status-badge ${getStatusBadgeClass(user.accountStatus)}`}>
+                              {user.accountStatus || "ACTIVE"}
                             </span>
-                          )}
-                        </td>
-                        <td>
-                          <span className={`status-badge ${getStatusBadgeClass(user.accountStatus)}`}>
-                            {user.accountStatus || "ACTIVE"}
-                          </span>
-                        </td>
-                        <td>{formatDate(user.lastLoginAt)}</td>
-                        <td>{formatDate(user.createdAt)}</td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td>{formatDate(user.lastLoginAt)}</td>
+                          <td>{formatDate(user.createdAt)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

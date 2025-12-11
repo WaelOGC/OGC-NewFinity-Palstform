@@ -22,16 +22,25 @@ export function errorHandler(err, req, res, next) {
   
   // Handle MySQL/database errors specifically
   if (err.code && err.code.startsWith('ER_')) {
+    // Log detailed error for debugging
+    console.error('[ErrorHandler] Database error:', {
+      code: err.code,
+      message: err.message,
+      sqlState: err.sqlState,
+      sqlMessage: err.sqlMessage,
+      stack: isDev ? err.stack : undefined
+    });
+
     // Common MySQL errors that indicate missing columns/tables
     if (err.code === 'ER_BAD_FIELD_ERROR' || err.message.includes('Unknown column')) {
       return res.status(500).json({
         status: 'ERROR',
-        message: 'Database schema error. Please ensure the Phase 5 migration has been run.',
+        message: 'Database error occurred. Please try again later.',
         code: 'DATABASE_SCHEMA_ERROR',
         details: isDev ? {
           mysqlError: err.message,
           code: err.code,
-          hint: 'Run: backend/scripts/run-phase5-roles-migration.ps1'
+          hint: 'Check backend logs for detailed error information'
         } : undefined
       });
     }
@@ -39,7 +48,7 @@ export function errorHandler(err, req, res, next) {
     // Generic database error
     return res.status(500).json({
       status: 'ERROR',
-      message: isDev ? err.message : 'Database error occurred',
+      message: 'Database error occurred. Please try again later.',
       code: 'DATABASE_ERROR',
       details: isDev ? {
         mysqlError: err.message,

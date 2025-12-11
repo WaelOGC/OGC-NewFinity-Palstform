@@ -17,6 +17,9 @@ import {
   updateAdminUserFeatureFlags,
   getAdminUserActivity,
   getAdminUserDevices,
+  getAdminUserSessions,
+  revokeAdminUserSession,
+  revokeAllAdminUserSessions,
 } from '../controllers/adminController.js';
 
 const router = Router();
@@ -50,5 +53,14 @@ router.get('/users/:userId/activity', getAdminUserActivity);
 
 // GET /api/v1/admin/users/:userId/devices - Get user devices
 router.get('/users/:userId/devices', getAdminUserDevices);
+
+// GET /api/v1/admin/users/:userId/sessions - Get user sessions
+router.get('/users/:userId/sessions', getAdminUserSessions);
+
+// POST /api/v1/admin/users/:userId/sessions/revoke - Revoke a specific session
+router.post('/users/:userId/sessions/revoke', revokeAdminUserSession);
+
+// POST /api/v1/admin/users/:userId/sessions/revoke-all - Revoke all sessions
+router.post('/users/:userId/sessions/revoke-all', revokeAllAdminUserSessions);
 
 export default router;

@@ -43,6 +43,11 @@ const ALLOWED_ROUTES = {
   'GET /api/v1/user/security/2fa/status': true,
   'POST /api/v1/user/security/2fa/setup': true,
   'POST /api/v1/user/security/2fa/disable': true,
+  // Phase 7.1: Active Sessions & Device Security
+  // Note: Sessions routes are under /user/security/ in userRoutes.js
+  'GET /api/v1/user/security/sessions': true,
+  'POST /api/v1/user/security/sessions/revoke': true,
+  'POST /api/v1/user/security/sessions/revoke-all-others': true,
   // Phase 3: 2FA verification for login flow
   'POST /api/v1/auth/2fa/verify': true,
   // Phase 5: Role, permissions, and feature flags
@@ -56,6 +61,10 @@ const ALLOWED_ROUTES = {
   'PUT /api/v1/admin/users/:userId/feature-flags': true,
   'GET /api/v1/admin/users/:userId/activity': true,
   'GET /api/v1/admin/users/:userId/devices': true,
+  // Phase 7.1: Admin Session Management
+  'GET /api/v1/admin/users/:userId/sessions': true,
+  'POST /api/v1/admin/users/:userId/sessions/revoke': true,
+  'POST /api/v1/admin/users/:userId/sessions/revoke-all': true,
 };
 
 /**
@@ -149,6 +158,10 @@ export async function apiRequest(endpoint, options = {}) {
       if (url.includes('/admin/users/') && !url.endsWith('/admin/users')) {
         return allowedRoute.includes('/admin/users/');
       }
+      // For session routes, check if it matches the pattern
+      if (url.includes('/user/security/sessions')) {
+        return allowedRoute.includes('/user/security/sessions');
+      }
       return false;
     });
     
@@ -222,6 +235,24 @@ export async function apiRequest(endpoint, options = {}) {
           statusText: res.statusText,
           body: data
         });
+      }
+
+      // Handle 401 (Unauthorized) - redirect to login
+      if (res.status === 401) {
+        // Clear any stored auth data
+        window.localStorage.removeItem('ogc_token');
+        // Only redirect if we're not already on auth pages
+        if (!window.location.pathname.startsWith('/auth')) {
+          window.location.href = '/auth?redirect=' + encodeURIComponent(window.location.pathname);
+        }
+      }
+
+      // Handle 403 (Forbidden) - redirect to dashboard
+      if (res.status === 403) {
+        // Only redirect if we're not already on dashboard or auth pages
+        if (!window.location.pathname.startsWith('/dashboard') && !window.location.pathname.startsWith('/auth')) {
+          window.location.href = '/dashboard';
+        }
       }
 
       // Extract error message with priority: message > error > code
