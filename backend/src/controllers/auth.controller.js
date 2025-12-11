@@ -1,35 +1,13 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import pool from '../db.js';
 import { createActivationToken, getTermsVersion } from '../services/activationService.js';
-import { sendActivationEmail } from '../services/emailService.js';
+import { sendActivationEmail, sendPasswordResetEmail } from '../services/emailService.js';
+import { createAuthSessionForUser } from '../utils/authSession.js';
 
-// Standardized JWT configuration
-// Note: These are read from process.env at module load time
-// Ensure dotenv.config() is called in the entry point (index.js or server.js) before importing this module
-const {
-  JWT_ACCESS_SECRET,
-  JWT_REFRESH_SECRET,
-  JWT_ACCESS_EXPIRES_IN = '15m',
-  JWT_REFRESH_EXPIRES_IN = '7d',
-  JWT_COOKIE_ACCESS_NAME = 'ogc_access',
-  JWT_COOKIE_REFRESH_NAME = 'ogc_refresh',
-} = process.env;
-
-// Validate required JWT secrets (warning only at module load - actual validation happens in functions)
-if (!JWT_ACCESS_SECRET || !JWT_REFRESH_SECRET) {
-  console.warn('WARNING: JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be set in environment variables');
-  console.warn('Make sure .env file exists in backend/ directory and contains these variables');
-}
-
-// Helper to convert time string to milliseconds
-function parseExpiresIn(expiresIn) {
-  const match = expiresIn.match(/^(\d+)([smhd])$/);
-  if (!match) return 15 * 60 * 1000; // default 15 minutes
-  const [, value, unit] = match;
-  const multipliers = { s: 1000, m: 60 * 1000, h: 60 * 60 * 1000, d: 24 * 60 * 60 * 1000 };
-  return parseInt(value) * (multipliers[unit] || 1000);
-}
+// Note: JWT configuration and session creation logic moved to utils/authSession.js
+// This keeps the code DRY and allows both email/password and social login to share the same session logic
 
 export async function register({ email, password, fullName, termsAccepted }, res) {
   try {
@@ -101,7 +79,7 @@ export async function register({ email, password, fullName, termsAccepted }, res
 
     // Send activation email
     try {
-      await sendActivationEmail(email, activationToken, fullName);
+      await sendActivationEmail({ to: email, token: activationToken, fullName });
       console.log(`✅ Registration successful for ${email}, activation email sent`);
     } catch (emailError) {
       // Log email error but don't fail registration
@@ -195,50 +173,8 @@ export async function login({ email, password }, res) {
       throw error;
     }
 
-    // Only allow login if status is 'active'
-    if (user.status !== 'active') {
-      const error = new Error('Account status invalid');
-      error.statusCode = 403;
-      error.code = 'ACCOUNT_STATUS_INVALID';
-      throw error;
-    }
-
-    const payload = { userId: user.id, role: user.role || 'user' };
-
-    // Validate JWT secrets before signing
-    if (!JWT_ACCESS_SECRET || !JWT_REFRESH_SECRET) {
-      const error = new Error('JWT secrets not configured');
-      error.statusCode = 500;
-      throw error;
-    }
-
-    // Generate tokens
-    const accessToken = jwt.sign(payload, JWT_ACCESS_SECRET, {
-      expiresIn: JWT_ACCESS_EXPIRES_IN,
-    });
-
-    const refreshToken = jwt.sign({ userId: user.id }, JWT_REFRESH_SECRET, {
-      expiresIn: JWT_REFRESH_EXPIRES_IN,
-    });
-
-    // Set cookies if res is provided
-    if (res) {
-      const isProd = process.env.NODE_ENV === 'production';
-      res.cookie(JWT_COOKIE_ACCESS_NAME, accessToken, {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: isProd ? 'strict' : 'lax',
-        maxAge: parseExpiresIn(JWT_ACCESS_EXPIRES_IN),
-      });
-      res.cookie(JWT_COOKIE_REFRESH_NAME, refreshToken, {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: isProd ? 'strict' : 'lax',
-        maxAge: parseExpiresIn(JWT_REFRESH_EXPIRES_IN),
-      });
-    }
-
-    return { access: accessToken, refresh: refreshToken };
+    // Use shared session creation helper (same logic for email/password and social login)
+    return await createAuthSessionForUser(res, user);
   } catch (error) {
     // Re-throw with status code if already set
     if (error.statusCode) {
@@ -303,5 +239,361 @@ export async function logout(req, res) {
   
   // stateless JWT: optionally implement refresh token blacklist
   return { success: true, userId: req.user?.id };
+}
+
+/**
+ * Generate a secure random password reset token
+ */
+function generateResetToken() {
+  return crypto.randomBytes(32).toString('hex'); // 64 hex characters
+}
+
+/**
+ * Hash password reset token for storage
+ */
+function hashResetToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+/**
+ * Forgot password handler
+ * Generates a reset token and sends password reset email
+ */
+export async function forgotPassword({ email }) {
+  try {
+    console.log(`[FORGOT_PASSWORD] Request received for: ${email}`);
+    
+    // Find user by email (case-insensitive)
+    let rows;
+    try {
+      [rows] = await pool.query(
+        'SELECT id, email, fullName FROM User WHERE LOWER(email) = LOWER(?)',
+        [email]
+      );
+    } catch (dbError) {
+      console.error('[FORGOT_PASSWORD] Database error:', {
+        code: dbError.code,
+        message: dbError.message,
+      });
+      if (dbError.code === 'ER_ACCESS_DENIED_ERROR' || dbError.code === 'ECONNREFUSED' || dbError.code === 'ENOTFOUND') {
+        const error = new Error('Database connection failed. Please check your database configuration.');
+        error.statusCode = 503;
+        error.code = dbError.code;
+        throw error;
+      }
+      throw dbError;
+    }
+
+    // Always return success message (security: don't reveal if email exists)
+    // If user exists, generate token and send email
+    if (rows.length > 0) {
+      const user = rows[0];
+      
+      // Generate reset token
+      const plainToken = generateResetToken();
+      const hashedToken = hashResetToken(plainToken);
+      
+      // Set expiry to 1 hour from now
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1);
+      
+      // Store hashed token and expiry in database
+      try {
+        await pool.query(
+          'UPDATE User SET resetPasswordToken = ?, resetPasswordExpires = ? WHERE id = ?',
+          [hashedToken, expiresAt, user.id]
+        );
+        console.log(`[FORGOT_PASSWORD] Reset token generated for user ID: ${user.id}`);
+      } catch (dbError) {
+        console.error('[FORGOT_PASSWORD] Database error storing token:', {
+          code: dbError.code,
+          message: dbError.message,
+        });
+        throw dbError;
+      }
+      
+      // Build reset URL
+      const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const resetUrl = `${frontendBaseUrl.replace(/\/$/, '')}/auth/reset-password?token=${encodeURIComponent(plainToken)}`;
+      
+      // Send password reset email
+      try {
+        await sendPasswordResetEmail(
+          { email: user.email, fullName: user.fullName },
+          resetUrl
+        );
+        console.log(`✅ Password reset email sent to ${user.email}`);
+      } catch (emailError) {
+        // Log email error but don't fail the request
+        console.error(`⚠️  Failed to send password reset email:`, emailError);
+        // In production, you might want to queue this for retry
+      }
+    } else {
+      console.log(`[FORGOT_PASSWORD] Email not found (returning generic message): ${email}`);
+    }
+    
+    // Always return the same generic message
+    return {
+      success: true,
+      message: "If this email is registered, we sent a password reset link.",
+    };
+  } catch (error) {
+    console.error('[FORGOT_PASSWORD] Error:', {
+      message: error.message,
+      code: error.code,
+      statusCode: error.statusCode,
+    });
+    
+    // Re-throw with status code if already set
+    if (error.statusCode) {
+      throw error;
+    }
+    // Wrap database errors
+    if (error.code && error.code.startsWith('ER_')) {
+      const dbError = new Error(`Database error: ${error.message}`);
+      dbError.statusCode = 500;
+      dbError.code = error.code;
+      throw dbError;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Validate reset token handler
+ * Checks if a reset token is valid and not expired
+ */
+export async function validateResetToken({ token }) {
+  try {
+    console.log(`[VALIDATE_RESET_TOKEN] Request received`);
+    
+    // Ensure token is provided
+    if (!token) {
+      const error = new Error('Reset token is required.');
+      error.statusCode = 400;
+      error.code = 'RESET_TOKEN_REQUIRED';
+      throw error;
+    }
+    
+    // Hash the provided token to look it up
+    const hashedToken = hashResetToken(token);
+    
+    // Lookup user by resetPasswordToken
+    let rows;
+    try {
+      [rows] = await pool.query(
+        'SELECT id, resetPasswordToken, resetPasswordExpires FROM User WHERE resetPasswordToken = ?',
+        [hashedToken]
+      );
+    } catch (dbError) {
+      console.error('[VALIDATE_RESET_TOKEN] Database error:', {
+        code: dbError.code,
+        message: dbError.message,
+      });
+      if (dbError.code === 'ER_ACCESS_DENIED_ERROR' || dbError.code === 'ECONNREFUSED' || dbError.code === 'ENOTFOUND') {
+        const error = new Error('Database connection failed. Please check your database configuration.');
+        error.statusCode = 503;
+        error.code = dbError.code;
+        throw error;
+      }
+      throw dbError;
+    }
+    
+    // Check if token exists
+    if (rows.length === 0) {
+      const error = new Error('This reset link is invalid or has expired.');
+      error.statusCode = 400;
+      error.code = 'RESET_TOKEN_INVALID_OR_EXPIRED';
+      throw error;
+    }
+    
+    const user = rows[0];
+    
+    // Check if token has expired
+    const now = new Date();
+    const expiresAt = new Date(user.resetPasswordExpires);
+    
+    if (expiresAt < now) {
+      const error = new Error('This reset link is invalid or has expired.');
+      error.statusCode = 400;
+      error.code = 'RESET_TOKEN_INVALID_OR_EXPIRED';
+      throw error;
+    }
+    
+    // Token is valid
+    return {
+      success: true,
+      message: 'Reset token is valid.',
+      code: 'RESET_TOKEN_VALID',
+    };
+  } catch (error) {
+    console.error('[VALIDATE_RESET_TOKEN] Error:', {
+      message: error.message,
+      code: error.code,
+      statusCode: error.statusCode,
+    });
+    
+    // Re-throw with status code if already set
+    if (error.statusCode) {
+      throw error;
+    }
+    // Wrap database errors
+    if (error.code && error.code.startsWith('ER_')) {
+      const dbError = new Error(`Database error: ${error.message}`);
+      dbError.statusCode = 500;
+      dbError.code = error.code;
+      throw dbError;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Reset password handler
+ * Validates token and updates user password
+ */
+export async function resetPassword({ token, password, confirmPassword }) {
+  try {
+    console.log(`[RESET_PASSWORD] Request received`);
+    
+    // Validate password and confirmPassword match
+    if (!token || !password || !confirmPassword) {
+      const error = new Error('Token, password, and confirm password are required.');
+      error.statusCode = 400;
+      error.code = 'VALIDATION_ERROR';
+      throw error;
+    }
+    
+    if (password !== confirmPassword) {
+      const error = new Error('Passwords do not match.');
+      error.statusCode = 400;
+      error.code = 'PASSWORD_MISMATCH';
+      throw error;
+    }
+    
+    // Validate password length (same as registration: min 8 chars)
+    if (password.length < 8) {
+      const error = new Error('Password does not meet security requirements.');
+      error.statusCode = 400;
+      error.code = 'PASSWORD_WEAK';
+      throw error;
+    }
+    
+    // Hash the provided token to look it up
+    const hashedToken = hashResetToken(token);
+    
+    // Lookup user by resetPasswordToken
+    let rows;
+    try {
+      [rows] = await pool.query(
+        'SELECT id, email, resetPasswordToken, resetPasswordExpires FROM User WHERE resetPasswordToken = ?',
+        [hashedToken]
+      );
+    } catch (dbError) {
+      console.error('[RESET_PASSWORD] Database error:', {
+        code: dbError.code,
+        message: dbError.message,
+      });
+      if (dbError.code === 'ER_ACCESS_DENIED_ERROR' || dbError.code === 'ECONNREFUSED' || dbError.code === 'ENOTFOUND') {
+        const error = new Error('Database connection failed. Please check your database configuration.');
+        error.statusCode = 503;
+        error.code = dbError.code;
+        throw error;
+      }
+      throw dbError;
+    }
+    
+    // Check if token exists
+    if (rows.length === 0) {
+      const error = new Error('This reset link is invalid or has expired.');
+      error.statusCode = 400;
+      error.code = 'RESET_TOKEN_INVALID_OR_EXPIRED';
+      throw error;
+    }
+    
+    const user = rows[0];
+    
+    // Check if token has expired
+    const now = new Date();
+    const expiresAt = new Date(user.resetPasswordExpires);
+    
+    if (expiresAt < now) {
+      const error = new Error('This reset link is invalid or has expired.');
+      error.statusCode = 400;
+      error.code = 'RESET_TOKEN_INVALID_OR_EXPIRED';
+      throw error;
+    }
+    
+    // Hash the new password
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    // Update user's password and clear reset fields
+    try {
+      await pool.query(
+        'UPDATE User SET password = ?, resetPasswordToken = NULL, resetPasswordExpires = NULL WHERE id = ?',
+        [passwordHash, user.id]
+      );
+      console.log(`✅ Password reset successful for user ID: ${user.id}`);
+    } catch (dbError) {
+      console.error('[RESET_PASSWORD] Database error updating password:', {
+        code: dbError.code,
+        message: dbError.message,
+      });
+      throw dbError;
+    }
+    
+    // Note: We don't invalidate existing sessions/refresh tokens here
+    // since JWT tokens are stateless. If you want to invalidate sessions,
+    // you would need to implement a token blacklist or track token versions.
+    
+    return {
+      success: true,
+      message: 'Your password has been reset successfully. You can now log in with your new password.',
+      code: 'PASSWORD_RESET_SUCCESS',
+    };
+  } catch (error) {
+    console.error('[RESET_PASSWORD] Error:', {
+      message: error.message,
+      code: error.code,
+      statusCode: error.statusCode,
+    });
+    
+    // Re-throw with status code if already set
+    if (error.statusCode) {
+      throw error;
+    }
+    // Wrap database errors
+    if (error.code && error.code.startsWith('ER_')) {
+      const dbError = new Error(`Database error: ${error.message}`);
+      dbError.statusCode = 500;
+      dbError.code = error.code;
+      throw dbError;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Social login callback handler
+ * Called after successful OAuth authentication
+ * Creates auth session and redirects to frontend
+ */
+export async function socialLoginCallback(req, res, next) {
+  try {
+    const user = req.user; // set by passport verify callback
+    
+    if (!user) {
+      return res.redirect('/auth/login?provider=github&error=authentication_failed');
+    }
+    
+    await createAuthSessionForUser(res, user);
+    
+    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const provider = req.user?.authProvider || 'github';
+    return res.redirect(`${FRONTEND_URL}/auth/social/callback?status=success&provider=${provider}`);
+  } catch (err) {
+    console.error('[SOCIAL_LOGIN_CALLBACK] Error:', err);
+    return res.redirect('/auth/login?provider=github&error=callback_error');
+  }
 }
 

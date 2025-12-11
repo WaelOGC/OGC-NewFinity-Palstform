@@ -1,15 +1,19 @@
 // Load environment variables FIRST before any other imports
-import dotenv from 'dotenv';
-dotenv.config();
+import 'dotenv/config';
 
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
+import passport from 'passport';
 import { rateLimiter } from './middleware/rateLimit.js';
 import { errorHandler } from './middleware/error.js';
 import routes from './routes/index.js';
+import { initEmailService } from './services/emailService.js';
+
+// Import Passport providers configuration (registers all OAuth strategies)
+import './config/passportProviders.js';
 
 const app = express();
 
@@ -32,6 +36,7 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(passport.initialize()); // Initialize Passport (we don't use passport.session())
 app.use(rateLimiter);
 
 // Routes
@@ -100,7 +105,18 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 4000;
 const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '127.0.0.1' : 'localhost');
 
-app.listen(PORT, HOST, () => {
-  console.log(`OGC NewFinity backend listening on ${HOST}:${PORT}`);
-});
+// Initialize email service and start server
+(async () => {
+  try {
+    await initEmailService();
+    
+    app.listen(PORT, HOST, () => {
+      console.log(`OGC NewFinity backend listening on ${HOST}:${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to initialize email service:', error.message);
+    console.error('Server startup aborted. Please configure SMTP settings in .env file.');
+    process.exit(1);
+  }
+})();
 

@@ -1,0 +1,135 @@
+/* Reset Password Page - Reuses auth page styles with additional states */
+
+.reset-password-success,
+.reset-password-error-state,
+.reset-password-loading {
+  text-align: center;
+  padding: 24px 0;
+}
+
+.reset-password-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.4s ease;
+}
+
+.reset-password-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.reset-password-icon .spinner {
+  width: 48px;
+  height: 48px;
+  color: rgba(0, 255, 198, 0.9);
+}
+
+[data-theme="light"] .reset-password-icon .spinner {
+  color: rgba(60, 120, 220, 0.9);
+}
+
+.reset-password-icon--success {
+  color: rgba(0, 255, 198, 0.9);
+  background: rgba(0, 255, 198, 0.15);
+}
+
+[data-theme="light"] .reset-password-icon--success {
+  color: rgba(0, 200, 170, 0.9);
+  background: rgba(0, 200, 170, 0.15);
+}
+
+.reset-password-icon--error {
+  color: rgba(255, 60, 172, 0.9);
+  background: rgba(255, 60, 172, 0.15);
+}
+
+[data-theme="light"] .reset-password-icon--error {
+  color: rgba(220, 50, 150, 0.9);
+  background: rgba(220, 50, 150, 0.15);
+}
+
+.reset-password-message {
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 24px 0;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .reset-password-message {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="light"] .reset-password-message {
+  color: rgba(17, 24, 39, 0.85);
+}
+
+/* Password toggle button */
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="dark"] .password-toggle-btn {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="dark"] .password-toggle-btn:hover {
+  color: rgba(0, 255, 198, 0.9);
+}
+
+[data-theme="light"] .password-toggle-btn {
+  color: rgba(17, 24, 39, 0.6);
+}
+
+[data-theme="light"] .password-toggle-btn:hover {
+  color: rgba(60, 120, 220, 0.9);
+}
+
+.password-toggle-btn:focus {
+  outline: none;
+}
+
+.password-toggle-btn:focus-visible {
+  outline: 2px solid rgba(0, 255, 198, 0.5);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+[data-theme="light"] .password-toggle-btn:focus-visible {
+  outline-color: rgba(60, 120, 220, 0.5);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .reset-password-icon {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 20px;
+  }
+
+  .reset-password-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .reset-password-message {
+    font-size: 14px;
+  }
+}
+

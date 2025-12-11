@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
-import { login, register, refresh, logout } from '../controllers/auth.controller.js';
+import passport from 'passport';
+import { login, register, refresh, logout, forgotPassword, resetPassword, validateResetToken, socialLoginCallback } from '../controllers/auth.controller.js';
 import { activate, resendActivation } from '../controllers/activationController.js';
 import { requireAuth } from '../middleware/auth.js';
+import { createAuthSessionForUser } from '../utils/authSession.js';
 import pool from '../db.js';
 
 const router = Router();
@@ -20,6 +22,23 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+const validateResetTokenSchema = z.object({
+  token: z.string().min(1),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(8),
+  confirmPassword: z.string().min(8),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
 });
 
 router.post('/register', async (req, res, next) => {
@@ -185,6 +204,186 @@ router.post('/resend-activation', resendActivationLimiter, async (req, res, next
     next(err);
   }
 });
+
+// Rate limiter for forgot password (5 requests per hour per IP)
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // 5 requests per hour
+  message: { 
+    status: 'ERROR',
+    message: 'Too many password reset requests. Please try again later.',
+    code: 'RATE_LIMIT_EXCEEDED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Forgot password route
+router.post('/forgot-password', forgotPasswordLimiter, async (req, res, next) => {
+  try {
+    const body = forgotPasswordSchema.parse(req.body);
+    const result = await forgotPassword(body);
+    res.status(200).json({
+      status: 'OK',
+      success: true,
+      message: result.message,
+    });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 400;
+    }
+    if (!err.code) {
+      err.code = 'VALIDATION_ERROR';
+    }
+    next(err);
+  }
+});
+
+// Validate reset token route
+router.post('/reset-password/validate', async (req, res, next) => {
+  try {
+    const body = validateResetTokenSchema.parse(req.body);
+    const result = await validateResetToken(body);
+    res.status(200).json({
+      status: 'OK',
+      success: true,
+      message: result.message,
+      code: result.code,
+    });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 400;
+    }
+    if (!err.code) {
+      err.code = 'VALIDATION_ERROR';
+    }
+    next(err);
+  }
+});
+
+// Reset password route
+router.post('/reset-password', async (req, res, next) => {
+  try {
+    const body = resetPasswordSchema.parse(req.body);
+    const result = await resetPassword(body);
+    res.status(200).json({
+      status: 'OK',
+      success: true,
+      message: result.message,
+      code: result.code,
+    });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 400;
+    }
+    if (!err.code) {
+      err.code = 'RESET_PASSWORD_ERROR';
+    }
+    next(err);
+  }
+});
+
+// ============================================================================
+// Social OAuth Routes
+// ============================================================================
+
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const SOCIAL_SUCCESS_REDIRECT = `${FRONTEND_URL}/auth/social/callback?status=success`;
+const SOCIAL_FAILURE_REDIRECT = `${FRONTEND_URL}/auth/social/callback?status=error`;
+
+// Google OAuth Routes
+router.get('/google', passport.authenticate('google', {
+  scope: ['profile', 'email'],
+  session: false
+}));
+
+router.get('/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: SOCIAL_FAILURE_REDIRECT }),
+  async (req, res, next) => {
+    try {
+      const user = req.user; // set by passport verify callback
+      await createAuthSessionForUser(res, user);
+      return res.redirect(SOCIAL_SUCCESS_REDIRECT + '&provider=google');
+    } catch (err) {
+      console.error('[GOOGLE_CALLBACK] Error:', err);
+      return res.redirect(SOCIAL_FAILURE_REDIRECT + '&provider=google');
+    }
+  }
+);
+
+// GitHub OAuth Routes
+router.get(
+  '/github',
+  passport.authenticate('github', { scope: ['user:email'] })
+);
+
+router.get(
+  '/github/callback',
+  passport.authenticate('github', {
+    failureRedirect: '/auth/login?provider=github',
+    session: false,
+  }),
+  socialLoginCallback
+);
+
+// Twitter/X OAuth Routes
+router.get('/twitter', passport.authenticate('twitter', {
+  session: false
+}));
+
+router.get('/twitter/callback',
+  passport.authenticate('twitter', { session: false, failureRedirect: SOCIAL_FAILURE_REDIRECT }),
+  async (req, res, next) => {
+    try {
+      const user = req.user;
+      await createAuthSessionForUser(res, user);
+      return res.redirect(SOCIAL_SUCCESS_REDIRECT + '&provider=twitter');
+    } catch (err) {
+      console.error('[TWITTER_CALLBACK] Error:', err);
+      return res.redirect(SOCIAL_FAILURE_REDIRECT + '&provider=twitter');
+    }
+  }
+);
+
+// LinkedIn OAuth Routes
+router.get('/linkedin', passport.authenticate('linkedin', {
+  scope: ['openid', 'profile', 'email'],
+  session: false
+}));
+
+router.get('/linkedin/callback',
+  passport.authenticate('linkedin', { session: false, failureRedirect: SOCIAL_FAILURE_REDIRECT }),
+  async (req, res, next) => {
+    try {
+      const user = req.user;
+      await createAuthSessionForUser(res, user);
+      return res.redirect(SOCIAL_SUCCESS_REDIRECT + '&provider=linkedin');
+    } catch (err) {
+      console.error('[LINKEDIN_CALLBACK] Error:', err);
+      return res.redirect(SOCIAL_FAILURE_REDIRECT + '&provider=linkedin');
+    }
+  }
+);
+
+// Discord OAuth Routes
+router.get('/discord', passport.authenticate('discord', {
+  scope: ['identify', 'email'],
+  session: false
+}));
+
+router.get('/discord/callback',
+  passport.authenticate('discord', { session: false, failureRedirect: SOCIAL_FAILURE_REDIRECT }),
+  async (req, res, next) => {
+    try {
+      const user = req.user;
+      await createAuthSessionForUser(res, user);
+      return res.redirect(SOCIAL_SUCCESS_REDIRECT + '&provider=discord');
+    } catch (err) {
+      console.error('[DISCORD_CALLBACK] Error:', err);
+      return res.redirect(SOCIAL_FAILURE_REDIRECT + '&provider=discord');
+    }
+  }
+);
 
 export default router;
 

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { API_BASE_URL } from '../utils/apiClient';
 import './SocialLogin.css';
 
 // SVG Icon Components
@@ -36,17 +37,23 @@ const GitHubIcon = ({ className }) => (
 );
 
 function SocialLogin() {
-  const [showMessage, setShowMessage] = useState(false);
-  const [messageProvider, setMessageProvider] = useState('');
-
-  // Show "coming soon" message instead of navigating
+  // Redirect to backend OAuth endpoint for the selected provider
   const handleSocialLogin = (provider) => {
-    setMessageProvider(provider);
-    setShowMessage(true);
-    // Hide message after 5 seconds
-    setTimeout(() => {
-      setShowMessage(false);
-    }, 5000);
+    // Map provider names to backend route names
+    const providerMap = {
+      'Google': 'google',
+      'X': 'twitter',
+      'LinkedIn': 'linkedin',
+      'Discord': 'discord',
+      'GitHub': 'github',
+    };
+
+    const backendProvider = providerMap[provider] || provider.toLowerCase();
+    // API_BASE_URL already includes /api/v1, so we just need /auth/<provider>
+    const oauthUrl = `${API_BASE_URL}/auth/${backendProvider}`;
+    
+    // Perform full-page redirect to backend OAuth endpoint
+    window.location.href = oauthUrl;
   };
 
   const providers = [
@@ -79,13 +86,6 @@ function SocialLogin() {
           );
         })}
       </div>
-      {showMessage && (
-        <div className="social-login__message" role="alert">
-          <p className="social-login__message-text">
-            Social login with {messageProvider} is not available yet. Please use email and password to sign in.
-          </p>
-        </div>
-      )}
       <p className="social-login__terms-note">
         By continuing with Google, X, LinkedIn, Discord, or GitHub, you agree to the{" "}
         <a href="/legal/terms" target="_blank" rel="noopener noreferrer" className="social-login__terms-link">

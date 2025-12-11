@@ -8,6 +8,9 @@ import Layout from './components/layout/Layout.jsx';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import ActivationPage from './pages/ActivationPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import SocialAuthCallback from './pages/SocialAuthCallback';
 import DocsPage from './pages/DocsPage';
 import DevDesignPage from './pages/DevDesignPage';
 import LoginPage from './pages/LoginPage';
@@ -33,6 +36,9 @@ const router = createBrowserRouter([
       { path: '/', element: <LandingPage /> },
       { path: '/auth', element: <AuthPage /> },
       { path: '/auth/activate', element: <ActivationPage /> },
+      { path: '/auth/forgot-password', element: <ForgotPasswordPage /> },
+      { path: '/auth/reset-password', element: <ResetPasswordPage /> },
+      { path: '/auth/social/callback', element: <SocialAuthCallback /> },
       { path: '/docs', element: <DocsPage /> },
       { path: '/dev-design', element: <DevDesignPage /> },
       { path: '/download', element: <DownloadPage /> },

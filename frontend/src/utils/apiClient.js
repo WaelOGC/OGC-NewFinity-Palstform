@@ -18,6 +18,23 @@ const API_BASE_URL = import.meta.env.DEV ? DEV_BASE : PROD_BASE;
 const isDev = import.meta.env.DEV;
 
 /**
+ * Whitelist of allowed API routes
+ * Routes must be in the format: 'METHOD /api/v1/path'
+ */
+const ALLOWED_ROUTES = {
+  'POST /api/v1/auth/login': true,
+  'POST /api/v1/auth/register': true,
+  'POST /api/v1/auth/refresh': true,
+  'POST /api/v1/auth/logout': true,
+  'GET /api/v1/auth/me': true,
+  'GET /api/v1/auth/activate': true,
+  'POST /api/v1/auth/resend-activation': true,
+  'POST /api/v1/auth/forgot-password': true,
+  'POST /api/v1/auth/reset-password/validate': true,
+  'POST /api/v1/auth/reset-password': true,
+};
+
+/**
  * Log API call details in development
  */
 function logApiCall(method, url, data = null) {
@@ -89,6 +106,17 @@ export async function apiRequest(endpoint, options = {}) {
   // Ensure endpoint starts with '/' for proper concatenation
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = `${API_BASE_URL}${normalizedEndpoint}`;
+  
+  // Check if route is in whitelist
+  const routeKey = `${method} ${url}`;
+  if (!ALLOWED_ROUTES[routeKey]) {
+    const error = new Error(`API route not found: ${method} ${url}`);
+    error.statusCode = 404;
+    error.status = 404;
+    error.backendMessage = `API route not found: ${method} ${url}`;
+    error.backendCode = 'NOT_FOUND';
+    throw error;
+  }
   
   // Log the final URL in development
   if (isDev) {

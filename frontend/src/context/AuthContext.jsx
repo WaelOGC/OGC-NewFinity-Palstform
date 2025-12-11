@@ -12,31 +12,35 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     async function fetchMe() {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
       try {
-        const data = await api.get('/auth/me', {
+        // Always try to fetch /auth/me to check if we're authenticated
+        // This works for both token-based auth (Authorization header) and cookie-based auth (social login)
+        // The apiClient uses credentials: 'include', so cookies will be sent automatically
+        const data = await api.get('/auth/me', token ? {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        });
+        } : {});
 
         if (data.status === "OK") {
           setUser(data.user);
+          // If we got user data but no token in localStorage, cookies are likely being used
+          // This is fine - we don't need to store token for cookie-based auth
         } else {
-          // Token not valid anymore
+          // Not authenticated
           setUser(null);
           setToken(null);
           window.localStorage.removeItem("ogc_token");
         }
       } catch (err) {
-        console.error("AuthContext fetchMe error:", err);
-        setUser(null);
-        setToken(null);
-        window.localStorage.removeItem("ogc_token");
+        // If /auth/me fails, we're not authenticated
+        // This is expected if user is not logged in
+        if (token) {
+          // Only clear token if we had one (to avoid clearing on initial load)
+          setUser(null);
+          setToken(null);
+          window.localStorage.removeItem("ogc_token");
+        }
       } finally {
         setLoading(false);
       }

@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import "./AuthForm.css";
 
 function LoginForm() {
+  const navigate = useNavigate();
   const { login, loading, isAuthenticated, user, logout, resendActivation } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -103,9 +105,26 @@ function LoginForm() {
       </div>
 
       <div className="auth-form-field">
-        <label htmlFor="login-password" className="auth-form-label">
-          Password
-        </label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <label htmlFor="login-password" className="auth-form-label" style={{ marginBottom: 0 }}>
+            Password
+          </label>
+          <button
+            type="button"
+            onClick={() => navigate('/auth/forgot-password')}
+            className="auth-form-link"
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              padding: 0, 
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '500'
+            }}
+          >
+            Forgot password?
+          </button>
+        </div>
         <input
           id="login-password"
           type="password"
