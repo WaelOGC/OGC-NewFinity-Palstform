@@ -314,16 +314,25 @@ router.get('/google/callback',
 // GitHub OAuth Routes
 router.get(
   '/github',
-  passport.authenticate('github', { scope: ['user:email'] })
+  passport.authenticate('github', { scope: ['user:email'], session: false })
 );
 
 router.get(
   '/github/callback',
   passport.authenticate('github', {
-    failureRedirect: '/auth/login?provider=github',
+    failureRedirect: SOCIAL_FAILURE_REDIRECT + '&provider=github',
     session: false,
   }),
-  socialLoginCallback
+  async (req, res, next) => {
+    try {
+      const user = req.user; // set by passport verify callback
+      await createAuthSessionForUser(res, user);
+      return res.redirect(SOCIAL_SUCCESS_REDIRECT + '&provider=github');
+    } catch (err) {
+      console.error('[GITHUB_CALLBACK] Error:', err);
+      return res.redirect(SOCIAL_FAILURE_REDIRECT + '&provider=github');
+    }
+  }
 );
 
 // Twitter/X OAuth Routes

@@ -135,54 +135,58 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 }
 
 // --- GitHub OAuth ---
-try {
-  console.log('[GitHub OAuth] init...');
+if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+  try {
+    console.log('[GitHub OAuth] init...');
 
-  const clientID = process.env.GITHUB_CLIENT_ID;
-  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-  const baseUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+    const clientID = process.env.GITHUB_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+    const baseUrl = process.env.BACKEND_URL || 'http://localhost:4000';
 
-  console.log('[GitHub OAuth] env', { clientID, hasSecret: !!clientSecret });
+    console.log('[GitHub OAuth] env', { clientID, hasSecret: !!clientSecret });
 
-  passport.use(
-    'github',
-    new GitHubStrategy(
-      {
-        clientID,
-        clientSecret,
-        callbackURL: `${baseUrl}/api/v1/auth/github/callback`,
-        scope: ['user:email'],
-      },
-      async (accessToken, refreshToken, profile, done) => {
-        try {
-          const user = await findOrCreateSocialUser({
-            provider: 'github',
-            providerId: profile.id,
-            email:
-              (profile.emails &&
-                profile.emails[0] &&
-                profile.emails[0].value) ||
-              null,
-            name: profile.displayName || profile.username || 'GitHub User',
-            avatarUrl:
-              (profile.photos &&
-                profile.photos[0] &&
-                profile.photos[0].value) ||
-              null,
-          });
+    passport.use(
+      'github',
+      new GitHubStrategy(
+        {
+          clientID,
+          clientSecret,
+          callbackURL: `${baseUrl}/api/v1/auth/github/callback`,
+          scope: ['user:email'],
+        },
+        async (accessToken, refreshToken, profile, done) => {
+          try {
+            const user = await findOrCreateSocialUser({
+              provider: 'github',
+              providerId: profile.id,
+              email:
+                (profile.emails &&
+                  profile.emails[0] &&
+                  profile.emails[0].value) ||
+                null,
+              name: profile.displayName || profile.username || 'GitHub User',
+              avatarUrl:
+                (profile.photos &&
+                  profile.photos[0] &&
+                  profile.photos[0].value) ||
+                null,
+            });
 
-          return done(null, user);
-        } catch (err) {
-          console.error('[GitHub OAuth] verify error', err);
-          return done(err);
+            return done(null, user);
+          } catch (err) {
+            console.error('[GitHub OAuth] verify error', err);
+            return done(err);
+          }
         }
-      }
-    )
-  );
+      )
+    );
 
-  console.log('[GitHub OAuth] strategy registered successfully');
-} catch (err) {
-  console.error('[GitHub OAuth] FAILED to register strategy', err);
+    console.log('✓ GitHub OAuth strategy registered successfully');
+  } catch (err) {
+    console.error('✗ Failed to register GitHub OAuth strategy:', err.message);
+  }
+} else {
+  console.log('⚠ GitHub OAuth strategy skipped (missing environment variables)');
 }
 
 // Configure Twitter OAuth Strategy
