@@ -1,7 +1,27 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { api } from "../../utils/apiClient.js";
-import { QRCodeSVG } from "qrcode.react";
+import { QRCodeCanvas } from 'qrcode.react';
+import {
+  getUserSessions,
+  revokeUserSession,
+  revokeAllOtherSessions,
+  getUserSecurityActivity,
+  getUserSecurityDevices,
+  getTwoFactorStatus,
+  startTwoFactorSetup,
+  confirmTwoFactorSetup,
+  disableTwoFactor,
+  exportAccountData,
+  changePasswordApi,
+  fetchSecuritySessions,
+  revokeSession as revokeSecuritySession,
+  revokeOtherSessions as revokeOtherSecuritySessions,
+  deleteAccountApi,
+  getRecoveryCodesStatus,
+  regenerateRecoveryCodes,
+} from "../../utils/apiClient.js";
 import "../../index.css";
 import "./dashboard-pages.css";
 
@@ -9,6 +29,7 @@ import "./dashboard-pages.css";
 
 function Security() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   // Password change state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -31,20 +52,95 @@ function Security() {
 
   // Sessions state (Phase 7.1)
   const [sessions, setSessions] = useState([]);
-  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
   const [sessionsError, setSessionsError] = useState(null);
-  const [revokingSession, setRevokingSession] = useState(null);
-  const [revokingAllOthers, setRevokingAllOthers] = useState(false);
+  const [sessionsActionLoading, setSessionsActionLoading] = useState(false);
 
-  // 2FA state
-  const [twoFactorStatus, setTwoFactorStatus] = useState({ enabled: false });
+  // 2FA state (new implementation)
+  const [twoFactorStatus, setTwoFactorStatus] = useState({
+    enabled: false,
+    createdAt: null,
+    confirmedAt: null,
+  });
   const [twoFactorLoading, setTwoFactorLoading] = useState(true);
   const [twoFactorError, setTwoFactorError] = useState(null);
-  const [twoFactorMessage, setTwoFactorMessage] = useState(null);
-  const [twoFactorSetupMode, setTwoFactorSetupMode] = useState(false); // 'idle', 'qr', 'verify'
-  const [twoFactorQrUrl, setTwoFactorQrUrl] = useState(null);
-  const [twoFactorVerifyCode, setTwoFactorVerifyCode] = useState("");
-  const [twoFactorVerifying, setTwoFactorVerifying] = useState(false);
+  const [twoFactorSecret, setTwoFactorSecret] = useState('');
+  const [twoFactorOtpToken, setTwoFactorOtpToken] = useState('');
+  const [twoFactorSetupStep, setTwoFactorSetupStep] = useState('idle'); // 'idle' | 'setup'
+  const [twoFactorSetupMode, setTwoFactorSetupMode] = useState('qr');   // 'qr' | 'manual'
+  const [twoFactorOtpauthUrl, setTwoFactorOtpauthUrl] = useState('');
+  const [twoFactorBusy, setTwoFactorBusy] = useState(false);
+
+  // Delete Account state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteOtp, setDeleteOtp] = useState("");
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
+
+  // Data Export state
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState(null);
+  const [exportSuccess, setExportSuccess] = useState(false);
+
+  // Recovery codes state (Phase S5)
+  const [recoveryCodes, setRecoveryCodes] = useState([]);
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [recoveryError, setRecoveryError] = useState(null);
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+  const [freshRecoveryCodes, setFreshRecoveryCodes] = useState([]); // plain codes after generation
+
+  // PHASE S2: Load sessions function
+  const loadSessions = async () => {
+    setSessionsLoading(true);
+    setSessionsError(null);
+    try {
+      const sessionList = await fetchSecuritySessions();
+      setSessions(sessionList || []);
+      setSessionsError(null);
+    } catch (err) {
+      console.error("Failed to load sessions:", err);
+      setSessionsError(err?.message || "Unable to load sessions.");
+      setSessions([]);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  // Fetch activities function
+  const fetchActivities = async () => {
+    setActivitiesLoading(true);
+    setActivitiesError(null);
+    try {
+      const items = await getUserSecurityActivity();
+      setActivities(items || []);
+      setActivitiesError(null);
+    } catch (err) {
+      console.error("Failed to fetch activities:", err);
+      setActivitiesError(err?.message || "Unable to load recent activity.");
+      setActivities([]);
+    } finally {
+      setActivitiesLoading(false);
+    }
+  };
+
+  // Fetch devices function
+  const fetchDevices = async () => {
+    setDevicesLoading(true);
+    setDevicesError(null);
+    try {
+      const list = await getUserSecurityDevices();
+      setDevices(list || []);
+      setDevicesError(null);
+    } catch (err) {
+      console.error("Failed to fetch devices:", err);
+      setDevicesError(err?.message || "Unable to load devices.");
+      setDevices([]);
+    } finally {
+      setDevicesLoading(false);
+    }
+  };
 
   // Fetch activities on mount
   useEffect(() => {
@@ -58,141 +154,86 @@ function Security() {
 
   // Fetch sessions on mount (Phase 7.1)
   useEffect(() => {
-    fetchSessions();
+    loadSessions();
   }, []);
 
-  // Fetch 2FA status on mount
+  // Load 2FA status on mount (new implementation)
   useEffect(() => {
-    fetchTwoFactorStatus();
+    let cancelled = false;
+
+    async function load2FA() {
+      try {
+        setTwoFactorLoading(true);
+        setTwoFactorError(null);
+        const data = await getTwoFactorStatus();
+        if (!cancelled) {
+          setTwoFactorStatus(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setTwoFactorError(err.message || 'Failed to load 2FA status.');
+        }
+      } finally {
+        if (!cancelled) {
+          setTwoFactorLoading(false);
+        }
+      }
+    }
+
+    load2FA();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const fetchActivities = async () => {
-    try {
-      setActivitiesLoading(true);
-      setActivitiesError(null);
-      // apiClient handles authentication via cookies
-      const response = await api.get('/user/security/activity');
-      
-      if (response.status === "OK" && response.data?.items) {
-        setActivities(Array.isArray(response.data.items) ? response.data.items : []);
-      } else {
-        // If no items, set empty array instead of error
-        setActivities([]);
+  // Load recovery codes status on mount (Phase S5)
+  useEffect(() => {
+    async function loadRecoveryStatus() {
+      try {
+        const codes = await getRecoveryCodesStatus();
+        setRecoveryCodes(codes || []);
+      } catch (err) {
+        console.error('Failed to load recovery codes status:', err);
+        // Do not show blocking error – keep card usable
       }
-    } catch (err) {
-      console.error("Failed to fetch activities:", err);
-      // Don't show error - just show empty state
-      setActivities([]);
-      setActivitiesError(null);
-    } finally {
-      setActivitiesLoading(false);
     }
-  };
 
-  const fetchDevices = async () => {
-    try {
-      setDevicesLoading(true);
-      setDevicesError(null);
-      // apiClient handles authentication via cookies
-      const response = await api.get('/user/security/devices');
-      
-      if (response.status === "OK" && response.data?.devices) {
-        setDevices(Array.isArray(response.data.devices) ? response.data.devices : []);
-      } else {
-        // If no devices, set empty array instead of error
-        setDevices([]);
-      }
-    } catch (err) {
-      console.error("Failed to fetch devices:", err);
-      // Don't show error - just show empty state
-      setDevices([]);
-      setDevicesError(null);
-    } finally {
-      setDevicesLoading(false);
-    }
-  };
-
-  const fetchSessions = async () => {
-    try {
-      setSessionsLoading(true);
-      setSessionsError(null);
-      // apiClient handles authentication via cookies
-      const response = await api.get('/user/security/sessions');
-      
-      if (response.status === "OK" && response.data?.sessions) {
-        setSessions(Array.isArray(response.data.sessions) ? response.data.sessions : []);
-      } else {
-        // If no sessions, set empty array instead of error
-        setSessions([]);
-      }
-    } catch (err) {
-      console.error("Failed to fetch sessions:", err);
-      // Don't show error - just show empty state
-      setSessions([]);
-      setSessionsError(null);
-    } finally {
-      setSessionsLoading(false);
-    }
-  };
-
-  const fetchTwoFactorStatus = async () => {
-    try {
-      setTwoFactorLoading(true);
-      setTwoFactorError(null);
-      // apiClient handles authentication via cookies
-      const response = await api.get('/user/security/2fa/status');
-      
-      if (response.status === "OK" && response.data) {
-        setTwoFactorStatus(response.data);
-      } else {
-        // Default to disabled if status not available
-        setTwoFactorStatus({ enabled: false });
-      }
-    } catch (err) {
-      console.error("Failed to fetch 2FA status:", err);
-      // Default to disabled on error
-      setTwoFactorStatus({ enabled: false });
-      setTwoFactorError(null); // Don't show error, just default to disabled
-    } finally {
-      setTwoFactorLoading(false);
-    }
-  };
+    loadRecoveryStatus();
+  }, []);
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setPasswordError(null);
     setPasswordSuccess(false);
 
-    if (newPassword !== confirmPassword) {
-      setPasswordError("Passwords do not match");
+    if (!newPassword || !confirmPassword) {
+      setPasswordError("Please enter and confirm your new password.");
       return;
     }
 
-    if (newPassword.length < 8) {
-      setPasswordError("Password must be at least 8 characters");
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New password and confirmation do not match.");
       return;
     }
 
     try {
       setPasswordLoading(true);
-      // apiClient handles authentication via cookies
-      const response = await api.put('/user/change-password', {
+      await changePasswordApi({
         currentPassword,
         newPassword,
+        confirmPassword,
       });
-
-      if (response.status === "OK") {
-        setPasswordSuccess(true);
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-        setTimeout(() => setPasswordSuccess(false), 3000);
-        // Refresh activities to show password change
-        fetchActivities();
-      }
+      setPasswordSuccess(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setPasswordSuccess(false), 3000);
+      // Refresh activities to show password change
+      fetchActivities();
     } catch (err) {
       console.error("Failed to change password:", err);
-      setPasswordError(err.backendMessage || err.message || "Failed to change password");
+      setPasswordError(err?.message || "Failed to change password.");
     } finally {
       setPasswordLoading(false);
     }
@@ -216,7 +257,7 @@ function Security() {
       }
     } catch (err) {
       console.error("Failed to revoke device:", err);
-      alert(err.backendMessage || err.message || "Failed to revoke device");
+      alert(err?.message || "Unable to revoke device.");
     } finally {
       setRevokingDevice(null);
     }
@@ -227,135 +268,269 @@ function Security() {
       return;
     }
 
+    setSessionsActionLoading(true);
+    setSessionsError(null);
     try {
-      setRevokingSession(sessionId);
-      // apiClient handles authentication via cookies
-      const response = await api.post('/user/security/sessions/revoke', { sessionId });
-
-      if (response.status === "OK") {
-        // Refresh sessions list
-        await fetchSessions();
-        // Refresh activities
-        await fetchActivities();
-      }
+      await revokeSecuritySession(sessionId);
+      // Reload list after revocation
+      await loadSessions();
+      // Refresh activities to show revocation
+      await fetchActivities();
     } catch (err) {
       console.error("Failed to revoke session:", err);
-      alert(err.backendMessage || err.message || "Failed to revoke session");
+      setSessionsError(err?.message || "Unable to revoke session.");
     } finally {
-      setRevokingSession(null);
+      setSessionsActionLoading(false);
     }
   };
 
-  const handleRevokeAllOtherSessions = async () => {
+  const handleRevokeAllOthers = async () => {
     if (!confirm("Are you sure you want to log out from all other devices? You will remain logged in on this device only.")) {
       return;
     }
 
+    setSessionsActionLoading(true);
+    setSessionsError(null);
     try {
-      setRevokingAllOthers(true);
-      // apiClient handles authentication via cookies
-      const response = await api.post('/user/security/sessions/revoke-all-others', {});
-
-      if (response.status === "OK") {
-        // Refresh sessions list
-        await fetchSessions();
-        // Refresh activities
-        await fetchActivities();
-        alert(`Successfully logged out from ${response.data?.revokedCount || 0} other device(s).`);
-      }
+      await revokeOtherSecuritySessions();
+      // Reload list after revocation
+      await loadSessions();
+      // Refresh activities to show revocation
+      await fetchActivities();
     } catch (err) {
-      console.error("Failed to revoke all other sessions:", err);
-      alert(err.backendMessage || err.message || "Failed to revoke sessions");
+      console.error("Failed to revoke other sessions:", err);
+      setSessionsError(err?.message || "Unable to revoke other sessions.");
     } finally {
-      setRevokingAllOthers(false);
+      setSessionsActionLoading(false);
     }
   };
 
-  const handleTwoFactorSetup = async () => {
+  // 2FA handlers (new implementation)
+  async function handleStart2FA() {
     try {
+      setTwoFactorError('');
+      setTwoFactorLoading(true);
+      setTwoFactorBusy(true);
+      
+      // Clear any previous state first
+      setTwoFactorSecret('');
+      setTwoFactorOtpauthUrl('');
+      setTwoFactorOtpToken('');
+      setTwoFactorSetupMode('qr');      // default to QR
+      
+      // Get fresh setup data from server
+      const { secret, otpauthUrl } = await startTwoFactorSetup();
+      
+      // Set new state with fresh data
+      setTwoFactorSecret(secret || '');
+      setTwoFactorOtpauthUrl(otpauthUrl || '');
+      setTwoFactorOtpToken('');
+      setTwoFactorSetupStep('setup');
+    } catch (err) {
+      setTwoFactorError(err.message || 'Failed to start 2FA setup.');
+      setTwoFactorSetupStep('idle');
+    } finally {
+      setTwoFactorLoading(false);
+      setTwoFactorBusy(false);
+    }
+  }
+
+  async function handleConfirm2FA() {
+    try {
+      if (!twoFactorOtpToken.trim()) {
+        setTwoFactorError('Enter the 6-digit code from your authenticator app.');
+        return;
+      }
+      setTwoFactorBusy(true);
       setTwoFactorError(null);
-      setTwoFactorMessage(null);
+      await confirmTwoFactorSetup(twoFactorOtpToken.trim());
+      
+      // Reset setup state
+      setTwoFactorSetupStep('idle');
       setTwoFactorSetupMode('qr');
-      
-      // apiClient handles authentication via cookies
-      const response = await api.post('/user/security/2fa/setup', { step: 'start' });
-
-      if (response.status === "OK" && response.data?.otpauthUrl) {
-        setTwoFactorQrUrl(response.data.otpauthUrl);
-      } else {
-        setTwoFactorError("Failed to generate QR code");
-        setTwoFactorSetupMode(false);
-      }
-    } catch (err) {
-      console.error("Failed to setup 2FA:", err);
-      setTwoFactorError(err.backendMessage || err.message || "Failed to setup 2FA");
-      setTwoFactorSetupMode(false);
-    }
-  };
-
-  const handleTwoFactorVerify = async () => {
-    if (!twoFactorVerifyCode || !/^\d{6}$/.test(twoFactorVerifyCode)) {
-      setTwoFactorError("Please enter a valid 6-digit code");
-      return;
-    }
-
-    try {
-      setTwoFactorVerifying(true);
+      setTwoFactorSecret('');
+      setTwoFactorOtpauthUrl('');
+      setTwoFactorOtpToken('');
       setTwoFactorError(null);
       
-      // apiClient handles authentication via cookies
-      const response = await api.post('/user/security/2fa/setup', { 
-        step: 'verify', 
-        token: twoFactorVerifyCode 
-      });
-
-      if (response.status === "OK") {
-        setTwoFactorStatus({ enabled: true, method: 'totp' });
-        setTwoFactorMessage("2FA enabled successfully!");
-        setTwoFactorSetupMode(false);
-        setTwoFactorQrUrl(null);
-        setTwoFactorVerifyCode("");
-        setTimeout(() => {
-          setTwoFactorMessage(null);
-          fetchTwoFactorStatus();
-          fetchActivities();
-        }, 3000);
+      // Refresh status from server to get updated enabled state
+      try {
+        const freshStatus = await getTwoFactorStatus();
+        setTwoFactorStatus(freshStatus);
+      } catch (statusErr) {
+        console.warn('Failed to refresh 2FA status after confirm:', statusErr);
+        // Fallback to optimistic update
+        setTwoFactorStatus((prev) => ({ ...prev, enabled: true }));
       }
+      
+      // Refresh activities
+      fetchActivities();
     } catch (err) {
-      console.error("Failed to verify 2FA:", err);
-      setTwoFactorError(err.backendMessage || err.message || "Invalid code. Please try again.");
+      setTwoFactorError(err.message || 'Failed to confirm 2FA.');
     } finally {
-      setTwoFactorVerifying(false);
+      setTwoFactorBusy(false);
     }
-  };
+  }
 
   const handleCancelTwoFactorSetup = () => {
-    setTwoFactorSetupMode(false);
-    setTwoFactorQrUrl(null);
-    setTwoFactorVerifyCode("");
-    setTwoFactorError(null);
+    setTwoFactorSetupStep('idle');
+    setTwoFactorSecret('');
+    setTwoFactorOtpauthUrl('');
+    setTwoFactorOtpToken('');
+    setTwoFactorError('');
   };
 
-  const handleTwoFactorDisable = async () => {
-    if (!confirm("Are you sure you want to disable two-factor authentication?")) {
-      return;
+  async function handleDisable2FA() {
+    try {
+      setTwoFactorBusy(true);
+      setTwoFactorError(null);
+      await disableTwoFactor();
+      
+      // Reset all UI state
+      setTwoFactorStatus({ enabled: false, createdAt: null, confirmedAt: null });
+      setTwoFactorSetupStep('idle');
+      setTwoFactorSetupMode('qr');
+      setTwoFactorSecret('');
+      setTwoFactorOtpauthUrl('');
+      setTwoFactorOtpToken('');
+      setTwoFactorError(null);
+      
+      // Refresh status from server to ensure consistency
+      try {
+        const freshStatus = await getTwoFactorStatus();
+        setTwoFactorStatus(freshStatus);
+      } catch (statusErr) {
+        console.warn('Failed to refresh 2FA status after disable:', statusErr);
+      }
+      
+      // Refresh activities
+      fetchActivities();
+    } catch (err) {
+      setTwoFactorError(err.message || 'Failed to disable 2FA.');
+    } finally {
+      setTwoFactorBusy(false);
     }
+  }
+
+  function openDeleteModal() {
+    setDeleteError(null);
+    setDeletePassword("");
+    setDeleteOtp("");
+    setDeleteConfirmText("");
+    setShowDeleteModal(true);
+  }
+
+  function closeDeleteModal() {
+    if (deleteBusy) return;
+    setShowDeleteModal(false);
+  }
+
+  async function handleConfirmDeleteAccount() {
+    try {
+      setDeleteBusy(true);
+      setDeleteError(null);
+
+      const payload = {
+        password: deletePassword,
+        otp: deleteOtp || undefined,
+        confirmText: deleteConfirmText,
+      };
+
+      await deleteAccountApi(payload);
+
+      // Clear local app state if needed (auth context, etc.)
+      // For now, force a full redirect to landing page.
+      window.location.href = '/';
+    } catch (err) {
+      setDeleteError(err.message || 'Failed to delete account.');
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
+  const deleteFormValid =
+    deletePassword.trim().length > 0 &&
+    deleteConfirmText.trim().toUpperCase() === 'DELETE';
+
+  // Recovery codes handlers (Phase S5)
+  function openRecoveryModal() {
+    setFreshRecoveryCodes([]);
+    setRecoveryError(null);
+    setShowRecoveryModal(true);
+  }
+
+  function closeRecoveryModal() {
+    if (recoveryBusy) return;
+    setShowRecoveryModal(false);
+  }
+
+  async function handleGenerateRecoveryCodes() {
+    try {
+      setRecoveryBusy(true);
+      setRecoveryError(null);
+
+      const codes = await regenerateRecoveryCodes();
+      setFreshRecoveryCodes(codes);
+      // Refresh status to show new list (all unused)
+      const status = await getRecoveryCodesStatus();
+      setRecoveryCodes(status || []);
+    } catch (err) {
+      setRecoveryError(err.message || 'Failed to generate recovery codes.');
+    } finally {
+      setRecoveryBusy(false);
+    }
+  }
+
+  function handleDownloadRecoveryCodes() {
+    if (!freshRecoveryCodes || freshRecoveryCodes.length === 0) return;
+
+    const blob = new Blob(
+      [
+        'OGC NewFinity — 2FA Recovery Codes\n\n',
+        'Store these codes in a safe place. Each code can be used once.\n\n',
+        ...freshRecoveryCodes.map((c) => `${c}\n`),
+      ],
+      { type: 'text/plain;charset=utf-8' }
+    );
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ogc-newfinity-2fa-recovery-codes.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const handleDownloadData = async () => {
+    setExportBusy(true);
+    setExportError(null);
+    setExportSuccess(false);
 
     try {
-      setTwoFactorMessage(null);
-      // apiClient handles authentication via cookies
-      const response = await api.post('/user/security/2fa/disable', {});
+      const blob = await exportAccountData();
 
-      if (response.status === "OK") {
-        setTwoFactorStatus({ enabled: false });
-        setTwoFactorMessage("2FA disabled successfully");
-        setTimeout(() => setTwoFactorMessage(null), 3000);
-        // Refresh activities
-        fetchActivities();
-      }
+      const url = window.URL.createObjectURL(blob);
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10);
+      const fileName = `ogc-newfinity-account-export-${dateStr}.json`;
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      setExportSuccess(true);
     } catch (err) {
-      console.error("Failed to disable 2FA:", err);
-      setTwoFactorError(err.backendMessage || err.message || "Failed to disable 2FA");
+      console.error("[Security] Account export failed", err);
+      setExportError(
+        err?.message ||
+          "Could not generate your data export right now. Please try again later."
+      );
+    } finally {
+      setExportBusy(false);
     }
   };
 
@@ -497,10 +672,16 @@ function Security() {
       <div className="ogc-dashboard-card" style={{ marginTop: "24px" }}>
         <h2 className="ogc-dashboard-card-title">Recent Activity</h2>
         
+        {activitiesError && (
+          <div className="ogc-form-error" style={{ marginBottom: "1rem" }}>
+            {activitiesError}
+          </div>
+        )}
+        
         {activitiesLoading ? (
-          <p style={{ opacity: 0.8 }}>Loading activity...</p>
-        ) : activities.length === 0 ? (
-          <p style={{ opacity: 0.8 }}>No activity recorded yet.</p>
+          <p style={{ opacity: 0.8 }}>Loading recent activity...</p>
+        ) : !activitiesLoading && !activitiesError && activities.length === 0 ? (
+          <p style={{ opacity: 0.8 }}>No recent activity yet.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {activities.map((activity) => (
@@ -546,273 +727,526 @@ function Security() {
           <h2 className="ogc-dashboard-card-title">Active Sessions</h2>
           {sessions.length > 1 && (
             <button
-              onClick={handleRevokeAllOtherSessions}
-              disabled={revokingAllOthers}
+              onClick={handleRevokeAllOthers}
+              disabled={sessionsActionLoading}
               style={{
                 padding: "8px 16px",
                 backgroundColor: "rgba(255, 0, 0, 0.2)",
                 border: "1px solid rgba(255, 0, 0, 0.3)",
                 borderRadius: "4px",
                 color: "#fff",
-                cursor: revokingAllOthers ? "not-allowed" : "pointer",
-                opacity: revokingAllOthers ? 0.5 : 1,
+                cursor: sessionsActionLoading ? "not-allowed" : "pointer",
+                opacity: sessionsActionLoading ? 0.5 : 1,
                 fontSize: "0.9em",
               }}
             >
-              {revokingAllOthers ? "Logging out..." : "Log out from all other devices"}
+              {sessionsActionLoading ? "Logging out..." : "Log out from all other devices"}
             </button>
           )}
         </div>
         
+        {sessionsError && (
+          <div className="ogc-form-error" style={{ marginBottom: "1rem" }}>
+            {sessionsError}
+          </div>
+        )}
+        
         {sessionsLoading ? (
           <p style={{ opacity: 0.8 }}>Loading sessions...</p>
-        ) : sessions.length === 0 ? (
-          <p style={{ opacity: 0.8 }}>No active sessions.</p>
+        ) : sessions.length === 0 && !sessionsError ? (
+          <p style={{ opacity: 0.8 }}>No active sessions found.</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {sessions.map((session) => (
-              <div
-                key={session.id}
-                style={{
-                  padding: "12px",
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
-                  borderRadius: "8px",
-                  backgroundColor: "rgba(255, 255, 255, 0.02)",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                    <strong>{parseUserAgent(session.userAgent)}</strong>
-                    {session.isCurrent && (
-                      <span style={{ fontSize: "0.75em", padding: "2px 6px", backgroundColor: "rgba(0, 255, 0, 0.2)", borderRadius: "4px" }}>
-                        This device
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: "0.85em", opacity: 0.7 }}>
-                    Last seen: {formatDateTime(session.lastSeenAt)}
-                  </div>
-                  {session.ipAddress && (
-                    <div style={{ fontSize: "0.85em", opacity: 0.7 }}>
-                      IP: {session.ipAddress}
+          <>
+            <ul className="session-list">
+              {sessions.map((session) => (
+                <li
+                  key={session.id}
+                  className={'session-item' + (session.isCurrent ? ' session-item--current' : '')}
+                >
+                  <div className="session-main">
+                    <div className="session-title-row">
+                      <span className="session-device">{session.deviceLabel || 'Unknown device'}</span>
+                      {session.isCurrent && <span className="session-badge">This device</span>}
                     </div>
-                  )}
-                  {session.createdAt && (
-                    <div style={{ fontSize: "0.85em", opacity: 0.7 }}>
-                      Created: {formatDateTime(session.createdAt)}
+                    <div className="session-meta">
+                      <span>{session.ipAddress}</span>
+                      <span>Last active: {new Date(session.lastSeenAt).toLocaleString()}</span>
+                      <span>Expires: {new Date(session.expiresAt).toLocaleString()}</span>
                     </div>
+                  </div>
+                  {!session.isCurrent && (
+                    <button
+                      type="button"
+                      className="session-revoke-btn"
+                      onClick={() => handleRevokeSession(session.id)}
+                      disabled={sessionsActionLoading}
+                    >
+                      {sessionsActionLoading ? 'Removing…' : 'Sign out'}
+                    </button>
                   )}
-                </div>
-                {!session.isCurrent && (
-                  <button
-                    onClick={() => handleRevokeSession(session.id)}
-                    disabled={revokingSession === session.id}
-                    style={{
-                      padding: "6px 12px",
-                      backgroundColor: "rgba(255, 0, 0, 0.2)",
-                      border: "1px solid rgba(255, 0, 0, 0.3)",
-                      borderRadius: "4px",
-                      color: "#fff",
-                      cursor: revokingSession === session.id ? "not-allowed" : "pointer",
-                      opacity: revokingSession === session.id ? 0.5 : 1,
-                    }}
-                  >
-                    {revokingSession === session.id ? "Logging out..." : "Log out"}
-                  </button>
-                )}
+                </li>
+              ))}
+            </ul>
+            
+            {sessions.length > 1 && (
+              <div className="session-footer">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleRevokeAllOthers}
+                  disabled={sessionsActionLoading}
+                >
+                  {sessionsActionLoading ? 'Signing out…' : 'Sign out of other devices'}
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 
       {/* Devices & Sessions Section (Legacy - keeping for backward compatibility) */}
       <div className="ogc-dashboard-card" style={{ marginTop: "24px" }}>
         <h2 className="ogc-dashboard-card-title">Devices & Sessions</h2>
-        
-        {devicesLoading ? (
-          <p style={{ opacity: 0.8 }}>Loading devices...</p>
-        ) : devices.length === 0 ? (
-          <p style={{ opacity: 0.8 }}>No devices registered yet.</p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {devices.map((device, index) => {
-              const isCurrentDevice = index === 0; // Simplified - first device is current
-              return (
-                <div
-                  key={device.id}
-                  style={{
-                    padding: "12px",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    borderRadius: "8px",
-                    backgroundColor: "rgba(255, 255, 255, 0.02)",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                      <strong>{device.deviceName || "Unknown device"}</strong>
-                      {isCurrentDevice && (
-                        <span style={{ fontSize: "0.75em", padding: "2px 6px", backgroundColor: "rgba(0, 255, 0, 0.2)", borderRadius: "4px" }}>
-                          This device
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: "0.85em", opacity: 0.7 }}>
-                      Last seen: {formatDateTime(device.lastSeenAt)}
-                    </div>
-                    {device.ipAddress && (
-                      <div style={{ fontSize: "0.85em", opacity: 0.7 }}>
-                        IP: {device.ipAddress}
-                      </div>
-                    )}
+
+        <p className="security-muted" style={{ marginBottom: "0.5rem" }}>
+          Overview of devices and browsers that have an active session on your account.
+        </p>
+
+        {sessionsLoading && (
+          <p className="security-muted">Loading devices…</p>
+        )}
+
+        {sessionsError && (
+          <p className="form-message form-message--error">{sessionsError}</p>
+        )}
+
+        {!sessionsLoading && !sessionsError && sessions.length === 0 && (
+          <p className="security-muted">No active devices found.</p>
+        )}
+
+        {!sessionsLoading && !sessionsError && sessions.length > 0 && (
+          <ul className="session-list">
+            {sessions.map((s) => (
+              <li
+                key={`device-${s.id}`}
+                className={
+                  "session-item" + (s.isCurrent ? " session-item--current" : "")
+                }
+              >
+                <div className="session-main">
+                  <div className="session-title-row">
+                    <span className="session-device">{s.deviceLabel}</span>
+                    {s.isCurrent && <span className="session-badge">This device</span>}
                   </div>
-                  {!isCurrentDevice && (
-                    <button
-                      onClick={() => handleRevokeDevice(device.deviceFingerprint)}
-                      disabled={revokingDevice === device.deviceFingerprint}
-                      style={{
-                        padding: "6px 12px",
-                        backgroundColor: "rgba(255, 0, 0, 0.2)",
-                        border: "1px solid rgba(255, 0, 0, 0.3)",
-                        borderRadius: "4px",
-                        color: "#fff",
-                        cursor: revokingDevice === device.deviceFingerprint ? "not-allowed" : "pointer",
-                        opacity: revokingDevice === device.deviceFingerprint ? 0.5 : 1,
-                      }}
-                    >
-                      {revokingDevice === device.deviceFingerprint ? "Revoking..." : "Revoke"}
-                    </button>
-                  )}
+
+                  <div className="session-meta">
+                    <span>{s.ipAddress}</span>
+                    <span>
+                      Last active:{" "}
+                      {s.lastSeenAt
+                        ? new Date(s.lastSeenAt).toLocaleString()
+                        : "Unknown"}
+                    </span>
+                    <span>
+                      Expires:{" "}
+                      {s.expiresAt
+                        ? new Date(s.expiresAt).toLocaleString()
+                        : "Unknown"}
+                    </span>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
       {/* Two-Factor Authentication Section */}
       <div className="ogc-dashboard-card" style={{ marginTop: "24px" }}>
         <h2 className="ogc-dashboard-card-title">Two-Factor Authentication</h2>
-        
-        {twoFactorLoading ? (
-          <p style={{ opacity: 0.8 }}>Loading 2FA status...</p>
-        ) : (
+        <p className="ogc-dashboard-card-subtitle">
+          Add an extra layer of security to your account using a one-time code from an authenticator app.
+        </p>
+
+        {twoFactorLoading && (
+          <p className="security-muted">Checking 2FA status…</p>
+        )}
+
+        {twoFactorError && (
+          <p className="form-message form-message--error" style={{ marginTop: '0.5rem' }}>
+            {twoFactorError}
+          </p>
+        )}
+
+        {!twoFactorLoading && twoFactorSetupStep === 'idle' && (
           <>
+            <p className="security-muted">
+              Status:{' '}
+              {twoFactorStatus.enabled ? (
+                <span style={{ color: '#00FFC6' }}>Enabled</span>
+              ) : (
+                <span style={{ color: '#ffbc25' }}>Disabled</span>
+              )}
+            </p>
+
+            <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+              {!twoFactorStatus.enabled && (
+                <button
+                  type="button"
+                  className="ogc-button-primary"
+                  onClick={handleStart2FA}
+                  disabled={twoFactorBusy}
+                >
+                  {twoFactorBusy ? 'Starting…' : 'Enable 2FA'}
+                </button>
+              )}
+
+              {twoFactorStatus.enabled && (
+                <button
+                  type="button"
+                  className="ogc-button-secondary"
+                  onClick={handleDisable2FA}
+                  disabled={twoFactorBusy}
+                >
+                  {twoFactorBusy ? 'Updating…' : 'Disable 2FA'}
+                </button>
+              )}
+            </div>
+
+            <p className="security-note">
+              Enforcement in the login flow will be added in a later phase. For now, this
+              lets you prepare your authenticator setup.
+            </p>
+          </>
+        )}
+
+        {!twoFactorLoading && twoFactorSetupStep === 'setup' && (
+          <div className="twofactor-setup-panel">
+            <div className="twofactor-setup-header">
+              <div className="twofactor-toggle">
+                <button
+                  type="button"
+                  className={
+                    twoFactorSetupMode === 'qr'
+                      ? 'twofactor-toggle-btn twofactor-toggle-btn--active'
+                      : 'twofactor-toggle-btn'
+                  }
+                  onClick={() => setTwoFactorSetupMode('qr')}
+                >
+                  QR code
+                </button>
+                <button
+                  type="button"
+                  className={
+                    twoFactorSetupMode === 'manual'
+                      ? 'twofactor-toggle-btn twofactor-toggle-btn--active'
+                      : 'twofactor-toggle-btn'
+                  }
+                  onClick={() => setTwoFactorSetupMode('manual')}
+                >
+                  Secret key
+                </button>
+              </div>
+              <p className="twofactor-setup-subtitle">
+                Scan the QR code with your authenticator app, or switch to "Secret key" to enter it manually.
+              </p>
+            </div>
+
+            {twoFactorSetupMode === 'qr' && (
+              <div className="twofactor-qr-section">
+                {twoFactorOtpauthUrl ? (
+                  <div className="twofactor-qr-box">
+                    <QRCodeCanvas
+                      value={twoFactorOtpauthUrl}
+                      size={160}
+                      includeMargin={true}
+                    />
+                  </div>
+                ) : (
+                  <p className="twofactor-helper-text">
+                    QR data is not available. You can switch to "Secret key" instead.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {twoFactorSetupMode === 'manual' && (
+              <div className="twofactor-secret-box">
+                <div className="twofactor-secret-label">Secret key</div>
+                <div className="twofactor-secret-value">
+                  {twoFactorSecret || 'Not available'}
+                </div>
+                <p className="twofactor-helper-text">
+                  In your authenticator app, choose "Enter key manually" and paste this secret.
+                </p>
+              </div>
+            )}
+
+            {/* Code entry is shared for both modes */}
+            <div className="twofactor-code-row">
+              <label className="twofactor-code-label">
+                Enter the 6-digit code from your app to confirm:
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                className="ogc-input"
+                value={twoFactorOtpToken}
+                onChange={(e) => setTwoFactorOtpToken(e.target.value.trim())}
+                placeholder="123456"
+              />
+            </div>
+
             {twoFactorError && (
-              <div className="ogc-form-error" style={{ marginBottom: "1rem" }}>
+              <div className="ogc-form-error" style={{ marginBottom: '0.75rem' }}>
                 {twoFactorError}
               </div>
             )}
-            
-            {twoFactorMessage && (
-              <div className="ogc-form-success" style={{ marginBottom: "1rem" }}>
-                {twoFactorMessage}
-              </div>
-            )}
 
-            {!twoFactorSetupMode ? (
-              <>
-                <div style={{ marginBottom: "1rem" }}>
-                  <p style={{ opacity: 0.8, marginBottom: "12px" }}>
-                    Status: <strong>{twoFactorStatus.enabled ? "Enabled" : "Disabled"}</strong>
-                  </p>
-                  {twoFactorStatus.enabled && (
-                    <p style={{ opacity: 0.7, fontSize: "0.9em", marginBottom: "16px" }}>
-                      Method: <strong>TOTP (Google Authenticator / Authy)</strong>
-                    </p>
-                  )}
-                </div>
-
-                {twoFactorStatus.enabled ? (
-                  <button
-                    onClick={handleTwoFactorDisable}
-                    className="ogc-form-submit-btn"
-                    style={{ backgroundColor: "rgba(255, 0, 0, 0.2)", borderColor: "rgba(255, 0, 0, 0.3)" }}
-                  >
-                    Disable 2FA
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleTwoFactorSetup}
-                    className="ogc-form-submit-btn"
-                  >
-                    Enable 2FA
-                  </button>
-                )}
-              </>
-            ) : (
-              <div>
-                {twoFactorQrUrl && (
-                  <div style={{ marginBottom: "24px" }}>
-                    <p style={{ marginBottom: "16px", opacity: 0.9 }}>
-                      Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.):
-                    </p>
-                    <div style={{ 
-                      display: "flex", 
-                      justifyContent: "center", 
-                      padding: "20px",
-                      backgroundColor: "rgba(255, 255, 255, 0.05)",
-                      borderRadius: "8px",
-                      marginBottom: "16px"
-                    }}>
-                      <QRCodeSVG value={twoFactorQrUrl} size={200} />
-                    </div>
-                    <p style={{ fontSize: "0.9em", opacity: 0.7, marginBottom: "16px" }}>
-                      After scanning, enter the 6-digit code from your app below:
-                    </p>
-                    
-                    <div className="ogc-form-group">
-                      <label htmlFor="twoFactorCode" className="ogc-form-label">
-                        6-Digit Code
-                      </label>
-                      <input
-                        type="text"
-                        id="twoFactorCode"
-                        className="ogc-form-input"
-                        value={twoFactorVerifyCode}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                          setTwoFactorVerifyCode(value);
-                        }}
-                        placeholder="000000"
-                        maxLength={6}
-                        style={{ textAlign: "center", fontSize: "1.2em", letterSpacing: "0.2em" }}
-                      />
-                    </div>
-                    
-                    <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
-                      <button
-                        onClick={handleTwoFactorVerify}
-                        className="ogc-form-submit-btn"
-                        disabled={twoFactorVerifying || twoFactorVerifyCode.length !== 6}
-                      >
-                        {twoFactorVerifying ? "Verifying..." : "Verify & Enable"}
-                      </button>
-                      <button
-                        onClick={handleCancelTwoFactorSetup}
-                        className="ogc-form-submit-btn"
-                        style={{ 
-                          backgroundColor: "rgba(255, 255, 255, 0.1)", 
-                          borderColor: "rgba(255, 255, 255, 0.2)" 
-                        }}
-                        disabled={twoFactorVerifying}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </>
+            <div className="twofactor-actions-row">
+              <button
+                type="button"
+                className="ogc-button-primary"
+                onClick={handleConfirm2FA}
+                disabled={twoFactorBusy || !twoFactorOtpToken}
+              >
+                {twoFactorBusy ? 'Confirming…' : 'Confirm & enable'}
+              </button>
+              <button
+                type="button"
+                className="ogc-button-secondary"
+                onClick={handleCancelTwoFactorSetup}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         )}
       </div>
+
+      {/* Recovery codes Section (Phase S5) */}
+      <div className="ogc-dashboard-card" style={{ marginTop: '24px' }}>
+        <h2 className="ogc-dashboard-card-title">Recovery codes</h2>
+        <p className="ogc-dashboard-card-text">
+          Use recovery codes if you lose access to your authenticator app. Each code can be used once.
+        </p>
+
+        <p className="ogc-dashboard-card-text" style={{ fontSize: '0.8rem', opacity: 0.8, marginBottom: '0.5rem' }}>
+          Status:&nbsp;
+          {recoveryCodes && recoveryCodes.length > 0 ? (
+            <>
+              {recoveryCodes.filter((c) => !c.used).length} unused codes,&nbsp;
+              {recoveryCodes.filter((c) => c.used).length} used.
+            </>
+          ) : (
+            'No recovery codes generated yet.'
+          )}
+        </p>
+
+        <button
+          type="button"
+          className="ogc-button-secondary"
+          onClick={openRecoveryModal}
+        >
+          {recoveryCodes && recoveryCodes.length > 0
+            ? 'View / regenerate recovery codes'
+            : 'Generate recovery codes'}
+        </button>
+      </div>
+
+      {/* Download Your Data Section */}
+      <div className="ogc-dashboard-card security-privacy-export" style={{ marginTop: "24px" }}>
+        <h2 className="ogc-dashboard-card-title">Download your data</h2>
+        <p className="ogc-dashboard-card-text">
+          Export a copy of your account data, including profile details, sessions, and
+          recent security activity, as a JSON file.
+        </p>
+
+        <button
+          type="button"
+          className="ogc-button-primary"
+          onClick={handleDownloadData}
+          disabled={exportBusy}
+        >
+          {exportBusy ? "Preparing export…" : "Download my data"}
+        </button>
+
+        {exportError && (
+          <div className="ogc-form-message ogc-form-message--error" style={{ marginTop: "0.75rem" }}>
+            {exportError}
+          </div>
+        )}
+        {exportSuccess && !exportError && (
+          <div className="ogc-form-message ogc-form-message--success" style={{ marginTop: "0.75rem" }}>
+            Your data export has started downloading.
+          </div>
+        )}
+      </div>
+
+      {/* Delete Account Section */}
+      <div className="ogc-dashboard-card security-danger-zone" style={{ marginTop: "24px" }}>
+        <h2 className="ogc-dashboard-card-title">Delete account</h2>
+        <p className="ogc-dashboard-card-text" style={{ marginBottom: "16px" }}>
+          This action is permanent and cannot be undone. All your sessions will be
+          revoked and you will lose access to this account.
+        </p>
+
+        <button
+          type="button"
+          className="ogc-button-danger"
+          onClick={openDeleteModal}
+        >
+          Delete my account
+        </button>
+      </div>
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div className="ogc-modal-backdrop">
+          <div className="ogc-modal">
+            <h2 className="ogc-modal-title">Delete your account</h2>
+            <p className="ogc-modal-text">
+              This action is <strong>permanent</strong>. Your profile, sessions, and
+              account data will be deleted. Security logs will be anonymized for
+              fraud and abuse prevention.
+            </p>
+
+            <div className="ogc-modal-section">
+              <label className="ogc-modal-label">Current password</label>
+              <input
+                type="password"
+                className="ogc-input"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="Enter your current password"
+              />
+            </div>
+
+            {/* Optional 2FA input — safe even if 2FA is disabled */}
+            <div className="ogc-modal-section">
+              <label className="ogc-modal-label">
+                Two-factor code (if 2FA is enabled)
+              </label>
+              <input
+                type="text"
+                className="ogc-input"
+                inputMode="numeric"
+                maxLength={6}
+                value={deleteOtp}
+                onChange={(e) => setDeleteOtp(e.target.value)}
+                placeholder="123456"
+              />
+            </div>
+
+            <div className="ogc-modal-section">
+              <label className="ogc-modal-label">
+                Type <code>DELETE</code> to confirm
+              </label>
+              <input
+                type="text"
+                className="ogc-input"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="DELETE"
+              />
+            </div>
+
+            {deleteError && (
+              <div className="ogc-form-message ogc-form-message--error">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="ogc-modal-actions">
+              <button
+                type="button"
+                className="ogc-button-secondary"
+                onClick={closeDeleteModal}
+                disabled={deleteBusy}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="ogc-button-danger"
+                onClick={handleConfirmDeleteAccount}
+                disabled={!deleteFormValid || deleteBusy}
+              >
+                {deleteBusy ? 'Deleting…' : 'Delete my account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recovery codes Modal (Phase S5) */}
+      {showRecoveryModal && (
+        <div className="ogc-modal-backdrop">
+          <div className="ogc-modal">
+            <h2 className="ogc-modal-title">2FA recovery codes</h2>
+            <p className="ogc-modal-text">
+              Store these codes somewhere safe (password manager, secure notes, or offline file).
+              Each code can be used once if you lose access to your authenticator app.
+            </p>
+
+            <div className="ogc-modal-section">
+              <button
+                type="button"
+                className="ogc-button-primary"
+                onClick={handleGenerateRecoveryCodes}
+                disabled={recoveryBusy}
+              >
+                {recoveryBusy ? 'Generating…' : 'Generate new codes'}
+              </button>
+              <p className="ogc-modal-helper">
+                Generating new codes will invalidate any existing unused codes.
+              </p>
+            </div>
+
+            {recoveryError && (
+              <div className="ogc-form-message ogc-form-message--error">
+                {recoveryError}
+              </div>
+            )}
+
+            {freshRecoveryCodes.length > 0 && (
+              <div className="twofactor-recovery-list">
+                <p className="ogc-modal-text" style={{ marginBottom: '0.4rem' }}>
+                  Copy or download these codes now. You won't be able to see them again.
+                </p>
+                <div className="twofactor-recovery-codes">
+                  {freshRecoveryCodes.map((code) => (
+                    <div key={code} className="twofactor-recovery-code-item">
+                      {code}
+                    </div>
+                  ))}
+                </div>
+                <div className="twofactor-recovery-actions">
+                  <button
+                    type="button"
+                    className="ogc-button-secondary"
+                    onClick={handleDownloadRecoveryCodes}
+                  >
+                    Download as text file
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="ogc-modal-actions">
+              <button
+                type="button"
+                className="ogc-button-secondary"
+                onClick={closeRecoveryModal}
+                disabled={recoveryBusy}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

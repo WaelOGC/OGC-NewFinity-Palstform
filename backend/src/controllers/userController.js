@@ -19,13 +19,19 @@ import {
   getEffectivePermissions,
   mergeFeatureFlags,
   getDefaultFeatureFlags,
+  softDeleteUserAccount,
 } from "../services/userService.js";
 import {
   getUserSessions,
   revokeSession,
   revokeAllOtherSessions,
+  revokeAllUserSessions,
 } from "../services/sessionService.js";
+import { sendOk, sendError } from "../utils/apiResponse.js";
+import { sendPasswordChangedAlertEmail, sendTwoFactorStatusChangedEmail } from "../services/emailService.js";
+import { logUserActivity } from "../services/activityService.js";
 import pool from "../db.js";
+import bcrypt from "bcryptjs";
 
 export async function listUsers(req, res) {
   try {
@@ -127,33 +133,32 @@ export async function getProfile(req, res) {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ 
-        status: "ERROR", 
-        message: "Authentication required" 
+      return sendError(res, {
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+        statusCode: 401
       });
     }
 
     const profile = await getUserProfile(userId);
     if (!profile) {
-      return res.status(404).json({ 
-        status: "ERROR", 
-        message: "Profile not found" 
+      return sendError(res, {
+        code: "PROFILE_NOT_FOUND",
+        message: "Profile not found",
+        statusCode: 404
       });
     }
 
     // Remove sensitive fields before sending
     const { password, ...safeProfile } = profile;
     
-    return res.json({ 
-      status: "OK", 
-      profile: safeProfile 
-    });
+    return sendOk(res, { profile: safeProfile });
   } catch (error) {
     console.error("getProfile error:", error);
-    return res.status(500).json({
-      status: "ERROR",
+    return sendError(res, {
+      code: "DATABASE_ERROR",
       message: "Failed to fetch profile",
-      error: error.message,
+      statusCode: 500
     });
   }
 }
@@ -166,9 +171,10 @@ export async function updateProfile(req, res) {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ 
-        status: "ERROR", 
-        message: "Authentication required" 
+      return sendError(res, {
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+        statusCode: 401
       });
     }
 
@@ -178,8 +184,9 @@ export async function updateProfile(req, res) {
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     try {
-      await recordUserActivity({
+      await logUserActivity({
         userId,
+        actorId: userId,
         type: 'PROFILE_UPDATED',
         ipAddress,
         userAgent,
@@ -192,43 +199,39 @@ export async function updateProfile(req, res) {
     // Remove sensitive fields before sending
     const { password, ...safeProfile } = updatedProfile;
     
-    return res.json({ 
-      status: "OK", 
-      message: "Profile updated successfully",
-      profile: safeProfile 
-    });
+    return sendOk(res, { profile: safeProfile });
   } catch (error) {
     console.error("updateProfile error:", error);
     
     // Handle duplicate username error
     if (error.code === "ER_DUP_ENTRY") {
-      return res.status(409).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "USERNAME_EXISTS",
         message: "Username already taken",
-        code: "USERNAME_EXISTS"
+        statusCode: 409
       });
     }
     
     if (error.message === "No valid fields to update") {
-      return res.status(400).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "VALIDATION_ERROR",
         message: error.message,
-        code: "INVALID_REQUEST"
+        statusCode: 400
       });
     }
     
     if (error.message === "User not found") {
-      return res.status(404).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "USER_NOT_FOUND",
         message: error.message,
-        code: "USER_NOT_FOUND"
+        statusCode: 404
       });
     }
     
-    return res.status(500).json({
-      status: "ERROR",
+    return sendError(res, {
+      code: "DATABASE_ERROR",
       message: "Failed to update profile",
-      error: error.message,
+      statusCode: 500
     });
   }
 }
@@ -241,106 +244,171 @@ export async function changePasswordHandler(req, res) {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ 
-        status: "ERROR", 
-        message: "Authentication required" 
+      return sendError(res, {
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+        statusCode: 401
       });
     }
 
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "VALIDATION_ERROR",
         message: "currentPassword and newPassword are required",
-        code: "MISSING_FIELDS"
+        statusCode: 400
       });
     }
 
     if (newPassword.length < 8) {
-      return res.status(400).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "VALIDATION_ERROR",
         message: "New password must be at least 8 characters",
-        code: "PASSWORD_TOO_SHORT"
+        statusCode: 400
       });
     }
 
     await changePassword(userId, currentPassword, newPassword);
     
-    // Phase 2: Record password change activity
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    const userAgent = req.headers['user-agent'];
+    // Phase 8.6: Record password change activity
+    const ipAddress = req.ip || req.headers['x-forwarded-for']?.split(",")[0].trim() || req.socket?.remoteAddress || req.connection.remoteAddress || null;
+    const userAgent = req.headers['user-agent'] || null;
     try {
-      await recordUserActivity({
+      await logUserActivity({
         userId,
+        actorId: userId, // Self-action
         type: 'PASSWORD_CHANGED',
         ipAddress,
         userAgent,
-        metadata: {}
+        metadata: {
+          via: 'SELF_CHANGE'
+        }
       });
     } catch (activityError) {
       console.error('Failed to record password change activity:', activityError);
     }
     
-    return res.json({ 
-      status: "OK", 
-      message: "Password changed successfully" 
-    });
+    // Phase 8.3: Send password changed alert email
+    try {
+      // Get user email for the alert
+      const userProfile = await getUserProfile(userId);
+      if (userProfile && userProfile.email) {
+        await sendPasswordChangedAlertEmail({
+          to: userProfile.email,
+          changedAt: new Date(),
+          ipAddress,
+          userAgent,
+        });
+      }
+    } catch (emailErr) {
+      // Do NOT fail the password change if email fails
+      console.warn("[User] Failed to send password-changed alert:", emailErr);
+    }
+    
+    return sendOk(res, { message: "Password changed successfully" });
   } catch (error) {
     console.error("changePasswordHandler error:", error);
     
     if (error.message === "Current password is incorrect") {
-      return res.status(401).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "INVALID_PASSWORD",
         message: error.message,
-        code: "INVALID_PASSWORD"
+        statusCode: 401
       });
     }
     
     if (error.message === "User not found") {
-      return res.status(404).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "USER_NOT_FOUND",
         message: error.message,
-        code: "USER_NOT_FOUND"
+        statusCode: 404
       });
     }
     
-    return res.status(500).json({
-      status: "ERROR",
+    return sendError(res, {
+      code: "DATABASE_ERROR",
       message: "Failed to change password",
-      error: error.message,
+      statusCode: 500
     });
   }
 }
 
 /**
  * GET /api/v1/user/security/activity
- * Get user's security activity log
+ * Get user's security activity log (Phase 8.6 - Normalized response)
  */
 export async function getSecurityActivity(req, res) {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ 
-        status: "ERROR", 
-        message: "Authentication required" 
+      return sendError(res, {
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+        statusCode: 401
       });
     }
 
-    const limit = parseInt(req.query.limit) || 20;
-    const activities = await getUserActivityLog(userId, { limit });
+    const limit = parseInt(req.query.limit) || 50;
+
+    // Query UserActivityLog directly with normalized structure
+    // Handle missing table gracefully
+    let rows = [];
+    try {
+      const [result] = await pool.query(
+        `
+        SELECT
+          id,
+          userId,
+          actorId,
+          activityType as type,
+          ipAddress,
+          userAgent,
+          metadata,
+          createdAt
+        FROM UserActivityLog
+        WHERE userId = ?
+        ORDER BY createdAt DESC
+        LIMIT ?
+        `,
+        [userId, limit]
+      );
+      rows = result;
+    } catch (err) {
+      // Table doesn't exist yet (migration not run), return empty array
+      if (err.code === 'ER_NO_SUCH_TABLE' || err.code === '42S02') {
+        rows = [];
+      } else {
+        throw err;
+      }
+    }
+
+    // Normalize response format
+    const items = rows.map((row) => ({
+      id: row.id,
+      type: row.type,
+      createdAt: row.createdAt,
+      ipAddress: row.ipAddress,
+      userAgent: row.userAgent,
+      metadata: row.metadata ? JSON.parse(row.metadata) : null,
+      actor: row.actorId
+        ? {
+            id: row.actorId,
+            isSelf: row.actorId === row.userId,
+          }
+        : {
+            id: row.userId,
+            isSelf: true,
+          },
+    }));
     
-    // Ensure we always return an array, even if empty
-    return res.json({ 
-      status: "OK", 
-      data: { items: Array.isArray(activities) ? activities : [] }
-    });
+    return sendOk(res, { items });
   } catch (error) {
     console.error("getSecurityActivity error:", error);
-    return res.status(500).json({
-      status: "ERROR",
+    return sendError(res, {
+      code: "DATABASE_ERROR",
       message: "Failed to fetch activity log",
-      error: error.message,
+      statusCode: 500
     });
   }
 }
@@ -353,25 +421,23 @@ export async function getSecurityDevices(req, res) {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ 
-        status: "ERROR", 
-        message: "Authentication required" 
+      return sendError(res, {
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+        statusCode: 401
       });
     }
 
     const devices = await getUserDevices(userId);
     
     // Ensure we always return an array, even if empty
-    return res.json({ 
-      status: "OK", 
-      data: { devices: Array.isArray(devices) ? devices : [] }
-    });
+    return sendOk(res, { devices: Array.isArray(devices) ? devices : [] });
   } catch (error) {
     console.error("getSecurityDevices error:", error);
-    return res.status(500).json({
-      status: "ERROR",
+    return sendError(res, {
+      code: "DATABASE_ERROR",
       message: "Failed to fetch devices",
-      error: error.message,
+      statusCode: 500
     });
   }
 }
@@ -384,28 +450,29 @@ export async function revokeSecurityDevice(req, res) {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ 
-        status: "ERROR", 
-        message: "Authentication required" 
+      return sendError(res, {
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+        statusCode: 401
       });
     }
 
     const { deviceId } = req.params;
     if (!deviceId) {
-      return res.status(400).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "VALIDATION_ERROR",
         message: "Device ID is required",
-        code: "MISSING_DEVICE_ID"
+        statusCode: 400
       });
     }
 
     const revoked = await revokeDevice({ userId, deviceId });
     
     if (!revoked) {
-      return res.status(404).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "DEVICE_NOT_FOUND",
         message: "Device not found",
-        code: "DEVICE_NOT_FOUND"
+        statusCode: 404
       });
     }
 
@@ -413,8 +480,9 @@ export async function revokeSecurityDevice(req, res) {
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     try {
-      await recordUserActivity({
+      await logUserActivity({
         userId,
+        actorId: userId,
         type: 'DEVICE_REVOKED',
         ipAddress,
         userAgent,
@@ -424,16 +492,13 @@ export async function revokeSecurityDevice(req, res) {
       console.error('Failed to record device revocation activity:', activityError);
     }
     
-    return res.json({ 
-      status: "OK", 
-      message: "Device revoked successfully" 
-    });
+    return sendOk(res, { message: "Device revoked successfully" });
   } catch (error) {
     console.error("revokeSecurityDevice error:", error);
-    return res.status(500).json({
-      status: "ERROR",
+    return sendError(res, {
+      code: "DATABASE_ERROR",
       message: "Failed to revoke device",
-      error: error.message,
+      statusCode: 500
     });
   }
 }
@@ -446,24 +511,27 @@ export async function getTwoFactorStatusHandler(req, res) {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ 
-        status: "ERROR", 
-        message: "Authentication required" 
+      return sendError(res, {
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+        statusCode: 401
       });
     }
 
     const status = await getTwoFactorStatus(userId);
     
-    return res.json({ 
-      status: "OK", 
-      data: status
+    // Normalize response to use isEnabled instead of enabled
+    return sendOk(res, {
+      isEnabled: status.enabled || false,
+      lastVerifiedAt: status.enabledAt || null,
+      method: status.method || null,
     });
   } catch (error) {
     console.error("getTwoFactorStatusHandler error:", error);
-    return res.status(500).json({
-      status: "ERROR",
+    return sendError(res, {
+      code: "DATABASE_ERROR",
       message: "Failed to fetch 2FA status",
-      error: error.message,
+      statusCode: 500
     });
   }
 }
@@ -478,9 +546,10 @@ export async function setupTwoFactorHandler(req, res) {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ 
-        status: "ERROR", 
-        message: "Authentication required" 
+      return sendError(res, {
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+        statusCode: 401
       });
     }
 
@@ -494,30 +563,27 @@ export async function setupTwoFactorHandler(req, res) {
       );
       
       if (userRows.length === 0) {
-        return res.status(404).json({
-          status: "ERROR",
+        return sendError(res, {
+          code: "USER_NOT_FOUND",
           message: "User not found",
-          code: "USER_NOT_FOUND"
+          statusCode: 404
         });
       }
 
       const userEmail = userRows[0].email;
       const setupData = await beginTwoFactorSetup(userId, userEmail);
       
-      return res.json({ 
-        status: "OK", 
-        data: {
-          otpauthUrl: setupData.otpauthUrl,
-          secretMasked: setupData.secretMasked,
-          method: setupData.method
-        }
+      return sendOk(res, {
+        otpauthUrl: setupData.otpauthUrl,
+        secretMasked: setupData.secretMasked,
+        method: setupData.method
       });
     } else if (step === 'verify') {
       if (!token || !/^\d{6}$/.test(token)) {
-        return res.status(400).json({
-          status: "ERROR",
+        return sendError(res, {
+          code: "VALIDATION_ERROR",
           message: "Invalid token. Please enter a 6-digit code.",
-          code: "INVALID_TOKEN_FORMAT"
+          statusCode: 400
         });
       }
 
@@ -528,49 +594,161 @@ export async function setupTwoFactorHandler(req, res) {
         // Enable 2FA after successful verification
         await enableTwoFactor(userId);
         
+        // Get user email for security alert
+        const [userRows] = await pool.query(
+          'SELECT email FROM User WHERE id = ?',
+          [userId]
+        );
+        const userEmail = userRows[0]?.email;
+        
         // Record 2FA enable activity
-        const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-        const userAgent = req.headers['user-agent'];
+        const ipAddress = req.ip || req.headers['x-forwarded-for']?.split(",")[0].trim() || req.socket?.remoteAddress || req.connection.remoteAddress || null;
+        const userAgent = req.headers['user-agent'] || null;
         try {
-          await recordUserActivity({
+          await logUserActivity({
             userId,
+            actorId: userId,
             type: 'TWO_FACTOR_ENABLED',
             ipAddress,
             userAgent,
-            metadata: {}
+            metadata: { method: 'TOTP' }
           });
         } catch (activityError) {
           console.error('Failed to record 2FA enable activity:', activityError);
         }
         
-        return res.json({ 
-          status: "OK", 
-          message: "2FA enabled successfully",
-          data: {
-            enabled: true,
-            method: 'totp'
+        // Phase 8.5: Send 2FA enabled alert email
+        if (userEmail) {
+          try {
+            await sendTwoFactorStatusChangedEmail({
+              to: userEmail,
+              enabled: true,
+              at: new Date(),
+              ipAddress,
+              userAgent,
+            });
+          } catch (emailErr) {
+            // Do NOT fail the 2FA enable if email fails
+            console.warn("[2FA] Failed to send 2FA change alert:", emailErr);
           }
+        }
+        
+        return sendOk(res, {
+          isEnabled: true,
+          method: 'totp'
         });
       } catch (verifyError) {
-        return res.status(400).json({
-          status: "ERROR",
+        return sendError(res, {
+          code: "TWO_FACTOR_INVALID_TOKEN",
           message: verifyError.message || "Invalid 2FA code. Please try again.",
-          code: "TWO_FACTOR_INVALID_TOKEN"
+          statusCode: 400
         });
       }
     } else {
-      return res.status(400).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "VALIDATION_ERROR",
         message: "Invalid step. Use 'start' or 'verify'.",
-        code: "INVALID_STEP"
+        statusCode: 400
       });
     }
   } catch (error) {
     console.error("setupTwoFactorHandler error:", error);
-    return res.status(500).json({
-      status: "ERROR",
+    return sendError(res, {
+      code: "DATABASE_ERROR",
       message: "Failed to setup 2FA",
-      error: error.message,
+      statusCode: 500
+    });
+  }
+}
+
+/**
+ * POST /api/v1/user/security/2fa/verify
+ * Verify 2FA code and enable 2FA
+ * Body: { code: "123456" }
+ */
+export async function verifyTwoFactorHandler(req, res) {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return sendError(res, {
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+        statusCode: 401
+      });
+    }
+
+    const { code } = req.body;
+
+    if (!code || !/^\d{6}$/.test(code)) {
+      return sendError(res, {
+        code: "VALIDATION_ERROR",
+        message: "Invalid code. Please enter a 6-digit code.",
+        statusCode: 400
+      });
+    }
+
+    // Verify the TOTP code
+    try {
+      await verifyTwoFactorCode({ userId, token: code });
+      
+      // Enable 2FA after successful verification
+      await enableTwoFactor(userId);
+      
+      // Get user email for security alert
+      const [userRows] = await pool.query(
+        'SELECT email FROM User WHERE id = ?',
+        [userId]
+      );
+      const userEmail = userRows[0]?.email;
+      
+      // Record 2FA enable activity
+      const ipAddress = req.ip || req.headers['x-forwarded-for']?.split(",")[0].trim() || req.socket?.remoteAddress || req.connection.remoteAddress || null;
+      const userAgent = req.headers['user-agent'] || null;
+      try {
+        await recordUserActivity({
+          userId,
+          type: 'TWO_FACTOR_ENABLED',
+          ipAddress,
+          userAgent,
+          metadata: {}
+        });
+      } catch (activityError) {
+        console.error('Failed to record 2FA enable activity:', activityError);
+      }
+      
+      // Phase 8.5: Send 2FA enabled alert email
+      if (userEmail) {
+        try {
+          await sendTwoFactorStatusChangedEmail({
+            to: userEmail,
+            enabled: true,
+            at: new Date(),
+            ipAddress,
+            userAgent,
+          });
+        } catch (emailErr) {
+          // Do NOT fail the 2FA enable if email fails
+          console.warn("[2FA] Failed to send 2FA change alert:", emailErr);
+        }
+      }
+      
+      return sendOk(res, {
+        isEnabled: true,
+        method: 'totp'
+      });
+    } catch (verifyError) {
+      return sendError(res, {
+        code: "INVALID_2FA_CODE",
+        message: verifyError.message || "Invalid authentication code",
+        statusCode: 400
+      });
+    }
+  } catch (error) {
+    console.error("verifyTwoFactorHandler error:", error);
+    return sendError(res, {
+      code: "DATABASE_ERROR",
+      message: "Failed to verify 2FA code",
+      statusCode: 500
     });
   }
 }
@@ -583,39 +761,64 @@ export async function disableTwoFactorHandler(req, res) {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({ 
-        status: "ERROR", 
-        message: "Authentication required" 
+      return sendError(res, {
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+        statusCode: 401
       });
     }
 
     await disableTwoFactor(userId);
     
+    // Get user email for security alert
+    const [userRows] = await pool.query(
+      'SELECT email FROM User WHERE id = ?',
+      [userId]
+    );
+    const userEmail = userRows[0]?.email;
+    
     // Record 2FA disable activity
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || req.headers['x-forwarded-for']?.split(",")[0].trim() || req.socket?.remoteAddress || req.connection.remoteAddress || null;
+    const userAgent = req.headers['user-agent'] || null;
     try {
-      await recordUserActivity({
+      await logUserActivity({
         userId,
+        actorId: userId,
         type: 'TWO_FACTOR_DISABLED',
         ipAddress,
         userAgent,
-        metadata: {}
+        metadata: { method: 'TOTP' }
       });
     } catch (activityError) {
       console.error('Failed to record 2FA disable activity:', activityError);
     }
     
-    return res.json({ 
-      status: "OK", 
+    // Phase 8.5: Send 2FA disabled alert email
+    if (userEmail) {
+      try {
+        await sendTwoFactorStatusChangedEmail({
+          to: userEmail,
+          enabled: false,
+          at: new Date(),
+          ipAddress,
+          userAgent,
+        });
+      } catch (emailErr) {
+        // Do NOT fail the 2FA disable if email fails
+        console.warn("[2FA] Failed to send 2FA change alert:", emailErr);
+      }
+    }
+    
+    return sendOk(res, { 
+      isEnabled: false,
       message: "2FA disabled successfully" 
     });
   } catch (error) {
     console.error("disableTwoFactorHandler error:", error);
-    return res.status(500).json({
-      status: "ERROR",
+    return sendError(res, {
+      code: "DATABASE_ERROR",
       message: "Failed to disable 2FA",
-      error: error.message,
+      statusCode: 500
     });
   }
 }
@@ -625,16 +828,18 @@ export async function disableTwoFactorHandler(req, res) {
 // ============================================================================
 
 /**
- * GET /api/v1/security/sessions
+ * GET /api/v1/user/security/sessions
  * Get all active sessions for the current user
+ * Returns: { status: "OK", data: { sessions: [...] } }
  */
 export async function getSecuritySessions(req, res) {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({
-        status: "ERROR",
-        message: "Authentication required"
+      return sendError(res, {
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+        statusCode: 401
       });
     }
 
@@ -650,50 +855,50 @@ export async function getSecuritySessions(req, res) {
     const sessions = await getUserSessions(userId, currentToken);
     
     // Ensure we always return an array, even if empty
-    return res.json({
-      status: "OK",
-      data: { sessions: Array.isArray(sessions) ? sessions : [] }
-    });
+    return sendOk(res, { sessions: Array.isArray(sessions) ? sessions : [] });
   } catch (error) {
     console.error("getSecuritySessions error:", error);
-    return res.status(500).json({
-      status: "ERROR",
+    return sendError(res, {
+      code: "DATABASE_ERROR",
       message: "Failed to fetch sessions",
-      error: error.message,
+      statusCode: 500
     });
   }
 }
 
 /**
- * POST /api/v1/security/sessions/revoke
+ * POST /api/v1/user/security/sessions/revoke
  * Revoke a specific session
+ * Body: { sessionId }
+ * Returns: { status: "OK", data: { success: true } }
  */
 export async function revokeSecuritySession(req, res) {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({
-        status: "ERROR",
-        message: "Authentication required"
+      return sendError(res, {
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+        statusCode: 401
       });
     }
 
     const { sessionId } = req.body;
     if (!sessionId) {
-      return res.status(400).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "VALIDATION_ERROR",
         message: "Session ID is required",
-        code: "MISSING_SESSION_ID"
+        statusCode: 400
       });
     }
 
     const revoked = await revokeSession(sessionId, userId);
     
     if (!revoked) {
-      return res.status(404).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "SESSION_NOT_FOUND",
         message: "Session not found",
-        code: "SESSION_NOT_FOUND"
+        statusCode: 404
       });
     }
 
@@ -701,42 +906,41 @@ export async function revokeSecuritySession(req, res) {
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     try {
-      await recordUserActivity({
+      await logUserActivity({
         userId,
+        actorId: userId,
         type: 'SESSION_REVOKED',
         ipAddress,
         userAgent,
-        metadata: { sessionId }
+        metadata: { targetSessionId: sessionId }
       });
     } catch (activityError) {
       console.error('Failed to record session revocation activity:', activityError);
     }
     
-    return res.json({
-      status: "OK",
-      message: "Session revoked successfully"
-    });
+    return sendOk(res, { success: true });
   } catch (error) {
     console.error("revokeSecuritySession error:", error);
-    return res.status(500).json({
-      status: "ERROR",
+    return sendError(res, {
+      code: "DATABASE_ERROR",
       message: "Failed to revoke session",
-      error: error.message,
+      statusCode: 500
     });
   }
 }
 
 /**
- * POST /api/v1/security/sessions/revoke-all-others
+ * POST /api/v1/user/security/sessions/revoke-all-others
  * Revoke all sessions except the current one
  */
 export async function revokeAllOtherSecuritySessions(req, res) {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({
-        status: "ERROR",
-        message: "Authentication required"
+      return sendError(res, {
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+        statusCode: 401
       });
     }
 
@@ -750,10 +954,10 @@ export async function revokeAllOtherSecuritySessions(req, res) {
     const currentToken = tokenFromCookie || tokenFromHeader;
 
     if (!currentToken) {
-      return res.status(400).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "VALIDATION_ERROR",
         message: "Current session token not found",
-        code: "MISSING_CURRENT_TOKEN"
+        statusCode: 400
       });
     }
 
@@ -763,8 +967,9 @@ export async function revokeAllOtherSecuritySessions(req, res) {
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     try {
-      await recordUserActivity({
+      await logUserActivity({
         userId,
+        actorId: userId,
         type: 'SESSIONS_REVOKED_ALL_OTHERS',
         ipAddress,
         userAgent,
@@ -774,17 +979,13 @@ export async function revokeAllOtherSecuritySessions(req, res) {
       console.error('Failed to record sessions revocation activity:', activityError);
     }
     
-    return res.json({
-      status: "OK",
-      message: `Revoked ${revokedCount} session(s)`,
-      data: { revokedCount }
-    });
+    return sendOk(res, { success: true });
   } catch (error) {
     console.error("revokeAllOtherSecuritySessions error:", error);
-    return res.status(500).json({
-      status: "ERROR",
+    return sendError(res, {
+      code: "DATABASE_ERROR",
       message: "Failed to revoke sessions",
-      error: error.message,
+      statusCode: 500
     });
   }
 }
@@ -801,35 +1002,34 @@ export async function getUserRole(req, res) {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "UNAUTHORIZED",
         message: "Authentication required",
+        statusCode: 401
       });
     }
 
     const user = await getUserWithAccessData(userId);
     if (!user) {
-      return res.status(404).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "USER_NOT_FOUND",
         message: "User not found",
+        statusCode: 404
       });
     }
 
     // Return role, permissions, and feature flags
-    return res.json({
-      status: "OK",
-      data: {
-        role: user.role,
-        permissions: user.effectivePermissions, // Computed permissions
-        featureFlags: user.featureFlags, // Merged feature flags
-      },
+    return sendOk(res, {
+      role: user.role,
+      permissions: user.effectivePermissions, // Computed permissions
+      featureFlags: user.featureFlags, // Merged feature flags
     });
   } catch (error) {
     console.error("getUserRole error:", error);
-    return res.status(500).json({
-      status: "ERROR",
+    return sendError(res, {
+      code: "DATABASE_ERROR",
       message: "Failed to fetch user role",
-      error: error.message,
+      statusCode: 500
     });
   }
 }
@@ -842,17 +1042,19 @@ export async function getUserFeatures(req, res) {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return res.status(401).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "UNAUTHORIZED",
         message: "Authentication required",
+        statusCode: 401
       });
     }
 
     const user = await getUserProfile(userId);
     if (!user) {
-      return res.status(404).json({
-        status: "ERROR",
+      return sendError(res, {
+        code: "USER_NOT_FOUND",
         message: "User not found",
+        statusCode: 404
       });
     }
 
@@ -860,18 +1062,318 @@ export async function getUserFeatures(req, res) {
     const defaultFlags = getDefaultFeatureFlags();
     const mergedFlags = mergeFeatureFlags(user.featureFlags, defaultFlags);
 
-    return res.json({
-      status: "OK",
-      data: {
-        featureFlags: mergedFlags,
-      },
+    return sendOk(res, {
+      featureFlags: mergedFlags,
     });
   } catch (error) {
     console.error("getUserFeatures error:", error);
-    return res.status(500).json({
-      status: "ERROR",
+    return sendError(res, {
+      code: "DATABASE_ERROR",
       message: "Failed to fetch feature flags",
-      error: error.message,
+      statusCode: 500
     });
+  }
+}
+
+/**
+ * POST /api/v1/user/account/delete
+ * Delete own account (soft delete with password confirmation) - Phase 9.1
+ */
+export async function deleteOwnAccount(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const { password } = req.body;
+
+    if (!password || typeof password !== "string") {
+      return sendError(res, {
+        statusCode: 400,
+        code: "PASSWORD_REQUIRED",
+        message: "Please provide your current password to delete your account.",
+      });
+    }
+
+    // Fetch hashed password from DB
+    const [rows] = await pool.query(
+      "SELECT id, email, password, status FROM User WHERE id = ? LIMIT 1",
+      [userId]
+    );
+    const user = rows[0];
+
+    if (!user || user.status === "DELETED") {
+      return sendError(res, {
+        statusCode: 400,
+        code: "ACCOUNT_NOT_FOUND",
+        message: "Account not found or already deleted.",
+      });
+    }
+
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordCorrect) {
+      await logUserActivity({
+        userId: user.id,
+        actorId: user.id,
+        type: "ACCOUNT_DELETE_FAILED",
+        ipAddress:
+          req.ip ||
+          (req.headers["x-forwarded-for"] || "").split(",")[0].trim() ||
+          req.socket?.remoteAddress ||
+          null,
+        userAgent: req.headers["user-agent"] || null,
+        metadata: {
+          reason: "INVALID_PASSWORD",
+        },
+      });
+
+      return sendError(res, {
+        statusCode: 401,
+        code: "INVALID_PASSWORD",
+        message: "The password you entered is incorrect.",
+      });
+    }
+
+    const ipAddress =
+      req.ip ||
+      (req.headers["x-forwarded-for"] || "").split(",")[0].trim() ||
+      req.socket?.remoteAddress ||
+      null;
+
+    const userAgent = req.headers["user-agent"] || null;
+
+    // Soft delete
+    const { deletedAt } = await softDeleteUserAccount(user.id, "USER_SELF_DELETE");
+
+    // Revoke all sessions
+    if (typeof revokeAllUserSessions === "function") {
+      await revokeAllUserSessions(user.id);
+    }
+
+    // Log activity
+    await logUserActivity({
+      userId: user.id,
+      actorId: user.id,
+      type: "ACCOUNT_DELETED",
+      ipAddress,
+      userAgent,
+      metadata: {
+        via: "SELF",
+        deletedAt,
+      },
+    });
+
+    // Return generic response
+    // Frontend will clear cookies and redirect to a goodbye / home page later.
+    return sendOk(res, {
+      message: "Your account has been deleted.",
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/**
+ * GET /api/v1/user/account/export
+ * Export own account data as JSON (Phase 9.3)
+ */
+export async function exportOwnAccountData(req, res, next) {
+  try {
+    const userId = req.user.id;
+
+    // 1) Basic profile - select all available columns
+    // Note: Migration ensures these columns exist, but we handle missing columns gracefully
+    const [userRows] = await pool.query(
+      `
+      SELECT
+        id,
+        email,
+        fullName,
+        status,
+        role,
+        featureFlags,
+        permissions,
+        termsAccepted,
+        termsAcceptedAt,
+        termsVersion,
+        termsSource,
+        createdAt,
+        updatedAt,
+        deletedAt,
+        deletedReason
+      FROM User
+      WHERE id = ?
+      LIMIT 1
+      `,
+      [userId]
+    );
+    
+    // Try to get optional profile fields (username, country, bio, phone, avatarUrl)
+    // These may not exist if migration hasn't run yet
+    let optionalFields = { username: null, country: null, bio: null, phone: null, avatarUrl: null };
+    try {
+      const [optionalRows] = await pool.query(
+        `SELECT username, country, bio, phone, avatarUrl FROM User WHERE id = ? LIMIT 1`,
+        [userId]
+      );
+      if (optionalRows[0]) {
+        optionalFields = {
+          username: optionalRows[0].username || null,
+          country: optionalRows[0].country || null,
+          bio: optionalRows[0].bio || null,
+          phone: optionalRows[0].phone || null,
+          avatarUrl: optionalRows[0].avatarUrl || null,
+        };
+      }
+    } catch (err) {
+      // Columns don't exist yet (migration not run), use null values
+      // This is expected during initial setup
+    }
+
+    const user = userRows[0];
+
+    if (!user) {
+      return sendError(res, {
+        statusCode: 404,
+        code: "ACCOUNT_NOT_FOUND",
+        message: "Account not found.",
+      });
+    }
+
+    // 2) Sessions - handle missing table gracefully
+    let sessionRows = [];
+    try {
+      const [rows] = await pool.query(
+        `
+        SELECT
+          id,
+          ipAddress,
+          userAgent,
+          deviceLabel,
+          isCurrent,
+          createdAt,
+          lastSeenAt
+        FROM AuthSession
+        WHERE userId = ?
+        ORDER BY createdAt DESC
+        `,
+        [userId]
+      );
+      sessionRows = rows;
+    } catch (err) {
+      // Table doesn't exist yet (migration not run), return empty array
+      if (err.code === 'ER_NO_SUCH_TABLE' || err.code === '42S02') {
+        sessionRows = [];
+      } else {
+        throw err;
+      }
+    }
+
+    // 3) Security activity - handle missing table gracefully
+    let activityRows = [];
+    try {
+      const [rows] = await pool.query(
+        `
+        SELECT
+          id,
+          activityType as type,
+          ipAddress,
+          userAgent,
+          metadata,
+          createdAt,
+          actorId
+        FROM UserActivityLog
+        WHERE userId = ?
+        ORDER BY createdAt DESC
+        LIMIT 500
+        `,
+        [userId]
+      );
+      activityRows = rows;
+    } catch (err) {
+      // Table doesn't exist yet (migration not run), return empty array
+      if (err.code === 'ER_NO_SUCH_TABLE' || err.code === '42S02') {
+        activityRows = [];
+      } else {
+        throw err;
+      }
+    }
+
+    // 4) 2FA - handle missing table gracefully
+    let twoFaRows = [];
+    try {
+      const [rows] = await pool.query(
+        `
+        SELECT
+          isEnabled,
+          enabledAt,
+          lastVerifiedAt,
+          createdAt,
+          updatedAt
+        FROM TwoFactorAuth
+        WHERE userId = ?
+        LIMIT 1
+        `,
+        [userId]
+      );
+      twoFaRows = rows;
+    } catch (err) {
+      // Table doesn't exist yet (migration not run), return empty array
+      if (err.code === 'ER_NO_SUCH_TABLE' || err.code === '42S02') {
+        twoFaRows = [];
+      } else {
+        throw err;
+      }
+    }
+
+    const twoFa = (twoFaRows && twoFaRows.length > 0) ? twoFaRows[0] : null;
+
+    // Normalize JSON fields and add optional profile fields
+    const normalizedUser = {
+      ...user,
+      ...optionalFields,
+      featureFlags: user.featureFlags ? (typeof user.featureFlags === 'string' ? JSON.parse(user.featureFlags) : user.featureFlags) : null,
+      permissions: user.permissions ? (typeof user.permissions === 'string' ? JSON.parse(user.permissions) : user.permissions) : null,
+    };
+
+    const sessions = sessionRows.map((row) => ({
+      id: row.id,
+      ipAddress: row.ipAddress,
+      userAgent: row.userAgent,
+      deviceLabel: row.deviceLabel,
+      isCurrent: !!row.isCurrent,
+      createdAt: row.createdAt,
+      lastSeenAt: row.lastSeenAt,
+    }));
+
+    const activity = activityRows.map((row) => ({
+      id: row.id,
+      type: row.type,
+      ipAddress: row.ipAddress,
+      userAgent: row.userAgent,
+      metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : null,
+      createdAt: row.createdAt,
+      actorId: row.actorId,
+    }));
+
+    const exportPayload = {
+      exportedAt: new Date().toISOString(),
+      user: normalizedUser,
+      security: {
+        twoFactor: twoFa
+          ? {
+              isEnabled: !!twoFa.isEnabled,
+              enabledAt: twoFa.enabledAt,
+              lastVerifiedAt: twoFa.lastVerifiedAt,
+              createdAt: twoFa.createdAt,
+              updatedAt: twoFa.updatedAt,
+            }
+          : null,
+        sessions,
+        activity,
+      },
+    };
+
+    return sendOk(res, exportPayload);
+  } catch (err) {
+    return next(err);
   }
 }

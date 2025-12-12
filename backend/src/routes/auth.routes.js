@@ -2,11 +2,13 @@ import { Router } from 'express';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
 import passport from 'passport';
-import { login, register, refresh, logout, forgotPassword, resetPassword, validateResetToken, socialLoginCallback, verifyTwoFactorLogin } from '../controllers/auth.controller.js';
+import { login, register, refresh, logout, forgotPassword, resetPassword, validateResetToken, socialLoginCallback, verifyTwoFactorLogin, requestPasswordReset, validatePasswordResetToken, resetPasswordWithToken, postLoginTwoFactor } from '../controllers/auth.controller.js';
 import { activate, resendActivation } from '../controllers/activationController.js';
 import { requireAuth } from '../middleware/auth.js';
 import { createAuthSessionForUser } from '../utils/authSession.js';
-import { recordLoginActivity, registerDevice, recordUserActivity } from '../services/userService.js';
+import { recordLoginActivity, registerDevice } from '../services/userService.js';
+import { logUserActivity } from '../services/activityService.js';
+import { sendOk, sendError } from '../utils/apiResponse.js';
 import pool from '../db.js';
 
 const router = Router();
@@ -46,16 +48,12 @@ router.post('/register', async (req, res, next) => {
   try {
     const body = registerSchema.parse(req.body);
     const result = await register(body, res);
-    // Ensure consistent JSON format
-    const responseData = {
-      status: 'OK',
-      success: true,
+    // Use standardized response format
+    return sendOk(res, {
       message: result.message || 'Registration successful. Please check your email to activate your account.',
-      requiresActivation: result.requiresActivation || true,
-      ...result
-    };
-    console.log('REGISTER SUCCESS RESPONSE', responseData);
-    res.status(201).json(responseData);
+      requiresActivation: result.requiresActivation !== false,
+      userId: result.userId,
+    }, 201);
   } catch (err) { 
     console.error('REGISTER ERROR', {
       message: err.message,
@@ -72,7 +70,19 @@ router.post('/login', async (req, res, next) => {
     const body = loginSchema.parse(req.body);
     const result = await login(body, res, req);
     
-    // Phase 3: Check if 2FA is required
+    // Phase S6: Check if 2FA is required (new format)
+    if (result.status === '2FA_REQUIRED') {
+      // Activity logging is already done in the login controller
+      // Return the 2FA_REQUIRED response directly
+      return res.status(200).json({
+        status: result.status,
+        code: result.code,
+        message: result.message,
+        data: result.data
+      });
+    }
+    
+    // Phase 3: Check if 2FA is required (legacy format)
     if (result.twoFactorRequired) {
       // Record 2FA challenge activity
       try {
@@ -85,8 +95,9 @@ router.post('/login', async (req, res, next) => {
           const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
           const userAgent = req.headers['user-agent'];
           try {
-            await recordUserActivity({
+            await logUserActivity({
               userId: userRows[0].id,
+              actorId: userRows[0].id,
               type: 'LOGIN_CHALLENGE_2FA',
               ipAddress,
               userAgent,
@@ -101,12 +112,9 @@ router.post('/login', async (req, res, next) => {
         console.error('Failed to fetch user for 2FA activity recording:', dbError);
       }
       
-      return res.status(200).json({
-        status: 'OK',
-        data: {
-          twoFactorRequired: true,
-          challengeToken: result.challengeToken
-        }
+      return sendOk(res, {
+        twoFactorRequired: true,
+        challengeToken: result.challengeToken
       });
     }
     
@@ -155,11 +163,8 @@ router.post('/login', async (req, res, next) => {
       console.error('Failed to fetch user data for response:', dbError);
     }
     
-    // Ensure consistent JSON format
-    res.status(200).json({
-      status: 'OK',
-      success: true,
-      message: 'Login successful',
+    // Use standardized response format
+    return sendOk(res, {
       access: result.access,
       refresh: result.refresh,
       user: userData
@@ -192,7 +197,30 @@ router.post('/login', async (req, res, next) => {
   }
 });
 
-// Phase 3: 2FA verification endpoint for login flow
+// Phase S6: New 2FA login endpoint with ticket system
+const loginTwoFactorSchema = z.object({
+  ticket: z.string().min(1),
+  mode: z.enum(['totp', 'recovery']),
+  code: z.string().min(1),
+});
+
+router.post('/login/2fa', async (req, res, next) => {
+  try {
+    const body = loginTwoFactorSchema.parse(req.body);
+    await postLoginTwoFactor(req, res, next);
+  } catch (err) {
+    if (err.name === 'ZodError') {
+      return sendError(res, {
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid request data.',
+        statusCode: 400,
+      });
+    }
+    next(err);
+  }
+});
+
+// Phase 3: 2FA verification endpoint for login flow (legacy - kept for backward compatibility)
 const verifyTwoFactorSchema = z.object({
   challengeToken: z.string().min(1),
   token: z.string().regex(/^\d{6}$/, 'Token must be a 6-digit code'),
@@ -216,10 +244,7 @@ router.post('/2fa/verify', async (req, res, next) => {
       console.error('Failed to register device after 2FA login:', deviceError);
     }
     
-    res.status(200).json({
-      status: 'OK',
-      success: true,
-      message: 'Login successful',
+    return sendOk(res, {
       access: result.access,
       refresh: result.refresh,
       user: result.user
@@ -238,12 +263,7 @@ router.post('/2fa/verify', async (req, res, next) => {
 router.post('/refresh', async (req, res, next) => {
   try {
     const result = await refresh(req, res);
-    // Ensure consistent JSON format
-    res.status(200).json({
-      status: 'OK',
-      success: true,
-      ...result
-    });
+    return sendOk(res, result);
   } catch (err) { 
     if (!err.statusCode) {
       err.statusCode = 401;
@@ -274,19 +294,26 @@ router.get('/me', requireAuth, async (req, res, next) => {
     );
     
     if (rows.length === 0) {
-      return res.status(404).json({
-        status: 'ERROR',
+      return sendError(res, {
+        code: 'USER_NOT_FOUND',
         message: 'User not found',
-        code: 'USER_NOT_FOUND'
+        statusCode: 404
       });
     }
     
     const user = rows[0];
     
+    // Check if account is deleted (Phase 9.1)
+    if (user.status === 'DELETED') {
+      return sendError(res, {
+        code: 'ACCOUNT_DELETED',
+        message: 'This account has been deleted.',
+        statusCode: 403
+      });
+    }
+    
     // Return user with role - use STANDARD_USER as fallback if role is null (shouldn't happen after Phase 5 migration)
-    return res.status(200).json({
-      status: 'OK',
-      success: true,
+    return sendOk(res, {
       user: {
         id: user.id,
         email: user.email,
@@ -364,7 +391,27 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res, next) =>
   }
 });
 
-// Validate reset token route
+// Rate limiter for password reset request (Phase 8.1) - 5 requests per hour per IP
+const passwordResetRequestLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // 5 requests per hour
+  message: { 
+    status: 'ERROR',
+    message: 'Too many password reset requests. Please try again later.',
+    code: 'RATE_LIMIT_EXCEEDED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Password reset request route (Phase 8.1)
+router.post('/password/reset/request', passwordResetRequestLimiter, requestPasswordReset);
+
+// Password reset validation and completion routes (Phase 8.2)
+router.post('/password/reset/validate', validatePasswordResetToken);
+router.post('/password/reset/complete', resetPasswordWithToken);
+
+// Validate reset token route (legacy - kept for backward compatibility)
 router.post('/reset-password/validate', async (req, res, next) => {
   try {
     const body = validateResetTokenSchema.parse(req.body);

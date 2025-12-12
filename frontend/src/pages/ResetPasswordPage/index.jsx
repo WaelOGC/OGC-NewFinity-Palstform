@@ -7,6 +7,7 @@ function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [token, setToken] = useState(null);
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isValidating, setIsValidating] = useState(false);
@@ -19,6 +20,9 @@ function ResetPasswordPage() {
   // Validate token on mount
   useEffect(() => {
     const tokenParam = searchParams.get('token');
+    const emailParam = searchParams.get('email') || '';
+    
+    // Token is required, but email can be missing (for backward compatibility with old links)
     if (!tokenParam) {
       setStatus({
         type: 'error',
@@ -30,24 +34,35 @@ function ResetPasswordPage() {
     }
 
     setToken(tokenParam);
+    setEmail(emailParam); // Set initial email (may be empty)
     setIsValidating(true);
     setStatus(null);
 
     // Validate token with backend
     async function validateToken() {
       try {
-        const data = await api.post('/auth/reset-password/validate', {
+        // Try validation with email from URL (or empty string if missing)
+        const data = await api.post('/auth/password/reset/validate', {
+          email: emailParam || '',
           token: tokenParam,
         });
 
-        if (data.status === 'OK' || data.success) {
+        // Check response format - handle both data.data and direct data
+        const responseData = data.data || data;
+        
+        if (data.status === 'OK' && responseData?.valid) {
           setIsTokenValid(true);
           setStatus(null);
+          
+          // If the URL didn't include email, but backend knows it, sync it
+          if (responseData.email && !emailParam) {
+            setEmail(responseData.email);
+          }
         } else {
           setIsTokenValid(false);
           setStatus({
             type: 'error',
-            message: data.message || 'This reset link is invalid or has expired.',
+            message: responseData?.message || data.message || 'This reset link is invalid or has expired.',
             code: 'RESET_TOKEN_INVALID_OR_EXPIRED',
           });
         }
@@ -95,16 +110,20 @@ function ResetPasswordPage() {
     }
 
     try {
-      const data = await api.post('/auth/reset-password', {
+      const data = await api.post('/auth/password/reset/complete', {
+        email: email || '', // Allow empty email if recovered from validation
         token,
         password,
-        confirmPassword,
       });
+
+      // Handle response format (check data.data for nested response)
+      const responseData = data.data || data;
+      const responseMessage = responseData?.message || data.message;
 
       if (data.status === 'OK' || data.success) {
         setStatus({
           type: 'success',
-          message: data.message || 'Your password has been reset successfully. Redirecting to login...',
+          message: responseMessage || 'Your password has been reset successfully. Redirecting to login...',
         });
         // Clear password fields
         setPassword('');
@@ -277,6 +296,20 @@ function ResetPasswordPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
+          <div className="auth-form-field">
+            <label htmlFor="reset-email" className="auth-form-label">
+              Email
+            </label>
+            <input
+              id="reset-email"
+              type="email"
+              className="auth-form-input"
+              value={email}
+              disabled
+              style={{ opacity: 0.7, cursor: 'not-allowed' }}
+            />
+          </div>
+
           <div className="auth-form-field">
             <label htmlFor="reset-password" className="auth-form-label">
               New Password

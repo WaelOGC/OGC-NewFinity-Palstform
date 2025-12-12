@@ -5,6 +5,8 @@ const links = [
   { to: "/dashboard/overview", label: "Overview" },
   { to: "/dashboard/profile", label: "Profile" },
   { to: "/dashboard/security", label: "Security" },
+  { to: "/dashboard/wallet", label: "Wallet" },
+  { to: "/dashboard/challenge", label: "Challenge Program" },
 ];
 
 function DashboardSidebar() {

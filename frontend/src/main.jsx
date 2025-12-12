@@ -24,6 +24,9 @@ import DashboardLayout from './layouts/DashboardLayout.jsx';
 import Overview from './pages/dashboard/Overview.jsx';
 import Profile from './pages/dashboard/Profile.jsx';
 import Security from './pages/dashboard/Security.jsx';
+import DashboardWalletPage from './pages/dashboard/WalletPage.jsx';
+import ChallengePage from './pages/dashboard/ChallengePage.jsx';
+import AmyAgentShell from './pages/amy/AmyAgentShell.jsx';
 import AdminLayout from './components/admin/AdminLayout.jsx';
 import AdminUsersPage from './pages/admin/AdminUsersPage.jsx';
 import InternalRouteGuard from './components/InternalRouteGuard.jsx';
@@ -86,22 +89,42 @@ const router = createBrowserRouter([
           { path: 'overview', element: <Overview /> },
           { path: 'profile', element: <Profile /> },
           { path: 'security', element: <Security /> },
+          { path: 'wallet', element: <DashboardWalletPage /> },
+          { path: 'challenge', element: <ChallengePage /> },
         ],
+      },
+      // Amy Agent Shell - full-screen layout (no dashboard sidebar)
+      {
+        path: '/amy',
+        element: <AmyAgentShell />,
       },
     ],
   },
   
   // Admin Console routes - requires admin role (Phase 6)
-  // Note: AdminRouteGuard handles both authentication AND authorization
-  // It redirects unauthenticated users to /auth and non-admin users to /dashboard
+  // 
+  // ROUTING STRUCTURE:
+  // - AdminRouteGuard wraps all /admin/* routes and handles:
+  //   * Authentication check (redirects to /auth if not logged in)
+  //   * Authorization check (redirects to /dashboard if not admin role)
+  //   * Uses <Outlet /> to render child routes (React Router v6 pattern)
+  // 
+  // - AdminLayout provides the admin UI shell (sidebar, header, etc.)
+  //   * Uses <Outlet /> to render admin page content
+  // 
+  // - Nested routes under /admin/*:
+  //   * /admin → shows AdminUsersPage (index route)
+  //   * /admin/users → shows AdminUsersPage (explicit route)
+  // 
+  // Note: AdminRouteGuard must use <Outlet />, not {children}, to work with React Router v6
   {
     element: <AdminRouteGuard />,
     children: [
       {
-        path: '/admin',
+        path: '/admin/*',
         element: <AdminLayout />,
         children: [
-          { index: true, element: <Navigate to="/admin/users" replace /> },
+          { index: true, element: <AdminUsersPage /> },
           { path: 'users', element: <AdminUsersPage /> },
         ],
       },

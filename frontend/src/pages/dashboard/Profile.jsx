@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { getUserProfile, updateUserProfile } from "../../utils/apiClient.js";
 import { api } from "../../utils/apiClient.js";
 import "../../index.css";
 import "./dashboard-pages.css";
@@ -28,106 +29,37 @@ function Profile() {
   const [passwordError, setPasswordError] = useState(null);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
-  // Fetch user profile on mount
-  useEffect(() => {
-    async function fetchProfile() {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // First, try to get full profile from /user/profile
-        try {
-          const response = await api.get('/user/profile');
-          
-          if (response.status === "OK" && response.profile) {
-            const profile = response.profile;
-            // Ensure we never set "Invalid ID" or invalid values as a field value
-            const sanitizeValue = (value) => {
-              if (value === null || value === undefined) return "";
-              if (typeof value === "string") {
-                const trimmed = value.trim();
-                if (trimmed === "" || trimmed === "Invalid ID" || trimmed === "null" || trimmed === "undefined") {
-                  return "";
-                }
-                return trimmed;
-              }
-              // Convert non-string values to string, but filter out invalid ones
-              const str = String(value);
-              if (str === "Invalid ID" || str === "null" || str === "undefined") {
-                return "";
-              }
-              return str;
-            };
-            
-            setFullName(sanitizeValue(profile.fullName));
-            setUsername(sanitizeValue(profile.username));
-            setCountry(sanitizeValue(profile.country));
-            setBio(sanitizeValue(profile.bio));
-            setPhone(sanitizeValue(profile.phone));
-            setAvatarUrl(sanitizeValue(profile.avatarUrl));
-            return; // Success, exit early
-          }
-        } catch (profileError) {
-          console.warn("Failed to fetch profile from /user/profile, trying fallback:", profileError);
-          
-          // Fallback: Use data from AuthContext if available
-          if (user) {
-            const sanitizeValue = (value) => {
-              if (value === null || value === undefined) return "";
-              if (typeof value === "string") {
-                const trimmed = value.trim();
-                if (trimmed === "" || trimmed === "Invalid ID" || trimmed === "null" || trimmed === "undefined") {
-                  return "";
-                }
-                return trimmed;
-              }
-              // Convert non-string values to string, but filter out invalid ones
-              const str = String(value);
-              if (str === "Invalid ID" || str === "null" || str === "undefined") {
-                return "";
-              }
-              return str;
-            };
-            
-            setFullName(sanitizeValue(user.fullName));
-            setUsername(sanitizeValue(user.username));
-            setCountry(sanitizeValue(user.country));
-            setBio(sanitizeValue(user.bio));
-            setPhone(sanitizeValue(user.phone));
-            setAvatarUrl(sanitizeValue(user.avatarUrl));
-            
-            // If we have basic user data, don't show error
-            if (user.email) {
-              console.log("Using fallback data from AuthContext");
-              return;
-            }
-          }
-          
-          // If both fail, show error
-          throw profileError;
-        }
-      } catch (err) {
-        console.error("Failed to fetch profile:", err);
-        const errorMessage = err.backendMessage || err.message || "Failed to load profile";
-        setError(errorMessage);
-        
-        // Don't show "Invalid ID" in fields - clear them and show user-friendly error
-        if (errorMessage.includes("Invalid ID") || errorMessage.includes("USER_NOT_FOUND")) {
-          setFullName("");
-          setUsername("");
-          setCountry("");
-          setBio("");
-          setPhone("");
-          setAvatarUrl("");
-          setError("Unable to load profile. Please refresh the page or contact support if the issue persists.");
-        }
-      } finally {
-        setLoading(false);
-      }
+  // Load user profile on mount
+  const loadProfile = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const profile = await getUserProfile();
+      // Initialize form fields from profile
+      setFullName(profile.fullName || "");
+      setUsername(profile.username || "");
+      setCountry(profile.country || "");
+      setBio(profile.bio || "");
+      setPhone(profile.phone || "");
+      setAvatarUrl(profile.avatarUrl || "");
+    } catch (err) {
+      console.error("Failed to load profile:", err);
+      setError(err?.message || "Unable to load profile.");
+      // Clear fields on error
+      setFullName("");
+      setUsername("");
+      setCountry("");
+      setBio("");
+      setPhone("");
+      setAvatarUrl("");
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     if (user) {
-      fetchProfile();
+      loadProfile();
     } else {
       setLoading(false);
     }
@@ -203,39 +135,23 @@ function Profile() {
         return;
       }
 
-      console.log("Updating profile with data:", updateData);
-
-      // apiClient handles authentication via cookies, no need for token in headers
-      const response = await api.put('/user/profile', updateData);
-
-      if (response.status === "OK") {
-        setSuccess(true);
-        setError(null); // Clear any previous errors
-        
-        // Update local state with returned profile data if available
-        if (response.profile) {
-          const profile = response.profile;
-          setFullName(profile.fullName || "");
-          setUsername(profile.username || "");
-          setCountry(profile.country || "");
-          setBio(profile.bio || "");
-          setPhone(profile.phone || "");
-          setAvatarUrl(profile.avatarUrl || "");
-        }
-        
-        setTimeout(() => setSuccess(false), 3000);
-      } else {
-        setError(response.message || "Failed to update profile");
-      }
+      // Update profile using the helper function
+      const updated = await updateUserProfile(updateData);
+      
+      // Update local state with returned profile data
+      setFullName(updated.fullName || "");
+      setUsername(updated.username || "");
+      setCountry(updated.country || "");
+      setBio(updated.bio || "");
+      setPhone(updated.phone || "");
+      setAvatarUrl(updated.avatarUrl || "");
+      
+      setSuccess(true);
+      setError(null);
+      setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       console.error("Failed to update profile:", err);
-      const errorMessage = err.backendMessage || err.message || "Failed to update profile";
-      setError(errorMessage);
-      
-      // Don't show "Invalid ID" in error if it's a different issue
-      if (errorMessage.includes("Invalid ID")) {
-        setError("Unable to update profile. Please refresh the page and try again.");
-      }
+      setError(err?.message || "Unable to update profile.");
     } finally {
       setSaving(false);
     }
@@ -263,23 +179,20 @@ function Profile() {
 
     try {
       // apiClient handles authentication via cookies, no need for token in headers
-      const response = await api.put('/user/change-password', {
+      await api.put('/user/change-password', {
         currentPassword,
         newPassword,
       });
 
-      if (response.status === "OK") {
-        setPasswordSuccess(true);
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-        setTimeout(() => setPasswordSuccess(false), 3000);
-      } else {
-        setPasswordError(response.message || "Failed to change password");
-      }
+      // Success - API client throws on error
+      setPasswordSuccess(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setPasswordSuccess(false), 3000);
     } catch (err) {
       console.error("Failed to change password:", err);
-      setPasswordError(err.backendMessage || err.message || "Failed to change password");
+      setPasswordError(err?.message || "Unable to change password.");
     }
   };
 

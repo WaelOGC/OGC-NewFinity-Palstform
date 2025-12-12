@@ -156,69 +156,66 @@ export async function sendResendActivationEmail(email, token, fullName = null) {
 }
 
 /**
- * Send password reset email to user
- * @param {Object} user - User object with email and fullName
- * @param {string} resetUrl - Full reset password URL with token
+ * Send password reset email to user (Phase 8.1 - new signature)
+ * @param {Object} options - Options object
+ * @param {string} options.to - User's email address
+ * @param {string} options.resetLink - Full reset password URL with token
+ * @param {Date|string} options.expiresAt - Token expiration date
  */
-export async function sendPasswordResetEmail(user, resetUrl) {
-  const subject = 'Reset your OGC NewFinity password';
-  
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #00ffc6 0%, #5864ff 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-        .header h1 { color: #020618; margin: 0; font-size: 24px; }
-        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-        .button { display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #00ffc6 0%, #5864ff 100%); color: #020618; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
-        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
-        .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 20px 0; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Password Reset Request</h1>
-        </div>
-        <div class="content">
-          <p>Hello${user.fullName ? ` ${user.fullName}` : ''},</p>
-          <p>We received a request to reset your password for your OGC NewFinity account. Click the button below to reset your password:</p>
-          <p style="text-align: center;">
-            <a href="${resetUrl}" class="button">Reset Password</a>
-          </p>
-          <p>Or copy and paste this link into your browser:</p>
-          <p style="word-break: break-all; color: #5864ff;">${resetUrl}</p>
-          <div class="warning">
-            <p><strong>This link will expire in 1 hour.</strong></p>
-            <p>If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
-          </div>
-        </div>
-        <div class="footer">
-          <p>© ${new Date().getFullYear()} OGC NewFinity. All rights reserved.</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
+export async function sendPasswordResetEmail({ to, resetLink, expiresAt }) {
+  const subject = "Reset your OGC NewFinity account password";
+
+  const formattedExpiry =
+    expiresAt instanceof Date ? expiresAt.toLocaleString() : String(expiresAt);
 
   const text = `
-    Password Reset Request - OGC NewFinity
-    
-    Hello${user.fullName ? ` ${user.fullName}` : ''},
-    
-    We received a request to reset your password for your OGC NewFinity account. Please visit the following link to reset your password:
-    
-    ${resetUrl}
-    
-    This link will expire in 1 hour.
-    
-    If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.
-    
-    © ${new Date().getFullYear()} OGC NewFinity. All rights reserved.
+You requested to reset your OGC NewFinity password.
+
+Click the link below to choose a new password:
+${resetLink}
+
+This link will expire at: ${formattedExpiry}
+
+If you did not request this, you can safely ignore this email.
+`;
+
+  const html = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: linear-gradient(135deg, #00ffc6 0%, #5864ff 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+      .header h1 { color: #020618; margin: 0; font-size: 24px; }
+      .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+      .button { display: inline-block; padding: 10px 18px; background: #00FFC6; color: #000; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0; }
+      .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Password Reset Request</h1>
+      </div>
+      <div class="content">
+        <p>You requested to reset your <strong>OGC NewFinity</strong> password.</p>
+        <p>Click the button below to choose a new password:</p>
+        <p style="text-align: center;">
+          <a href="${resetLink}" class="button">Reset password</a>
+        </p>
+        <p>Or copy and paste this link into your browser:</p>
+        <p style="word-break: break-all; color: #5864ff;">${resetLink}</p>
+        <p>This link will expire at: <strong>${formattedExpiry}</strong></p>
+        <p>If you did not request this, you can safely ignore this email.</p>
+      </div>
+      <div class="footer">
+        <p>© ${new Date().getFullYear()} OGC NewFinity. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+  </html>
   `;
 
   if (!transporter) {
@@ -228,16 +225,368 @@ export async function sendPasswordResetEmail(user, resetUrl) {
   try {
     const info = await transporter.sendMail({
       from: SMTP_FROM,
-      to: user.email,
+      to,
       subject,
       text,
       html,
     });
-    console.log(`[EmailService] Password reset email sent to ${user.email} (Message ID: ${info.messageId})`);
+    console.log(`[EmailService] Password reset email sent to ${to} (Message ID: ${info.messageId})`);
     return { success: true, messageId: info.messageId };
   } catch (err) {
     console.error('[EmailService] Failed to send password reset email', err);
     throw new Error(`Failed to send password reset email: ${err.message}`);
+  }
+}
+
+/**
+ * Send password changed alert email (Phase 8.3)
+ * Security notification sent when a user's password is changed
+ * @param {Object} options - Options object
+ * @param {string} options.to - User's email address
+ * @param {Date|string} options.changedAt - When the password was changed
+ * @param {string} options.ipAddress - IP address where change occurred (optional)
+ * @param {string} options.userAgent - User agent string (optional)
+ */
+export async function sendPasswordChangedAlertEmail({ to, changedAt, ipAddress, userAgent }) {
+  const when = changedAt || new Date();
+  const changedAtDate = when instanceof Date ? when : new Date(when);
+
+  const subject = "Your OGC NewFinity password was changed";
+
+  const lines = [
+    "Hello,",
+    "",
+    "This is a security notification from OGC NewFinity.",
+    "Your account password was recently changed.",
+    "",
+    `Time: ${changedAtDate.toISOString()}`,
+    ipAddress ? `IP address: ${ipAddress}` : null,
+    userAgent ? `Device: ${userAgent}` : null,
+    "",
+    "If you made this change, you can safely ignore this email.",
+    "If you did NOT make this change, please:",
+    "1) Reset your password again immediately, and",
+    "2) Contact support so we can review your account activity.",
+    "",
+    "— OGC NewFinity Security",
+  ].filter(Boolean);
+
+  const text = lines.join("\n");
+
+  const html = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: linear-gradient(135deg, #00ffc6 0%, #5864ff 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+      .header h1 { color: #020618; margin: 0; font-size: 24px; }
+      .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+      .alert-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px; }
+      .info-item { margin: 10px 0; }
+      .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Security Alert</h1>
+      </div>
+      <div class="content">
+        <p>Hello,</p>
+        <p>This is a security notification from <strong>OGC NewFinity</strong>.</p>
+        <p>Your account password was recently changed.</p>
+        <div class="alert-box">
+          <p><strong>Change Details:</strong></p>
+          <div class="info-item"><strong>Time:</strong> ${changedAtDate.toISOString()}</div>
+          ${ipAddress ? `<div class="info-item"><strong>IP address:</strong> ${ipAddress}</div>` : ''}
+          ${userAgent ? `<div class="info-item"><strong>Device:</strong> ${userAgent}</div>` : ''}
+        </div>
+        <p>If you made this change, you can safely ignore this email.</p>
+        <p>If you did <strong>NOT</strong> make this change, please:</p>
+        <ol>
+          <li>Reset your password again immediately, and</li>
+          <li>Contact support so we can review your account activity.</li>
+        </ol>
+      </div>
+      <div class="footer">
+        <p>— OGC NewFinity Security</p>
+        <p>© ${new Date().getFullYear()} OGC NewFinity. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+
+  if (!transporter) {
+    throw new Error('Email service not initialized. SMTP transporter is not available.');
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[EmailService] sendPasswordChangedAlertEmail →", {
+      to,
+      changedAt: changedAtDate.toISOString(),
+      ipAddress,
+    });
+  }
+
+  try {
+    const info = await transporter.sendMail({
+      from: SMTP_FROM,
+      to,
+      subject,
+      text,
+      html,
+    });
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[EmailService] Password changed alert email sent", {
+        messageId: info?.messageId,
+        response: info?.response,
+      });
+    }
+
+    console.log(`[EmailService] Password changed alert email sent to ${to} (Message ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (err) {
+    console.error('[EmailService] Failed to send password changed alert email', err);
+    throw new Error(`Failed to send password changed alert email: ${err.message}`);
+  }
+}
+
+/**
+ * Send new login alert email (Phase 8.4)
+ * Security notification sent when a user logs in from a new device or IP
+ * @param {Object} options - Options object
+ * @param {string} options.to - User's email address
+ * @param {Date|string} options.loggedInAt - When the login occurred
+ * @param {string} options.ipAddress - IP address where login occurred (optional)
+ * @param {string} options.userAgent - User agent string (optional)
+ */
+export async function sendNewLoginAlertEmail({ to, loggedInAt, ipAddress, userAgent }) {
+  const when = loggedInAt || new Date();
+  const loggedInAtDate = when instanceof Date ? when : new Date(when);
+
+  const subject = "New login detected on your OGC NewFinity account";
+
+  const lines = [
+    "Hello,",
+    "",
+    "This is a security notification from OGC NewFinity.",
+    "A new login to your account was detected.",
+    "",
+    `Time: ${loggedInAtDate.toISOString()}`,
+    ipAddress ? `IP address: ${ipAddress}` : null,
+    userAgent ? `Device / browser: ${userAgent}` : null,
+    "",
+    "If this was you, you can safely ignore this email.",
+    "If you did NOT sign in:",
+    "1) Reset your password immediately, and",
+    "2) Consider enabling two-factor authentication (2FA) from your Security settings.",
+    "",
+    "— OGC NewFinity Security",
+  ].filter(Boolean);
+
+  const text = lines.join("\n");
+
+  const html = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: linear-gradient(135deg, #00ffc6 0%, #5864ff 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+      .header h1 { color: #020618; margin: 0; font-size: 24px; }
+      .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+      .alert-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px; }
+      .info-item { margin: 10px 0; }
+      .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>New Login Detected</h1>
+      </div>
+      <div class="content">
+        <p>Hello,</p>
+        <p>This is a security notification from <strong>OGC NewFinity</strong>.</p>
+        <p>A new login to your account was detected.</p>
+        <div class="alert-box">
+          <p><strong>Login Details:</strong></p>
+          <div class="info-item"><strong>Time:</strong> ${loggedInAtDate.toISOString()}</div>
+          ${ipAddress ? `<div class="info-item"><strong>IP address:</strong> ${ipAddress}</div>` : ''}
+          ${userAgent ? `<div class="info-item"><strong>Device / browser:</strong> ${userAgent}</div>` : ''}
+        </div>
+        <p>If this was you, you can safely ignore this email.</p>
+        <p>If you did <strong>NOT</strong> sign in:</p>
+        <ol>
+          <li>Reset your password immediately, and</li>
+          <li>Consider enabling two-factor authentication (2FA) from your Security settings.</li>
+        </ol>
+      </div>
+      <div class="footer">
+        <p>— OGC NewFinity Security</p>
+        <p>© ${new Date().getFullYear()} OGC NewFinity. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+
+  if (!transporter) {
+    throw new Error('Email service not initialized. SMTP transporter is not available.');
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[EmailService] sendNewLoginAlertEmail →", {
+      to,
+      loggedInAt: loggedInAtDate.toISOString(),
+      ipAddress,
+    });
+  }
+
+  try {
+    const info = await transporter.sendMail({
+      from: SMTP_FROM,
+      to,
+      subject,
+      text,
+      html,
+    });
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[EmailService] New login alert email sent", {
+        messageId: info?.messageId,
+        response: info?.response,
+      });
+    }
+
+    console.log(`[EmailService] New login alert email sent to ${to} (Message ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (err) {
+    console.error('[EmailService] Failed to send new login alert email', err);
+    throw new Error(`Failed to send new login alert email: ${err.message}`);
+  }
+}
+
+/**
+ * Send two-factor authentication status changed alert email (Phase 8.5)
+ * Security notification sent when a user enables or disables 2FA
+ * @param {Object} options - Options object
+ * @param {string} options.to - User's email address
+ * @param {boolean} options.enabled - Whether 2FA was enabled (true) or disabled (false)
+ * @param {Date|string} options.at - When the change occurred (optional)
+ * @param {string} options.ipAddress - IP address where change occurred (optional)
+ * @param {string} options.userAgent - User agent string (optional)
+ */
+export async function sendTwoFactorStatusChangedEmail({ to, enabled, at, ipAddress, userAgent }) {
+  const action = enabled ? "enabled" : "disabled";
+  const when = at || new Date();
+  const changedAtDate = when instanceof Date ? when : new Date(when);
+
+  const subject = `Two-Factor Authentication ${action} on your OGC NewFinity account`;
+
+  const lines = [
+    "Hello,",
+    "",
+    `Two-Factor Authentication (2FA) was ${action} on your OGC NewFinity account.`,
+    "",
+    `Time: ${changedAtDate.toISOString()}`,
+    ipAddress ? `IP address: ${ipAddress}` : null,
+    userAgent ? `Device / browser: ${userAgent}` : null,
+    "",
+    enabled
+      ? "Your account is now protected by an additional security layer."
+      : "Your account is no longer protected by 2FA. If you did NOT disable 2FA, secure your account immediately.",
+    "",
+    "— OGC NewFinity Security",
+  ].filter(Boolean);
+
+  const text = lines.join("\n");
+
+  const html = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: linear-gradient(135deg, #00ffc6 0%, #5864ff 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+      .header h1 { color: #020618; margin: 0; font-size: 24px; }
+      .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+      .alert-box { background: ${enabled ? '#d1f2eb' : '#fff3cd'}; border-left: 4px solid ${enabled ? '#00ffc6' : '#ffc107'}; padding: 15px; margin: 20px 0; border-radius: 4px; }
+      .info-item { margin: 10px 0; }
+      .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>2FA ${enabled ? 'Enabled' : 'Disabled'}</h1>
+      </div>
+      <div class="content">
+        <p>Hello,</p>
+        <p>Two-Factor Authentication (2FA) was <strong>${action}</strong> on your <strong>OGC NewFinity</strong> account.</p>
+        <div class="alert-box">
+          <p><strong>Change Details:</strong></p>
+          <div class="info-item"><strong>Time:</strong> ${changedAtDate.toISOString()}</div>
+          ${ipAddress ? `<div class="info-item"><strong>IP address:</strong> ${ipAddress}</div>` : ''}
+          ${userAgent ? `<div class="info-item"><strong>Device / browser:</strong> ${userAgent}</div>` : ''}
+        </div>
+        ${enabled
+          ? '<p>Your account is now protected by an additional security layer.</p>'
+          : '<p>Your account is no longer protected by 2FA. If you did <strong>NOT</strong> disable 2FA, secure your account immediately.</p>'
+        }
+      </div>
+      <div class="footer">
+        <p>— OGC NewFinity Security</p>
+        <p>© ${new Date().getFullYear()} OGC NewFinity. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+
+  if (!transporter) {
+    throw new Error('Email service not initialized. SMTP transporter is not available.');
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[EmailService] sendTwoFactorStatusChangedEmail →", {
+      to,
+      enabled,
+      at: changedAtDate.toISOString(),
+      ipAddress,
+    });
+  }
+
+  try {
+    const info = await transporter.sendMail({
+      from: SMTP_FROM,
+      to,
+      subject,
+      text,
+      html,
+    });
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[EmailService] 2FA status change email sent", {
+        messageId: info?.messageId,
+        response: info?.response,
+      });
+    }
+
+    console.log(`[EmailService] 2FA status change email sent to ${to} (Message ID: ${info.messageId})`);
+    return { success: true, messageId: info.messageId };
+  } catch (err) {
+    console.error('[EmailService] Failed to send 2FA status change email', err);
+    throw new Error(`Failed to send 2FA status change email: ${err.message}`);
   }
 }
 

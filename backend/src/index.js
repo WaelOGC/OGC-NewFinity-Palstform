@@ -45,7 +45,9 @@ app.use(rateLimiter);
 app.use('/api/v1', routes);
 
 // Catch-all for unmatched API routes - return JSON instead of HTML
-app.use('/api', (req, res, next) => {
+// IMPORTANT: This must come AFTER /api/v1 routes are mounted
+// Express matches routes in order, so /api/v1 will match first
+app.use('/api', (req, res) => {
   res.status(404).json({
     status: 'ERROR',
     success: false,

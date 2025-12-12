@@ -32,17 +32,18 @@ function AdminUsersPage() {
       if (roleFilter) params.append("role", roleFilter);
       if (statusFilter) params.append("status", statusFilter);
 
-      const response = await api.get(`/admin/users?${params.toString()}`);
+      // API client now returns data directly (from { status: "OK", data: { items, pagination } })
+      const data = await api.get(`/admin/users?${params.toString()}`);
       
-      if (response.status === "OK" && response.data) {
-        setUsers(Array.isArray(response.data.items) ? response.data.items : []);
-        setPagination(response.data.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
+      if (data) {
+        setUsers(Array.isArray(data.items) ? data.items : []);
+        setPagination(data.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
       } else {
         setError("Failed to load users");
       }
     } catch (err) {
       console.error("Error fetching users:", err);
-      setError(err.backendMessage || err.message || "Failed to load users");
+      setError(err?.message || "Unable to load users.");
     } finally {
       setLoading(false);
     }
@@ -57,18 +58,9 @@ function AdminUsersPage() {
       console.error("Invalid user object:", user);
       return;
     }
-    try {
-      const response = await api.get(`/admin/users/${user.id}`);
-      if (response.status === "OK" && response.data) {
-        setSelectedUser(response.data);
-        setShowDetailPanel(true);
-      } else {
-        alert("Failed to load user details");
-      }
-    } catch (err) {
-      console.error("Error fetching user details:", err);
-      alert(err.backendMessage || "Failed to load user details");
-    }
+    // Just set the userId - AdminUserDetailPanel will load the data
+    setSelectedUser({ id: user.id });
+    setShowDetailPanel(true);
   };
 
   const handleCloseDetailPanel = () => {
@@ -79,10 +71,7 @@ function AdminUsersPage() {
   const handleUserUpdated = () => {
     // Refresh users list
     fetchUsers(pagination.page);
-    // Refresh selected user if open
-    if (selectedUser && selectedUser.user && selectedUser.user.id) {
-      handleUserClick({ id: selectedUser.user.id });
-    }
+    // Note: AdminUserDetailPanel will auto-refresh when userId changes
   };
 
   const getRoleBadgeClass = (role) => {
@@ -261,7 +250,7 @@ function AdminUsersPage() {
 
       {showDetailPanel && selectedUser && (
         <AdminUserDetailPanel
-          userData={selectedUser}
+          userId={selectedUser.id}
           onClose={handleCloseDetailPanel}
           onUserUpdated={handleUserUpdated}
         />

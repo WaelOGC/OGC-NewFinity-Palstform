@@ -1,13 +1,68 @@
 :root {
-  color-scheme: dark;
-  --ogc-bg: #020617;    /* dark slate */
-  --ogc-fg: #e5e7eb;    /* slate-200 */
+  color-scheme: light;
+  /* Light theme defaults */
+  --bg-body: #f3f5ff;
+  --bg-dashboard: #f3f5ff;
+  --bg-header: #ffffff;
+  --sidebar-bg: #0b1020; /* sidebar stays dark for contrast */
+  --bg-card: #ffffff;
+  --bg-card-soft: #edf1ff;
+  --border-card: rgba(8, 16, 40, 0.08);
+  --text-main: #080d1f;
+  --text-muted: rgba(8, 13, 31, 0.65);
+  --accent-primary: #00bfa6;
+  --accent-secondary: #5864ff;
+  --accent-warning: #ffbc25;
+  --accent-danger: #ff3c5c;
+  --chip-bg: rgba(8, 16, 40, 0.04);
+  
+  /* Legacy vars for backward compatibility */
+  --ogc-bg: #f3f5ff;
+  --ogc-fg: #080d1f;
 }
 
-:root[data-theme="light"] {
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg-body: #050712;
+  --bg-dashboard: #050712;
+  --bg-header: #050712;
+  --sidebar-bg: #050712;
+  --bg-card: #081426;
+  --bg-card-soft: #091a30;
+  --border-card: rgba(255, 255, 255, 0.06);
+  --text-main: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.7);
+  --accent-primary: #00ffc6;
+  --accent-secondary: #5864ff;
+  --accent-warning: #ffbc25;
+  --accent-danger: #ff3c5c;
+  --chip-bg: rgba(255, 255, 255, 0.04);
+  
+  /* Legacy vars for backward compatibility */
+  --ogc-bg: #020617;
+  --ogc-fg: #e5e7eb;
+}
+
+[data-theme='light'] {
   color-scheme: light;
-  --ogc-bg: #f9fafb;    /* light background */
-  --ogc-fg: #020617;    /* dark text */
+  --bg-body: #f3f5ff;
+  --bg-dashboard: #f3f5ff;
+  --bg-header: #ffffff;
+  --sidebar-bg: #0b1020; /* sidebar stays dark for contrast */
+  --bg-card: #ffffff;
+  --bg-card-soft: #edf1ff;
+  --border-card: rgba(8, 16, 40, 0.08);
+  --text-main: #080d1f;
+  --text-muted: rgba(8, 13, 31, 0.65);
+  --accent-primary: #00bfa6;
+  --accent-secondary: #5864ff;
+  --accent-warning: #ffbc25;
+  --accent-danger: #ff3c5c;
+  --chip-bg: rgba(8, 16, 40, 0.04);
+  
+  /* Legacy vars for backward compatibility */
+  --ogc-bg: #f3f5ff;
+  --ogc-fg: #080d1f;
 }
 
 html,
@@ -18,8 +73,8 @@ body {
   max-width: 100%;
   overflow-x: hidden;
   box-sizing: border-box;
-  background-color: var(--ogc-bg);
-  color: var(--ogc-fg);
+  background-color: var(--bg-body);
+  color: var(--text-main);
   transition: background-color 0.4s ease, color 0.4s ease;
 }
 
@@ -34,5 +89,5 @@ body {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
-  background-color: var(--ogc-bg);
+  background-color: var(--bg-body);
 }

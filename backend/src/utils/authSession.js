@@ -1,6 +1,9 @@
 import jwt from 'jsonwebtoken';
 import pool from '../db.js';
-import { createSession } from '../services/sessionService.js';
+import crypto from 'crypto';
+import { createSessionForUser, isNewDeviceOrIpForUser } from '../services/sessionService.js';
+import { sendNewLoginAlertEmail } from '../services/emailService.js';
+import { logUserActivity } from '../services/activityService.js';
 
 // Standardized JWT configuration
 const {
@@ -62,8 +65,81 @@ export async function createAuthSessionForUser(res, user, req = null) {
   }
 
   const payload = { userId: user.id, role: user.role || 'user' };
+  let sessionId = null;
 
-  // Generate tokens
+  // PHASE S2: Create session record first if request is provided (so we can include sessionId in JWT)
+  if (req) {
+    try {
+      // Extract IP address with proper fallback chain
+      const forwardedFor = req.headers['x-forwarded-for'];
+      const ipFromForwarded = forwardedFor ? forwardedFor.split(',')[0].trim() : null;
+      const ipAddress = req.ip || ipFromForwarded || req.connection?.remoteAddress || req.socket?.remoteAddress;
+      const userAgent = req.headers['user-agent'];
+      
+      // Generate device fingerprint from userAgent (simple hash for now)
+      const deviceFingerprint = userAgent ? crypto.createHash('sha256').update(userAgent).digest('hex') : null;
+      
+      // Create session with new opaque token system
+      const { sessionId: newSessionId, sessionToken } = await createSessionForUser(user.id, {
+        ipAddress,
+        userAgent,
+        deviceFingerprint,
+      });
+      
+      sessionId = newSessionId;
+      
+      // Add sessionId to JWT payload
+      payload.sessionId = sessionId;
+      
+      // Set ogc_session cookie with the session token
+      const isProd = process.env.NODE_ENV === 'production';
+      if (res) {
+        res.cookie('ogc_session', sessionToken, {
+          httpOnly: true,
+          secure: isProd,
+          sameSite: isProd ? 'strict' : 'lax',
+          maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+        });
+      }
+
+      // Phase 8.4: Check if this is a new device or IP and send alert if needed
+      try {
+        const { isNew } = await isNewDeviceOrIpForUser({
+          userId: user.id,
+          ipAddress,
+          userAgent,
+        });
+
+        if (isNew && user.email) {
+          try {
+            await sendNewLoginAlertEmail({
+              to: user.email,
+              loggedInAt: new Date(),
+              ipAddress,
+              userAgent,
+            });
+          } catch (emailErr) {
+            // Do NOT fail login if email sending fails
+            console.warn("[AuthSession] Failed to send new login alert:", emailErr);
+          }
+        }
+      } catch (newDeviceCheckError) {
+        // Do NOT fail login if new device check fails
+        console.warn("[AuthSession] Error while computing new-device logic:", newDeviceCheckError);
+      }
+
+      // Phase 8.6: Log login success activity (if session was created successfully)
+      // Note: The 'via' field in metadata should be set by the caller if needed
+      // For now, we default to 'PASSWORD' but this will be overridden by recordLoginActivity
+      // which is called by auth routes with proper metadata
+      // We're not logging here to avoid double-logging, as recordLoginActivity handles it
+    } catch (sessionError) {
+      // Log but don't fail login if session creation fails
+      console.error('[AuthSession] Failed to create session record:', sessionError);
+    }
+  }
+
+  // Generate tokens (with sessionId in payload if available)
   const accessToken = jwt.sign(payload, JWT_ACCESS_SECRET, {
     expiresIn: JWT_ACCESS_EXPIRES_IN,
   });
@@ -87,24 +163,6 @@ export async function createAuthSessionForUser(res, user, req = null) {
       sameSite: isProd ? 'strict' : 'lax',
       maxAge: parseExpiresIn(JWT_REFRESH_EXPIRES_IN),
     });
-  }
-
-  // Phase 7.1: Create session record if request is provided
-  if (req) {
-    try {
-      const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress;
-      const userAgent = req.headers['user-agent'];
-      await createSession({
-        userId: user.id,
-        accessToken,
-        userAgent,
-        ipAddress,
-        deviceLabel: null // Can be set later by user
-      });
-    } catch (sessionError) {
-      // Log but don't fail login if session creation fails
-      console.error('Failed to create session record:', sessionError);
-    }
   }
 
   return { access: accessToken, refresh: refreshToken };

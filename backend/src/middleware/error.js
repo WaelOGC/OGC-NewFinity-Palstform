@@ -1,3 +1,5 @@
+import { sendError } from "../utils/apiResponse.js";
+
 export function errorHandler(err, req, res, next) {
   // Ensure we always return JSON, never HTML
   if (err?.name === 'ZodError') {
@@ -33,28 +35,18 @@ export function errorHandler(err, req, res, next) {
 
     // Common MySQL errors that indicate missing columns/tables
     if (err.code === 'ER_BAD_FIELD_ERROR' || err.message.includes('Unknown column')) {
-      return res.status(500).json({
-        status: 'ERROR',
-        message: 'Database error occurred. Please try again later.',
+      return sendError(res, {
         code: 'DATABASE_SCHEMA_ERROR',
-        details: isDev ? {
-          mysqlError: err.message,
-          code: err.code,
-          hint: 'Check backend logs for detailed error information'
-        } : undefined
+        message: 'Database error occurred. Please try again later.',
+        statusCode: 500,
       });
     }
     
     // Generic database error
-    return res.status(500).json({
-      status: 'ERROR',
-      message: 'Database error occurred. Please try again later.',
+    return sendError(res, {
       code: 'DATABASE_ERROR',
-      details: isDev ? {
-        mysqlError: err.message,
-        code: err.code,
-        sqlState: err.sqlState
-      } : undefined
+      message: 'Database error occurred. Please try again later.',
+      statusCode: 500,
     });
   }
   
@@ -62,14 +54,13 @@ export function errorHandler(err, req, res, next) {
   const statusCode = err.statusCode || err.status || 500;
   
   // In development, include error message; in production, use generic message
-  const message = isDev ? err.message : 'Internal server error';
+  const message = isDev ? err.message : 'The server encountered an error. Please try again later.';
   
-  // Always return JSON with consistent format
-  res.status(statusCode).json({ 
-    status: 'ERROR',
-    message: message,
+  // Always return JSON with consistent format: { status: "ERROR", code, message }
+  return sendError(res, {
     code: err.code || 'INTERNAL_ERROR',
-    ...(isDev && { details: err.message })
+    message: message,
+    statusCode: statusCode,
   });
 }
 

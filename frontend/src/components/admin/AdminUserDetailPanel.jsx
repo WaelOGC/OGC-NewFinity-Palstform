@@ -1,106 +1,152 @@
 import { useState, useEffect } from "react";
 import { api } from "../../utils/apiClient.js";
+import {
+  getAdminUser,
+  getAdminUserSessions,
+  adminRevokeUserSession,
+  adminRevokeAllUserSessions,
+} from "../../utils/apiClient.js";
 import "./admin-user-detail-panel.css";
 
-function AdminUserDetailPanel({ userData, onClose, onUserUpdated }) {
-  const [user, setUser] = useState(userData?.user || null);
-  const [activities, setActivities] = useState(userData?.recentActivity || []);
-  const [devices, setDevices] = useState(userData?.devices || []);
+function AdminUserDetailPanel({ userId, onClose, onUserUpdated }) {
+  const [user, setUser] = useState(null);
+  const [userLoading, setUserLoading] = useState(false);
+  const [userError, setUserError] = useState(null); // Can be string or { message, code }
+
+  const [activities, setActivities] = useState([]);
+  const [devices, setDevices] = useState([]);
+
   const [sessions, setSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
-  const [revokingSession, setRevokingSession] = useState(null);
-  const [revokingAllSessions, setRevokingAllSessions] = useState(false);
+  const [sessionsError, setSessionsError] = useState(null); // Can be string or { message, code }
+  const [sessionsActionLoading, setSessionsActionLoading] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
   // Form state
-  const [role, setRole] = useState(user?.role || "");
-  const [accountStatus, setAccountStatus] = useState(user?.accountStatus || "ACTIVE");
-  const [featureFlags, setFeatureFlags] = useState(user?.featureFlags || {});
+  const [role, setRole] = useState("");
+  const [accountStatus, setAccountStatus] = useState("ACTIVE");
+  const [featureFlags, setFeatureFlags] = useState({});
 
+  // Load user and sessions when userId changes
   useEffect(() => {
-    if (userData) {
-      setUser(userData.user);
-      setActivities(userData.recentActivity || []);
-      setDevices(userData.devices || []);
-      setRole(userData.user?.role || "");
-      setAccountStatus(userData.user?.accountStatus || "ACTIVE");
-      setFeatureFlags(userData.user?.featureFlags || {});
-      
-      // Fetch sessions when user data is available (Phase 7.1)
-      if (userData.user?.id) {
-        fetchSessions(userData.user.id);
-      }
-    }
-  }, [userData]);
+    if (!userId) return;
 
-  const fetchSessions = async (userId) => {
-    try {
+    const loadUserAndSessions = async () => {
+      setUserLoading(true);
       setSessionsLoading(true);
-      const response = await api.get(`/admin/users/${userId}/sessions`);
-      if (response.status === "OK" && response.data?.sessions) {
-        setSessions(response.data.sessions);
-      }
-    } catch (err) {
-      console.error("Failed to fetch sessions:", err);
-    } finally {
-      setSessionsLoading(false);
-    }
-  };
+      setUserError(null);
+      setSessionsError(null);
 
-  const handleRevokeSession = async (sessionId) => {
-    if (!user) return;
+      try {
+        // Load full user detail (includes activities and devices)
+        const fullDetail = await api.get(`/admin/users/${userId}`);
+        
+        if (fullDetail && fullDetail.user) {
+          const loadedUser = fullDetail.user;
+          setUser(loadedUser);
+          setActivities(fullDetail.recentActivity || []);
+          setDevices(fullDetail.devices || []);
+          setRole(loadedUser.role || "");
+          setAccountStatus(loadedUser.accountStatus || "ACTIVE");
+          setFeatureFlags(loadedUser.featureFlags || {});
+          setUserError(null);
+        } else {
+          setUserError("Failed to load user details");
+        }
+
+        // Load sessions separately
+        const sessionList = await getAdminUserSessions(userId);
+        setSessions(sessionList || []);
+        setSessionsError(null);
+      } catch (err) {
+        console.error("Failed to load user details or sessions:", err);
+        setUserError({
+          message: err?.message || "Unable to load user details.",
+          code: err?.code
+        });
+        setSessionsError({
+          message: err?.message || "Unable to load sessions.",
+          code: err?.code
+        });
+      } finally {
+        setUserLoading(false);
+        setSessionsLoading(false);
+      }
+    };
+
+    loadUserAndSessions();
+  }, [userId]);
+
+  const handleAdminRevokeSession = async (sessionId) => {
+    if (!userId || !sessionId) return;
     
     if (!confirm("Are you sure you want to revoke this session? The user will be logged out from that device.")) {
       return;
     }
 
+    setSessionsActionLoading(true);
+    setSessionsError(null);
+    setError(null);
+    setSuccess(null);
+
     try {
-      setRevokingSession(sessionId);
-      const response = await api.post(`/admin/users/${user.id}/sessions/revoke`, { sessionId });
+      await adminRevokeUserSession(userId, sessionId);
+      setSuccess("Session revoked successfully");
       
-      if (response.status === "OK") {
-        setSuccess("Session revoked successfully");
-        await fetchSessions(user.id);
-        if (onUserUpdated) onUserUpdated();
-      } else {
-        setError("Failed to revoke session");
-      }
+      // Refresh sessions
+      const refreshed = await getAdminUserSessions(userId);
+      setSessions(refreshed || []);
+      setSessionsError(null);
+      
+      if (onUserUpdated) onUserUpdated();
     } catch (err) {
       console.error("Error revoking session:", err);
-      setError(err.backendMessage || "Failed to revoke session");
+      const errorObj = {
+        message: err?.message || "Unable to revoke session.",
+        code: err?.code
+      };
+      setSessionsError(errorObj);
+      setError(errorObj.message);
     } finally {
-      setRevokingSession(null);
+      setSessionsActionLoading(false);
     }
   };
 
-  const handleRevokeAllSessions = async () => {
-    if (!user) return;
+  const handleAdminRevokeAllSessions = async () => {
+    if (!userId) return;
     
     if (!confirm("Are you sure you want to log out this user from all devices? This will force them to log in again.")) {
       return;
     }
 
+    setSessionsActionLoading(true);
+    setSessionsError(null);
+    setError(null);
+    setSuccess(null);
+
     try {
-      setRevokingAllSessions(true);
-      setError(null);
-      setSuccess(null);
+      await adminRevokeAllUserSessions(userId);
+      setSuccess("Successfully logged out user from all devices");
       
-      const response = await api.post(`/admin/users/${user.id}/sessions/revoke-all`, {});
+      // Refresh sessions
+      const refreshed = await getAdminUserSessions(userId);
+      setSessions(refreshed || []);
+      setSessionsError(null);
       
-      if (response.status === "OK") {
-        setSuccess(`Successfully logged out user from ${response.data?.revokedCount || 0} device(s)`);
-        await fetchSessions(user.id);
-        if (onUserUpdated) onUserUpdated();
-      } else {
-        setError("Failed to revoke sessions");
-      }
+      if (onUserUpdated) onUserUpdated();
     } catch (err) {
       console.error("Error revoking all sessions:", err);
-      setError(err.backendMessage || "Failed to revoke sessions");
+      const errorObj = {
+        message: err?.message || "Unable to revoke all sessions.",
+        code: err?.code
+      };
+      setSessionsError(errorObj);
+      setError(errorObj.message);
     } finally {
-      setRevokingAllSessions(false);
+      setSessionsActionLoading(false);
     }
   };
 
@@ -112,18 +158,19 @@ function AdminUserDetailPanel({ userData, onClose, onUserUpdated }) {
       setError(null);
       setSuccess(null);
 
-      const response = await api.put(`/admin/users/${user.id}/role`, { role });
+      // API client now returns data directly (from { status: "OK", data: { user } })
+      const data = await api.put(`/admin/users/${user.id}/role`, { role });
       
-      if (response.status === "OK") {
-        setSuccess("Role updated successfully");
-        setUser({ ...user, role: response.data.user.role });
-        if (onUserUpdated) onUserUpdated();
-      } else {
-        setError("Failed to update role");
+      // Success - API client throws on error
+      setSuccess("Role updated successfully");
+      if (data && data.user) {
+        setUser({ ...user, role: data.user.role });
+        setRole(data.user.role);
       }
+      if (onUserUpdated) onUserUpdated();
     } catch (err) {
       console.error("Error updating role:", err);
-      setError(err.backendMessage || "Failed to update role");
+      setError(err?.message || "Unable to update role.");
     } finally {
       setLoading(false);
     }
@@ -137,18 +184,18 @@ function AdminUserDetailPanel({ userData, onClose, onUserUpdated }) {
       setError(null);
       setSuccess(null);
 
-      const response = await api.put(`/admin/users/${user.id}/status`, { accountStatus });
+      const data = await api.put(`/admin/users/${user.id}/status`, { accountStatus });
       
-      if (response.status === "OK") {
-        setSuccess("Account status updated successfully");
-        setUser({ ...user, accountStatus: response.data.user.accountStatus });
-        if (onUserUpdated) onUserUpdated();
-      } else {
-        setError("Failed to update status");
+      // Success - API client throws on error
+      setSuccess("Account status updated successfully");
+      if (data && data.user) {
+        setUser({ ...user, accountStatus: data.user.accountStatus });
+        setAccountStatus(data.user.accountStatus);
       }
+      if (onUserUpdated) onUserUpdated();
     } catch (err) {
       console.error("Error updating status:", err);
-      setError(err.backendMessage || "Failed to update status");
+      setError(err?.message || "Unable to update status.");
     } finally {
       setLoading(false);
     }
@@ -165,24 +212,22 @@ function AdminUserDetailPanel({ userData, onClose, onUserUpdated }) {
       const updatedFlags = { ...featureFlags, [flagName]: value };
       setFeatureFlags(updatedFlags);
 
-      const response = await api.put(`/admin/users/${user.id}/feature-flags`, {
+      // API client now returns data directly (from { status: "OK", data: { user } })
+      const data = await api.put(`/admin/users/${user.id}/feature-flags`, {
         featureFlags: { [flagName]: value },
       });
       
-      if (response.status === "OK") {
-        setSuccess("Feature flag updated successfully");
-        setFeatureFlags(response.data.user.featureFlags);
-        if (onUserUpdated) onUserUpdated();
-      } else {
-        // Revert on error
-        setFeatureFlags(featureFlags);
-        setError("Failed to update feature flag");
+      // Success - API client throws on error
+      setSuccess("Feature flag updated successfully");
+      if (data && data.user && data.user.featureFlags) {
+        setFeatureFlags(data.user.featureFlags);
       }
+      if (onUserUpdated) onUserUpdated();
     } catch (err) {
       console.error("Error updating feature flag:", err);
       // Revert on error
       setFeatureFlags(featureFlags);
-      setError(err.backendMessage || "Failed to update feature flag");
+      setError(err?.message || "Unable to update feature flag.");
     } finally {
       setLoading(false);
     }
@@ -194,7 +239,61 @@ function AdminUserDetailPanel({ userData, onClose, onUserUpdated }) {
     return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  if (!user) return null;
+  // Loading state
+  if (userLoading) {
+    return (
+      <div className="admin-detail-overlay" onClick={onClose}>
+        <div className="admin-detail-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="admin-detail-header">
+            <h2>User Details</h2>
+            <button onClick={onClose} className="admin-detail-close">×</button>
+          </div>
+          <div className="admin-detail-content">
+            <p>Loading user...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (userError) {
+    const errorMessage = typeof userError === 'string' ? userError : userError.message;
+    const errorCode = typeof userError === 'object' ? userError.code : null;
+    return (
+      <div className="admin-detail-overlay" onClick={onClose}>
+        <div className="admin-detail-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="admin-detail-header">
+            <h2>User Details</h2>
+            <button onClick={onClose} className="admin-detail-close">×</button>
+          </div>
+          <div className="admin-detail-content">
+            <div className="admin-detail-message admin-detail-error">
+              {errorMessage}
+              {errorCode && <span className="error-code" style={{ marginLeft: '8px', opacity: 0.7, fontSize: '0.9em' }}>(Code: {errorCode})</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No user state
+  if (!user) {
+    return (
+      <div className="admin-detail-overlay" onClick={onClose}>
+        <div className="admin-detail-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="admin-detail-header">
+            <h2>User Details</h2>
+            <button onClick={onClose} className="admin-detail-close">×</button>
+          </div>
+          <div className="admin-detail-content">
+            <p>No user selected.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Known feature flags from defaultFeatureFlags.json
   const knownFeatureFlags = [
@@ -392,27 +491,34 @@ function AdminUserDetailPanel({ userData, onClose, onUserUpdated }) {
               <h3>Active Sessions</h3>
               {sessions.length > 0 && (
                 <button
-                  onClick={handleRevokeAllSessions}
-                  disabled={revokingAllSessions}
+                  onClick={handleAdminRevokeAllSessions}
+                  disabled={sessionsActionLoading}
                   style={{
                     padding: "6px 12px",
                     backgroundColor: "rgba(255, 0, 0, 0.2)",
                     border: "1px solid rgba(255, 0, 0, 0.3)",
                     borderRadius: "4px",
                     color: "#fff",
-                    cursor: revokingAllSessions ? "not-allowed" : "pointer",
-                    opacity: revokingAllSessions ? 0.5 : 1,
+                    cursor: sessionsActionLoading ? "not-allowed" : "pointer",
+                    opacity: sessionsActionLoading ? 0.5 : 1,
                     fontSize: "0.85em",
                   }}
                 >
-                  {revokingAllSessions ? "Logging out..." : "Log out from all devices"}
+                  {sessionsActionLoading ? "Logging out..." : "Log out user from all devices"}
                 </button>
               )}
             </div>
             {sessionsLoading ? (
               <p className="admin-detail-empty">Loading sessions...</p>
+            ) : sessionsError ? (
+              <div className="admin-detail-message admin-detail-error">
+                {typeof sessionsError === 'string' ? sessionsError : sessionsError.message}
+                {typeof sessionsError === 'object' && sessionsError.code && (
+                  <span className="error-code" style={{ marginLeft: '8px', opacity: 0.7, fontSize: '0.9em' }}>(Code: {sessionsError.code})</span>
+                )}
+              </div>
             ) : sessions.length === 0 ? (
-              <p className="admin-detail-empty">No active sessions</p>
+              <p className="admin-detail-empty">No active sessions for this user.</p>
             ) : (
               <div className="admin-detail-devices-list">
                 {sessions.map((session) => (
@@ -436,7 +542,7 @@ function AdminUserDetailPanel({ userData, onClose, onUserUpdated }) {
                         })() : "Unknown device"}
                         {session.isCurrent && (
                           <span style={{ fontSize: "0.75em", marginLeft: "8px", padding: "2px 6px", backgroundColor: "rgba(0, 255, 0, 0.2)", borderRadius: "4px" }}>
-                            Current
+                            Current session (approx.)
                           </span>
                         )}
                       </div>
@@ -446,25 +552,25 @@ function AdminUserDetailPanel({ userData, onClose, onUserUpdated }) {
                         {session.createdAt && <div>Created: {formatDate(session.createdAt)}</div>}
                       </div>
                     </div>
-                    {!session.isCurrent && (
+                    <div>
                       <button
-                        onClick={() => handleRevokeSession(session.id)}
-                        disabled={revokingSession === session.id}
+                        onClick={() => handleAdminRevokeSession(session.id)}
+                        disabled={sessionsActionLoading}
                         style={{
                           padding: "4px 8px",
                           backgroundColor: "rgba(255, 0, 0, 0.2)",
                           border: "1px solid rgba(255, 0, 0, 0.3)",
                           borderRadius: "4px",
                           color: "#fff",
-                          cursor: revokingSession === session.id ? "not-allowed" : "pointer",
-                          opacity: revokingSession === session.id ? 0.5 : 1,
+                          cursor: sessionsActionLoading ? "not-allowed" : "pointer",
+                          opacity: sessionsActionLoading ? 0.5 : 1,
                           fontSize: "0.8em",
                           marginLeft: "12px",
                         }}
                       >
-                        {revokingSession === session.id ? "Revoking..." : "Revoke"}
+                        {sessionsActionLoading ? "Revoking..." : "Revoke"}
                       </button>
-                    )}
+                    </div>
                   </div>
                 ))}
               </div>

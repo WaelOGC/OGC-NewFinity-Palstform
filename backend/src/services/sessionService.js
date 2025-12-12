@@ -1,148 +1,218 @@
 /**
- * Session Service (Phase 7.1)
+ * Session Service (PHASE S2)
  * 
- * Handles authentication session management:
- * - Create sessions on login
+ * Handles authentication session management with database-backed sessions:
+ * - Create sessions on login with opaque session tokens
  * - Update lastSeenAt on authenticated requests
  * - Revoke sessions (single or all)
  * - List sessions for a user
+ * - Automatic expiry handling
  */
 
 import pool from '../db.js';
 import crypto from 'crypto';
 
+const DEFAULT_SESSION_TTL_DAYS = 30;
+
 /**
- * Hash a JWT token to use as session identifier
- * @param {string} token - JWT access token
- * @returns {string} SHA-256 hash of the token
+ * Generate a random opaque session token
+ * @returns {string} 64-character hex token
  */
-function hashToken(token) {
-  return crypto.createHash('sha256').update(token).digest('hex');
+function generateSessionToken() {
+  return crypto.randomBytes(32).toString('hex'); // 64 chars
 }
 
 /**
- * Create a new authentication session
- * @param {Object} params - Session parameters
- * @param {number} params.userId - User ID
- * @param {string} params.accessToken - JWT access token
- * @param {string} [params.userAgent] - User agent string
- * @param {string} [params.ipAddress] - IP address
- * @param {string} [params.deviceLabel] - Optional device label
- * @returns {Promise<number>} Session ID
+ * Create a new authentication session for a user
+ * @param {number} userId - User ID
+ * @param {Object} options - Session options
+ * @param {string} [options.ipAddress] - IP address
+ * @param {string} [options.userAgent] - User agent string
+ * @param {string} [options.deviceFingerprint] - Device fingerprint hash
+ * @returns {Promise<Object>} Object with sessionId and sessionToken
  */
-export async function createSession({ userId, accessToken, userAgent, ipAddress, deviceLabel }) {
-  const sessionToken = hashToken(accessToken);
-  
+export async function createSessionForUser(userId, { ipAddress, userAgent, deviceFingerprint } = {}) {
+  const sessionToken = generateSessionToken();
+
   const [result] = await pool.query(
-    `INSERT INTO AuthSession (userId, sessionToken, userAgent, ipAddress, deviceLabel, isCurrent)
-     VALUES (?, ?, ?, ?, ?, 1)`,
-    [userId, sessionToken, userAgent || null, ipAddress || null, deviceLabel || null]
+    `INSERT INTO AuthSession
+      (userId, sessionToken, userAgent, ipAddress, deviceFingerprint, createdAt, lastSeenAt, expiresAt, isCurrent)
+     VALUES (?, ?, ?, ?, ?, NOW(), NOW(), DATE_ADD(NOW(), INTERVAL ? DAY), 1)`,
+    [userId, sessionToken, userAgent || null, ipAddress || null, deviceFingerprint || null, DEFAULT_SESSION_TTL_DAYS]
   );
+
+  const sessionId = result.insertId;
 
   // Mark all other sessions for this user as not current
   await pool.query(
     `UPDATE AuthSession SET isCurrent = 0 WHERE userId = ? AND id != ?`,
-    [userId, result.insertId]
+    [userId, sessionId]
   );
 
-  return result.insertId;
+  // Development logging
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[AuthSession] Created session', {
+      sessionId,
+      userId,
+      ipAddress: ipAddress || 'unknown',
+      userAgent: userAgent ? userAgent.slice(0, 60) : 'unknown',
+    });
+  }
+
+  return { sessionId, sessionToken };
 }
 
 /**
- * Update lastSeenAt for a session by token
- * @param {string} accessToken - JWT access token
- * @returns {Promise<boolean>} True if session was found and updated
+ * Update lastSeenAt for a session
+ * @param {number} sessionId - Session ID
+ * @returns {Promise<void>}
  */
-export async function updateSessionLastSeen(accessToken) {
-  const sessionToken = hashToken(accessToken);
-  
-  const [result] = await pool.query(
-    `UPDATE AuthSession 
-     SET lastSeenAt = CURRENT_TIMESTAMP 
-     WHERE sessionToken = ?`,
-    [sessionToken]
-  );
+export async function touchSession(sessionId) {
+  if (!sessionId) return;
+  try {
+    await pool.query(
+      'UPDATE AuthSession SET lastSeenAt = NOW() WHERE id = ? AND revokedAt IS NULL',
+      [sessionId]
+    );
+  } catch (err) {
+    // Handle missing table gracefully (non-fatal)
+    if (err.code === 'ER_NO_SUCH_TABLE' || err.code === '42S02') {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[AuthSession] Table does not exist yet:', err.message);
+      }
+      return;
+    }
+    throw err;
+  }
+}
 
-  return result.affectedRows > 0;
+/**
+ * Find a valid session by token
+ * @param {string} sessionToken - Session token
+ * @returns {Promise<Object|null>} Session object or null
+ */
+export async function findValidSessionByToken(sessionToken) {
+  if (!sessionToken) return null;
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT *
+       FROM AuthSession
+       WHERE sessionToken = ?
+         AND revokedAt IS NULL
+         AND expiresAt > NOW()
+       LIMIT 1`,
+      [sessionToken]
+    );
+
+    return rows[0] || null;
+  } catch (err) {
+    // Handle missing table gracefully
+    if (err.code === 'ER_NO_SUCH_TABLE' || err.code === '42S02') {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[AuthSession] Table does not exist yet:', err.message);
+      }
+      return null;
+    }
+    throw err;
+  }
 }
 
 /**
  * Get all sessions for a user
  * @param {number} userId - User ID
- * @param {string} [currentToken] - Current JWT token to identify current session
+ * @param {number} [currentSessionId] - Current session ID to mark as current
  * @returns {Promise<Array>} Array of session objects
  */
-export async function getUserSessions(userId, currentToken = null) {
-  let query = `
-    SELECT id, userId, sessionToken, userAgent, ipAddress, deviceLabel, createdAt, lastSeenAt, isCurrent
-    FROM AuthSession
-    WHERE userId = ?
-    ORDER BY lastSeenAt DESC
-  `;
-  
-  const [rows] = await pool.query(query, [userId]);
-  
-  // If currentToken is provided, mark the matching session as current
-  if (currentToken) {
-    const currentSessionToken = hashToken(currentToken);
-    
-    // Update isCurrent flag in database for the matching session
-    await pool.query(
-      `UPDATE AuthSession SET isCurrent = 1 WHERE userId = ? AND sessionToken = ?`,
-      [userId, currentSessionToken]
+export async function getSessionsForUser(userId, currentSessionId) {
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, userId, userAgent, ipAddress, deviceFingerprint, createdAt, lastSeenAt, expiresAt, revokedAt
+       FROM AuthSession
+       WHERE userId = ?
+       ORDER BY lastSeenAt DESC`,
+      [userId]
     );
-    
-    // Update all other sessions to not current
-    await pool.query(
-      `UPDATE AuthSession SET isCurrent = 0 WHERE userId = ? AND sessionToken != ?`,
-      [userId, currentSessionToken]
-    );
+
+    return rows.map((row) => ({
+      ...row,
+      isCurrent: currentSessionId && row.id === currentSessionId,
+      isExpired: row.expiresAt && new Date(row.expiresAt) <= new Date(),
+      isRevoked: !!row.revokedAt,
+    }));
+  } catch (err) {
+    // Handle missing table gracefully
+    if (err.code === 'ER_NO_SUCH_TABLE' || err.code === '42S02') {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[AuthSession] Table does not exist yet:', err.message);
+      }
+      return [];
+    }
+    throw err;
   }
-  
-  // Map results, marking current session based on token match
-  const currentSessionToken = currentToken ? hashToken(currentToken) : null;
-  return rows.map(session => ({
-    id: session.id,
-    userId: session.userId,
-    userAgent: session.userAgent,
-    ipAddress: session.ipAddress,
-    deviceLabel: session.deviceLabel,
-    createdAt: session.createdAt,
-    lastSeenAt: session.lastSeenAt,
-    isCurrent: currentSessionToken ? (session.sessionToken === currentSessionToken) : (session.isCurrent === 1)
-  }));
 }
 
 /**
  * Revoke a specific session
+ * @param {number} userId - User ID
  * @param {number} sessionId - Session ID
- * @param {number} userId - User ID (for security: ensure session belongs to user)
- * @returns {Promise<boolean>} True if session was found and revoked
+ * @returns {Promise<void>}
  */
-export async function revokeSession(sessionId, userId) {
-  const [result] = await pool.query(
-    `DELETE FROM AuthSession WHERE id = ? AND userId = ?`,
+export async function revokeSession(userId, sessionId) {
+  await pool.query(
+    `UPDATE AuthSession
+     SET revokedAt = NOW(), isCurrent = 0
+     WHERE id = ? AND userId = ? AND revokedAt IS NULL`,
     [sessionId, userId]
   );
-
-  return result.affectedRows > 0;
 }
 
 /**
- * Revoke all sessions for a user except the current one
+ * Revoke all other sessions for a user (except current)
  * @param {number} userId - User ID
- * @param {string} currentToken - Current JWT token to keep
- * @returns {Promise<number>} Number of sessions revoked
+ * @param {number} currentSessionId - Current session ID to keep
+ * @returns {Promise<void>}
  */
-export async function revokeAllOtherSessions(userId, currentToken) {
-  const currentSessionToken = hashToken(currentToken);
-  
-  const [result] = await pool.query(
-    `DELETE FROM AuthSession WHERE userId = ? AND sessionToken != ?`,
-    [userId, currentSessionToken]
+export async function revokeOtherSessions(userId, currentSessionId) {
+  await pool.query(
+    `UPDATE AuthSession
+     SET revokedAt = NOW(), isCurrent = 0
+     WHERE userId = ?
+       AND id <> ?
+       AND revokedAt IS NULL`,
+    [userId, currentSessionId]
   );
+}
 
-  return result.affectedRows;
+/**
+ * Revoke all other sessions (alias for revokeOtherSessions)
+ * @param {number} userId - User ID
+ * @param {number} currentSessionId - Current session ID to keep
+ * @returns {Promise<void>}
+ */
+export async function revokeAllOtherSessions(userId, currentSessionId) {
+  return revokeOtherSessions(userId, currentSessionId);
+}
+
+/**
+ * Cleanup expired sessions (mark as revoked)
+ * @returns {Promise<void>}
+ */
+export async function cleanupExpiredSessions() {
+  try {
+    await pool.query(
+      `UPDATE AuthSession
+       SET revokedAt = NOW(), isCurrent = 0
+       WHERE expiresAt <= NOW()
+         AND revokedAt IS NULL`
+    );
+  } catch (err) {
+    // Handle missing table gracefully
+    if (err.code === 'ER_NO_SUCH_TABLE' || err.code === '42S02') {
+      return;
+    }
+    throw err;
+  }
 }
 
 /**
@@ -152,41 +222,98 @@ export async function revokeAllOtherSessions(userId, currentToken) {
  */
 export async function revokeAllUserSessions(userId) {
   const [result] = await pool.query(
-    `DELETE FROM AuthSession WHERE userId = ?`,
+    `UPDATE AuthSession SET revokedAt = NOW(), isCurrent = 0 WHERE userId = ? AND revokedAt IS NULL`,
     [userId]
   );
-
   return result.affectedRows;
 }
 
-/**
- * Get session by token (for validation)
- * @param {string} accessToken - JWT access token
- * @returns {Promise<Object|null>} Session object or null
- */
-export async function getSessionByToken(accessToken) {
-  const sessionToken = hashToken(accessToken);
+// Backward compatibility: Keep old function names that might be used elsewhere
+export async function createSession({ userId, accessToken, userAgent, ipAddress, deviceLabel }) {
+  // For backward compatibility, generate device fingerprint from userAgent if not provided
+  let deviceFingerprint = null;
+  if (userAgent && !deviceLabel) {
+    deviceFingerprint = crypto.createHash('sha256').update(userAgent).digest('hex');
+  }
   
-  const [rows] = await pool.query(
-    `SELECT id, userId, sessionToken, userAgent, ipAddress, deviceLabel, createdAt, lastSeenAt, isCurrent
-     FROM AuthSession
-     WHERE sessionToken = ?`,
-    [sessionToken]
-  );
+  const { sessionId, sessionToken } = await createSessionForUser(userId, {
+    ipAddress,
+    userAgent,
+    deviceFingerprint,
+  });
+  
+  return sessionId;
+}
 
-  if (rows.length === 0) {
-    return null;
+export async function updateSessionLastSeen(accessToken) {
+  // This is called from auth middleware with JWT token
+  // For backward compatibility, we'll try to find session by token hash
+  // But this won't work with new opaque tokens - should be updated to use sessionId
+  const sessionToken = crypto.createHash('sha256').update(accessToken).digest('hex');
+  
+  try {
+    const [result] = await pool.query(
+      `UPDATE AuthSession 
+       SET lastSeenAt = CURRENT_TIMESTAMP 
+       WHERE sessionToken = ? AND revokedAt IS NULL`,
+      [sessionToken]
+    );
+    return result.affectedRows > 0;
+  } catch (err) {
+    if (err.code === 'ER_NO_SUCH_TABLE' || err.code === '42S02') {
+      return false;
+    }
+    throw err;
+  }
+}
+
+export async function getUserSessions(userId, currentToken = null) {
+  // Backward compatibility wrapper
+  return await getSessionsForUser(userId, null);
+}
+
+export async function getSessionByToken(accessToken) {
+  // Backward compatibility - try hash lookup
+  const sessionToken = crypto.createHash('sha256').update(accessToken).digest('hex');
+  return await findValidSessionByToken(sessionToken);
+}
+
+export async function isNewDeviceOrIpForUser({ userId, ipAddress, userAgent }) {
+  // Keep existing implementation for backward compatibility
+  if (!userId) {
+    return { isNew: false, lastKnownSession: null };
   }
 
-  const session = rows[0];
-  return {
-    id: session.id,
-    userId: session.userId,
-    userAgent: session.userAgent,
-    ipAddress: session.ipAddress,
-    deviceLabel: session.deviceLabel,
-    createdAt: session.createdAt,
-    lastSeenAt: session.lastSeenAt,
-    isCurrent: session.isCurrent === 1
-  };
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, ipAddress, userAgent, createdAt, lastSeenAt
+       FROM AuthSession
+       WHERE userId = ?
+       ORDER BY createdAt DESC
+       LIMIT 21`,
+      [userId]
+    );
+
+    if (!rows || rows.length <= 1) {
+      return { isNew: true, lastKnownSession: null };
+    }
+
+    const previousSessions = rows.slice(1);
+    const hasSameFingerprint = previousSessions.some((row) => {
+      const sameIp = ipAddress && row.ipAddress && row.ipAddress.trim() === ipAddress.trim();
+      const sameUa = userAgent && row.userAgent && row.userAgent.trim() === userAgent.trim();
+      return sameIp && sameUa;
+    });
+
+    if (hasSameFingerprint) {
+      return { isNew: false, lastKnownSession: previousSessions[0] || null };
+    }
+
+    return { isNew: true, lastKnownSession: previousSessions[0] || null };
+  } catch (err) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[AuthSession] Failed to determine new device/IP:", err);
+    }
+    return { isNew: false, lastKnownSession: null };
+  }
 }

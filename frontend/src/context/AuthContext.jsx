@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { api, API_BASE_URL } from "../utils/apiClient.js";
+import { api, API_BASE_URL, loginWithTwoFactor } from "../utils/apiClient.js";
 
 const AuthContext = createContext(null);
 
@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
     () => window.localStorage.getItem("ogc_token") || null
   );
   const [loading, setLoading] = useState(!!token);
+  const [authError, setAuthError] = useState(null);
   // Phase 5: Role, permissions, and feature flags
   const [userRole, setUserRole] = useState(null);
   const [userPermissions, setUserPermissions] = useState(null);
@@ -17,16 +18,17 @@ export function AuthProvider({ children }) {
   // Phase 5: Fetch user role, permissions, and feature flags
   const fetchUserAccessData = async () => {
     try {
+      // API client now returns data directly (from { status: "OK", data: { role, permissions, featureFlags } })
       const roleData = await api.get('/user/role', token ? {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       } : {});
       
-      if (roleData.status === "OK" && roleData.data) {
-        setUserRole(roleData.data.role);
-        setUserPermissions(roleData.data.permissions);
-        setUserFeatureFlags(roleData.data.featureFlags);
+      if (roleData) {
+        setUserRole(roleData.role);
+        setUserPermissions(roleData.permissions);
+        setUserFeatureFlags(roleData.featureFlags);
       }
     } catch (err) {
       // Silently fail - user might not be authenticated yet
@@ -40,14 +42,16 @@ export function AuthProvider({ children }) {
         // Always try to fetch /auth/me to check if we're authenticated
         // This works for both token-based auth (Authorization header) and cookie-based auth (social login)
         // The apiClient uses credentials: 'include', so cookies will be sent automatically
+        // API client now returns data directly (from { status: "OK", data: { user } })
         const data = await api.get('/auth/me', token ? {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         } : {});
 
-        if (data.status === "OK") {
+        if (data && data.user) {
           setUser(data.user);
+          setAuthError(null);
           // Temporary debug log to verify role is being loaded
           console.log('[Auth] Loaded user:', data.user);
           // Phase 5: Fetch role, permissions, and feature flags
@@ -61,19 +65,23 @@ export function AuthProvider({ children }) {
           setUserPermissions(null);
           setUserFeatureFlags(null);
           setToken(null);
+          setAuthError(null);
           window.localStorage.removeItem("ogc_token");
         }
       } catch (err) {
-        // If /auth/me fails, we're not authenticated
-        // This is expected if user is not logged in
+        console.error("[Auth] Failed to load current user", err);
+        setUser(null);
+        setUserRole(null);
+        setUserPermissions(null);
+        setUserFeatureFlags(null);
+        // Only set auth error if we had a token (to avoid showing error on initial load)
         if (token) {
-          // Only clear token if we had one (to avoid clearing on initial load)
-          setUser(null);
-          setUserRole(null);
-          setUserPermissions(null);
-          setUserFeatureFlags(null);
+          setAuthError(err?.message || "Unable to verify your session.");
           setToken(null);
           window.localStorage.removeItem("ogc_token");
+        } else {
+          // Not logged in - this is expected, don't show error
+          setAuthError(null);
         }
       } finally {
         setLoading(false);
@@ -87,7 +95,19 @@ export function AuthProvider({ children }) {
     try {
       const data = await api.post('/auth/login', { email, password });
 
-      // Phase 3: Check if 2FA is required
+      // Phase S6: Check if 2FA is required (new format)
+      if (data.status === "2FA_REQUIRED" || (data.status === "OK" && data.data?.status === "2FA_REQUIRED")) {
+        // Return ticket and methods for 2FA verification
+        const ticket = data.data?.ticket || data.ticket;
+        const methods = data.data?.methods || data.methods || { totp: true, recovery: false };
+        return {
+          status: '2FA_REQUIRED',
+          ticket,
+          methods
+        };
+      }
+
+      // Legacy Phase 3: Check if 2FA is required (old format)
       if (data.status === "OK" && data.data?.twoFactorRequired) {
         // Return challenge token for 2FA verification
         return {
@@ -150,6 +170,63 @@ export function AuthProvider({ children }) {
   async function verifyTwoFactor(challengeToken, token) {
     try {
       const data = await api.post('/auth/2fa/verify', { challengeToken, token });
+
+      // Check for success
+      if (data.status !== "OK" && data.success !== true) {
+        const error = new Error(data.message || data.error || "2FA verification failed");
+        error.code = data.code;
+        error.backendCode = data.code;
+        error.backendMessage = data.message || data.error;
+        throw error;
+      }
+
+      // Store tokens from response
+      if (data.access) {
+        setToken(data.access);
+        window.localStorage.setItem("ogc_token", data.access);
+      }
+
+      // Set user from response
+      if (data.user) {
+        setUser(data.user);
+        // Temporary debug log to verify role is being loaded
+        console.log('[Auth] Loaded user:', data.user);
+        // Phase 5: Fetch role, permissions, and feature flags
+        await fetchUserAccessData();
+      } else if (data.access) {
+        // If no user in response, fetch it
+        try {
+          const meData = await api.get('/auth/me', {
+            headers: {
+              Authorization: `Bearer ${data.access}`,
+            },
+          });
+          if (meData.status === "OK") {
+            setUser(meData.user);
+            // Temporary debug log to verify role is being loaded
+            console.log('[Auth] Loaded user:', meData.user);
+            // Phase 5: Fetch role, permissions, and feature flags
+            await fetchUserAccessData();
+          }
+        } catch (err) {
+          console.error("Failed to fetch user after 2FA login:", err);
+        }
+      }
+
+      return data.user || user;
+    } catch (error) {
+      // Re-throw with backend message if available
+      if (error.backendMessage || error.backendCode) {
+        throw error;
+      }
+      throw error;
+    }
+  }
+
+  // Phase S6: New 2FA login with ticket system
+  async function loginWithTwoFactorStep(ticket, mode, code) {
+    try {
+      const data = await loginWithTwoFactor({ ticket, mode, code });
 
       // Check for success
       if (data.status !== "OK" && data.success !== true) {
@@ -266,6 +343,7 @@ export function AuthProvider({ children }) {
     user,
     token,
     loading,
+    authError,
     isAuthenticated: !!user,
     // Phase 5: Role, permissions, and feature flags
     userRole,
@@ -273,6 +351,7 @@ export function AuthProvider({ children }) {
     userFeatureFlags,
     login,
     verifyTwoFactor,
+    loginWithTwoFactorStep,
     register,
     logout,
     resendActivation,

@@ -453,6 +453,107 @@
   outline-offset: 2px;
 }
 
+/* Phase 8.3: Password reset panel */
+.auth-secondary-panel {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid;
+  transition: border-color 0.4s ease;
+}
+
+[data-theme="dark"] .auth-secondary-panel {
+  border-color: rgba(0, 255, 198, 0.2);
+}
+
+[data-theme="light"] .auth-secondary-panel {
+  border-color: rgba(60, 120, 220, 0.2);
+}
+
+.auth-secondary-panel-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .auth-secondary-panel-title {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="light"] .auth-secondary-panel-title {
+  color: rgba(17, 24, 39, 0.95);
+}
+
+.auth-secondary-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.auth-secondary-actions .auth-form-submit-btn {
+  flex: 1;
+  margin-top: 0;
+}
+
+.auth-form-secondary-btn {
+  padding: 14px 24px;
+  border-radius: 10px;
+  border: 1px solid;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease, border-color 0.4s ease, color 0.4s ease, background 0.4s ease;
+  font-family: inherit;
+  width: 100%;
+}
+
+.auth-secondary-actions .auth-form-secondary-btn {
+  flex: 1;
+  width: auto;
+}
+
+[data-theme="dark"] .auth-form-secondary-btn {
+  border-color: rgba(0, 255, 198, 0.4);
+  color: rgba(0, 255, 198, 0.9);
+}
+
+[data-theme="light"] .auth-form-secondary-btn {
+  border-color: rgba(60, 120, 220, 0.4);
+  color: rgba(60, 120, 220, 0.9);
+}
+
+[data-theme="dark"] .auth-form-secondary-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 198, 0.1);
+  border-color: rgba(0, 255, 198, 0.6);
+  color: #00ffc6;
+}
+
+[data-theme="light"] .auth-form-secondary-btn:hover:not(:disabled) {
+  background: rgba(60, 120, 220, 0.1);
+  border-color: rgba(60, 120, 220, 0.6);
+  color: rgba(60, 120, 220, 1);
+}
+
+.auth-form-secondary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-form-secondary-btn:focus {
+  outline: none;
+}
+
+[data-theme="dark"] .auth-form-secondary-btn:focus-visible {
+  outline: 2px solid rgba(0, 255, 198, 0.5);
+  outline-offset: 2px;
+}
+
+[data-theme="light"] .auth-form-secondary-btn:focus-visible {
+  outline: 2px solid rgba(60, 120, 220, 0.5);
+  outline-offset: 2px;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .auth-form-title {
@@ -476,6 +577,141 @@
 
   .auth-form-checkbox-text {
     font-size: 13px;
+  }
+
+  .auth-secondary-actions {
+    flex-direction: column;
+  }
+
+  .auth-form-secondary-btn {
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+}
+
+/* Phase S6: Two-Factor Authentication UI Components */
+.twofactor-mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.1);
+  transition: background 0.4s ease;
+}
+
+[data-theme="dark"] .twofactor-mode-toggle {
+  background: rgba(0, 255, 198, 0.1);
+}
+
+[data-theme="light"] .twofactor-mode-toggle {
+  background: rgba(60, 120, 220, 0.1);
+}
+
+.twofactor-mode-toggle-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease, background 0.4s ease, color 0.4s ease;
+  font-family: inherit;
+}
+
+[data-theme="dark"] .twofactor-mode-toggle-btn {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="light"] .twofactor-mode-toggle-btn {
+  color: rgba(17, 24, 39, 0.7);
+}
+
+.twofactor-mode-toggle-btn--active {
+  font-weight: 600;
+}
+
+[data-theme="dark"] .twofactor-mode-toggle-btn--active {
+  background: rgba(0, 255, 198, 0.2);
+  color: rgba(0, 255, 198, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 255, 198, 0.2);
+}
+
+[data-theme="light"] .twofactor-mode-toggle-btn--active {
+  background: rgba(60, 120, 220, 0.2);
+  color: rgba(60, 120, 220, 0.95);
+  box-shadow: 0 2px 8px rgba(60, 120, 220, 0.2);
+}
+
+.twofactor-mode-toggle-btn:hover:not(.twofactor-mode-toggle-btn--active) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .twofactor-mode-toggle-btn:hover:not(.twofactor-mode-toggle-btn--active) {
+  background: rgba(0, 255, 198, 0.05);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme="light"] .twofactor-mode-toggle-btn:hover:not(.twofactor-mode-toggle-btn--active) {
+  background: rgba(60, 120, 220, 0.05);
+  color: rgba(17, 24, 39, 0.85);
+}
+
+.twofactor-mode-toggle-btn:focus {
+  outline: none;
+}
+
+[data-theme="dark"] .twofactor-mode-toggle-btn:focus-visible {
+  outline: 2px solid rgba(0, 255, 198, 0.5);
+  outline-offset: 2px;
+}
+
+[data-theme="light"] .twofactor-mode-toggle-btn:focus-visible {
+  outline: 2px solid rgba(60, 120, 220, 0.5);
+  outline-offset: 2px;
+}
+
+.twofactor-help-text {
+  font-size: 12px;
+  margin-top: 8px;
+  transition: color 0.4s ease;
+}
+
+[data-theme="dark"] .twofactor-help-text {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="light"] .twofactor-help-text {
+  color: rgba(17, 24, 39, 0.6);
+}
+
+.auth-form-status--info {
+  background: rgba(0, 255, 198, 0.1);
+  border: 1px solid rgba(0, 255, 198, 0.3);
+  color: rgba(0, 255, 198, 0.9);
+}
+
+[data-theme="light"] .auth-form-status--info {
+  background: rgba(60, 120, 220, 0.15);
+  border-color: rgba(60, 120, 220, 0.4);
+  color: rgba(60, 120, 220, 0.95);
+}
+
+@media (max-width: 640px) {
+  .twofactor-mode-toggle {
+    gap: 6px;
+    padding: 3px;
+  }
+
+  .twofactor-mode-toggle-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .twofactor-help-text {
+    font-size: 11px;
   }
 }
 

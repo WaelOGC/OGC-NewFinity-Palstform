@@ -1,4 +1,15 @@
 import pool from '../db.js';
+import { sendOk, sendError } from '../utils/apiResponse.js';
+import {
+  getWalletSummary as getWalletSummaryService,
+  getWalletTransactionsForUser,
+  getStakingSummaryForUser,
+  previewStakingRewards,
+  getWalletOverviewForUser,
+  getWalletActivityForUser,
+  getRewardsTimelineForUser,
+  getWalletBadgesForUser,
+} from '../services/walletService.js';
 
 /**
  * Helper function to get or create a wallet for a user
@@ -321,5 +332,261 @@ export async function createDemoTransactions(userId) {
     throw err;
   } finally {
     connection.release();
+  }
+}
+
+/**
+ * Get wallet summary (Phase W2.1)
+ * Uses walletService for business logic and returns standardized API response
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+export async function getWalletSummary(req, res) {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return sendError(res, {
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required.',
+        statusCode: 401
+      });
+    }
+    
+    const summary = await getWalletSummaryService(userId);
+    return sendOk(res, { summary });
+  } catch (err) {
+    console.error('[Wallet] Error in getWalletSummary:', err);
+    return sendError(res, {
+      code: 'WALLET_SUMMARY_FAILED',
+      message: 'Could not load wallet summary.',
+      statusCode: 500
+    });
+  }
+}
+
+/**
+ * Get wallet transactions for the authenticated user (Phase W2.5)
+ * Returns paginated transaction history (mock data for now)
+ * Phase W2.6+: Will query WalletTransaction table from database
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+export async function getWalletTransactions(req, res) {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return sendError(res, {
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required.',
+        statusCode: 401,
+      });
+    }
+
+    const { limit, offset } = req.query;
+
+    const result = await getWalletTransactionsForUser(userId, {
+      limit: limit ?? 10,
+      offset: offset ?? 0,
+    });
+
+    return sendOk(res, { transactions: result.items, pagination: result.pagination });
+  } catch (err) {
+    console.error('[WalletController] getWalletTransactions error', err);
+    return sendError(res, {
+      code: err.code || 'WALLET_TRANSACTIONS_FAILED',
+      message: err.message || 'Failed to load wallet transactions.',
+      statusCode: err.statusCode || 500,
+    });
+  }
+}
+
+/**
+ * Get staking summary for the authenticated user (Phase W2.4)
+ * Returns mock staking data including staked amount, rewards, APY, etc.
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+export async function getStakingSummary(req, res) {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return sendError(res, {
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required.',
+        statusCode: 401,
+      });
+    }
+
+    const summary = await getStakingSummaryForUser(userId);
+    return sendOk(res, { staking: summary });
+  } catch (err) {
+    console.error('[WalletController] getStakingSummary error', err);
+    return sendError(res, {
+      code: err.code || 'STAKING_SUMMARY_FAILED',
+      message: err.message || 'Could not load staking summary.',
+      statusCode: err.statusCode || 500,
+    });
+  }
+}
+
+/**
+ * Get staking preview for a potential stake amount (Phase W2.4)
+ * Returns estimated rewards based on mock APY calculation
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+export async function getStakingPreview(req, res) {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return sendError(res, {
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required.',
+        statusCode: 401,
+      });
+    }
+
+    const { amount } = req.body || {};
+    const preview = await previewStakingRewards(userId, { amount });
+
+    return sendOk(res, { preview });
+  } catch (err) {
+    console.error('[WalletController] getStakingPreview error', err);
+    return sendError(res, {
+      code: err.code || 'STAKING_PREVIEW_FAILED',
+      message: err.message || 'Could not calculate staking preview.',
+      statusCode: err.statusCode || 500,
+    });
+  }
+}
+
+/**
+ * Get wallet overview for the authenticated user (Phase W2.6)
+ * Returns wallet snapshot and balances (mock data for now)
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @param {function} next - Express next middleware function
+ */
+export async function getWalletOverview(req, res, next) {
+  try {
+    const userId = req.user && req.user.id;
+
+    if (!userId) {
+      return sendError(res, {
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required.',
+        statusCode: 401,
+      });
+    }
+
+    const overview = await getWalletOverviewForUser(userId);
+
+    return sendOk(res, overview);
+  } catch (err) {
+    console.error('[WalletController] getWalletOverview error', err);
+    return sendError(res, {
+      code: err.code || 'WALLET_OVERVIEW_FAILED',
+      message: err.message || 'Could not load wallet overview.',
+      statusCode: err.statusCode || 500,
+    });
+  }
+}
+
+/**
+ * Get wallet activity for the authenticated user (Phase W2.7)
+ * Returns timeseries data and summary for charting (mock data for now)
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @param {function} next - Express next middleware function
+ */
+export async function getWalletActivity(req, res, next) {
+  try {
+    const userId = req.user && req.user.id;
+    const range = (req.query.range || '30d').toLowerCase();
+
+    if (!userId) {
+      return sendError(res, {
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required.',
+        statusCode: 401,
+      });
+    }
+
+    const activity = await getWalletActivityForUser(userId, { range });
+
+    return sendOk(res, activity);
+  } catch (err) {
+    console.error('[WalletController] getWalletActivity error', err);
+    return sendError(res, {
+      code: err.code || 'WALLET_ACTIVITY_FAILED',
+      message: err.message || 'Could not load wallet activity.',
+      statusCode: err.statusCode || 500,
+    });
+  }
+}
+
+/**
+ * Get rewards timeline for the authenticated user (Phase W2.8)
+ * Returns rewards events and upcoming payout for mini bar chart (mock data for now)
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @param {function} next - Express next middleware function
+ */
+export async function getRewardsTimeline(req, res, next) {
+  try {
+    const userId = req.user && req.user.id;
+    const range = (req.query.range || '30d').toLowerCase();
+
+    if (!userId) {
+      return sendError(res, {
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required.',
+        statusCode: 401,
+      });
+    }
+
+    const timeline = await getRewardsTimelineForUser(userId, { range });
+
+    return sendOk(res, timeline);
+  } catch (err) {
+    console.error('[WalletController] getRewardsTimeline error', err);
+    return sendError(res, {
+      code: err.code || 'REWARDS_TIMELINE_FAILED',
+      message: err.message || 'Could not load rewards timeline.',
+      statusCode: err.statusCode || 500,
+    });
+  }
+}
+
+/**
+ * Get wallet badges for the authenticated user (Phase W2.9)
+ * Returns mock badge data including staking tier, rewards level, contribution score, and badges
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ * @param {function} next - Express next middleware function
+ */
+export async function getWalletBadges(req, res, next) {
+  try {
+    const userId = req.user && req.user.id;
+
+    if (!userId) {
+      return sendError(res, {
+        code: 'UNAUTHORIZED',
+        message: 'Authentication required.',
+        statusCode: 401,
+      });
+    }
+
+    const badges = await getWalletBadgesForUser(userId);
+
+    return sendOk(res, badges);
+  } catch (err) {
+    console.error('[WalletController] getWalletBadges error', err);
+    return sendError(res, {
+      code: err.code || 'WALLET_BADGES_FAILED',
+      message: err.message || 'Could not load wallet badges.',
+      statusCode: err.statusCode || 500,
+    });
   }
 }

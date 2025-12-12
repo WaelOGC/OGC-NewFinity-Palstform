@@ -12,12 +12,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  border-bottom: 1px solid rgba(0, 255, 198, 0.3);
+  border-bottom: 1px solid var(--border-card);
   backdrop-filter: blur(10px);
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(2, 6, 23, 0.8);
+  background: var(--bg-header);
+  color: var(--text-main);
 }
 
 .ogc-dashboard-logo {
@@ -71,6 +72,146 @@
 
 .ogc-logout-btn:hover {
   background-color: #f87171;
+}
+
+/* PHASE W2.9: Header actions (icons + account menu) */
+.dashboard-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-icon-btn {
+  position: relative;
+  border: none;
+  background: transparent;
+  padding: 0.35rem;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.header-icon-btn:hover {
+  background: var(--chip-bg);
+}
+
+.header-icon {
+  color: var(--text-muted);
+}
+
+.header-icon-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent-danger);
+}
+
+/* Account menu */
+.header-account-wrapper {
+  position: relative;
+}
+
+.header-account-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-card);
+  padding: 0.2rem 0.6rem;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-account-btn:hover {
+  background: var(--chip-bg);
+  border-color: var(--accent-primary);
+}
+
+.header-account-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+  color: #ffffff;
+}
+
+.header-account-caret {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.header-account-btn:hover .header-account-caret {
+  border-top-color: var(--accent-primary);
+}
+
+.header-account-menu {
+  position: absolute;
+  right: 0;
+  margin-top: 0.35rem;
+  min-width: 220px;
+  background: var(--bg-card);
+  border-radius: 10px;
+  border: 1px solid var(--border-card);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  z-index: 30;
+  overflow: hidden;
+}
+
+.header-account-menu-header {
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--border-card);
+}
+
+.header-account-menu-header .name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-main);
+}
+
+.header-account-menu-header .email {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}
+
+.header-account-menu-item {
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.8rem;
+  border: none;
+  background: transparent;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: var(--text-main);
+  transition: all 0.2s ease;
+}
+
+.header-account-menu-item:hover {
+  background: var(--chip-bg);
+}
+
+.header-account-menu-item--danger {
+  color: var(--accent-danger);
+}
+
+.header-account-menu-item--danger:hover {
+  background: rgba(255, 60, 92, 0.1);
 }
 
 /* Phase 5: Role badges */
@@ -135,16 +276,25 @@
 
 .ogc-dashboard-sidebar {
   width: 260px;
-  border-right: 1px solid rgba(148, 163, 184, 0.3);
+  border-right: 1px solid var(--border-card);
   padding: 16px 12px;
-  background: rgba(2, 6, 23, 0.5);
+  background: var(--sidebar-bg);
+  color: #ffffff;
   overflow-y: auto;
 }
 
 .ogc-dashboard-main {
   flex: 1;
-  padding: 24px;
+  background: var(--bg-dashboard);
+  padding: 1.75rem 2.25rem 2.5rem;
   overflow-y: auto;
+  color: var(--text-main);
+}
+
+/* Content wrapper to keep cards centered with same width as dark mode */
+.dashboard-main-inner {
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 /* Responsive: sidebar collapses/stacked on mobile */

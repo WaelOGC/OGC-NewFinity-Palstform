@@ -3,10 +3,16 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import pool from '../db.js';
 import { createActivationToken, getTermsVersion } from '../services/activationService.js';
-import { sendActivationEmail, sendPasswordResetEmail } from '../services/emailService.js';
+import { sendActivationEmail, sendPasswordResetEmail, sendPasswordChangedAlertEmail } from '../services/emailService.js';
 import { createAuthSessionForUser } from '../utils/authSession.js';
 import { getTwoFactorStatus, verifyTwoFactorCode } from '../services/userService.js';
-import { recordUserActivity } from '../services/userService.js';
+import { getTwoFactorStatusForUser, verifyUserTotpCode } from '../services/twoFactorService.js';
+import { getRecoveryCodesStatusForUser, consumeRecoveryCode } from '../services/twoFactorRecoveryService.js';
+import { createTwoFactorTicket, verifyTwoFactorTicket } from '../utils/twoFactorTicket.js';
+import { logUserActivity } from '../services/activityService.js';
+import { sendOk, sendError } from '../utils/apiResponse.js';
+import { createPasswordResetToken, findValidPasswordResetToken, markPasswordResetTokenUsed } from '../services/passwordResetService.js';
+import { revokeAllUserSessions } from '../services/sessionService.js';
 
 // Note: JWT configuration and session creation logic moved to utils/authSession.js
 // This keeps the code DRY and allows both email/password and social login to share the same session logic
@@ -175,6 +181,13 @@ export async function login({ email, password }, res, req = null) {
     }
 
     // Check account status
+    if (user.status === 'DELETED') {
+      const error = new Error('This account has been deleted and can no longer be used to sign in.');
+      error.statusCode = 403;
+      error.code = 'ACCOUNT_DELETED';
+      throw error;
+    }
+
     if (user.status === 'disabled') {
       const error = new Error('Account is disabled');
       error.statusCode = 403;
@@ -189,21 +202,43 @@ export async function login({ email, password }, res, req = null) {
       throw error;
     }
 
-    // Phase 3: Check if 2FA is enabled
-    const twoFactorStatus = await getTwoFactorStatus(user.id);
+    // Phase S6: Check if 2FA is enabled using new service
+    const twoFactorStatus = await getTwoFactorStatusForUser(user.id);
+    const recoveryStatus = await getRecoveryCodesStatusForUser(user.id);
     
-    if (twoFactorStatus.enabled) {
-      // Generate a short-lived challenge token (5 minutes)
-      const challengeToken = jwt.sign(
-        { userId: user.id, type: '2fa_challenge' },
-        process.env.JWT_ACCESS_SECRET,
-        { expiresIn: '5m' }
-      );
+    if (twoFactorStatus?.enabled) {
+      // Do not create a session yet
+      // Generate a 2FA ticket
+      const ticket = createTwoFactorTicket(user.id);
       
-      // Return challenge token instead of full login
+      // Log 2FA required event
+      const ipAddress = req?.ip || req?.headers['x-forwarded-for'] || req?.connection?.remoteAddress;
+      const userAgent = req?.headers['user-agent'];
+      try {
+        await logUserActivity({
+          userId: user.id,
+          actorId: user.id,
+          type: 'LOGIN_2FA_REQUIRED',
+          ipAddress,
+          userAgent,
+          metadata: { loginMethod: 'email_password' }
+        });
+      } catch (activityError) {
+        console.error('Failed to record 2FA required activity:', activityError);
+      }
+      
+      // Return 2FA_REQUIRED response
       return {
-        twoFactorRequired: true,
-        challengeToken
+        status: '2FA_REQUIRED',
+        code: 'TWO_FACTOR_REQUIRED',
+        message: 'Two-factor authentication is required to complete login.',
+        data: {
+          ticket,
+          methods: {
+            totp: true,
+            recovery: recoveryStatus && recoveryStatus.filter(c => !c.used).length > 0,
+          },
+        },
       };
     }
 
@@ -274,6 +309,17 @@ export async function refresh(req, res) {
 }
 
 export async function logout(req, res) {
+  // PHASE S2: Revoke current session if available
+  if (req.session && req.session.id && req.user && req.user.id) {
+    try {
+      const { revokeSession } = await import('../services/sessionService.js');
+      await revokeSession(req.user.id, req.session.id);
+    } catch (err) {
+      // Log but don't fail logout if session revocation fails
+      console.warn('[Logout] Failed to revoke session:', err.message);
+    }
+  }
+  
   // Clear cookies
   if (res) {
     const {
@@ -283,9 +329,9 @@ export async function logout(req, res) {
     
     res.clearCookie(JWT_COOKIE_ACCESS_NAME);
     res.clearCookie(JWT_COOKIE_REFRESH_NAME);
+    res.clearCookie('ogc_session'); // PHASE S2: Clear session cookie
   }
   
-  // stateless JWT: optionally implement refresh token blacklist
   return { success: true, userId: req.user?.id };
 }
 
@@ -366,10 +412,11 @@ export async function forgotPassword({ email }) {
       
       // Send password reset email
       try {
-        await sendPasswordResetEmail(
-          { email: user.email, fullName: user.fullName },
-          resetUrl
-        );
+        await sendPasswordResetEmail({
+          to: user.email,
+          resetLink: resetUrl,
+          expiresAt: expiresAt
+        });
         console.log(`✅ Password reset email sent to ${user.email}`);
       } catch (emailError) {
         // Log email error but don't fail the request
@@ -622,6 +669,292 @@ export async function resetPassword({ token, password, confirmPassword }) {
 }
 
 /**
+ * Request password reset (Phase 8.1)
+ * Creates a reset token and sends password reset email
+ * @param {Object} req - Express request with email in body
+ * @param {Object} res - Express response
+ * @param {Function} next - Express next middleware
+ */
+export async function requestPasswordReset(req, res, next) {
+  try {
+    const { email } = req.body;
+
+    if (!email || typeof email !== "string") {
+      return sendError(res, {
+        code: "INVALID_EMAIL",
+        message: "Please provide a valid email address.",
+        statusCode: 400,
+      });
+    }
+
+    // Normalize email (trim + lowercase)
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Look up user by email
+    const [rows] = await pool.query(
+      "SELECT id, email, status FROM User WHERE email = ? LIMIT 1",
+      [normalizedEmail]
+    );
+    const user = rows[0];
+
+    // To avoid leaking whether an account exists, always return OK.
+    // Only create token if user exists and is active-ish.
+    if (!user || user.status === "banned") {
+      // Log internally for debugging but don't reveal to client
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[PasswordReset] Request for non-existing or banned email", {
+          email: normalizedEmail,
+        });
+      }
+
+      return sendOk(res, {
+        message: "If an account with that email exists, a reset link has been sent.",
+      });
+    }
+
+    // Optional: check if user is allowed (status not 'pending_verification' etc.), or just allow anyway.
+
+    // Create reset token
+    const { tokenPlain, expiresAt } = await createPasswordResetToken(user.id);
+
+    // Build reset link – FRONTEND_URL should already exist (or create BACKEND_APP_BASE_URL)
+    const baseUrl = process.env.FRONTEND_APP_URL || process.env.APP_BASE_URL || process.env.FRONTEND_URL || "http://localhost:5173";
+    const resetLink = `${baseUrl.replace(/\/$/, "")}/auth/reset-password?token=${encodeURIComponent(
+      tokenPlain
+    )}&email=${encodeURIComponent(user.email)}`;
+
+    // Send email
+    await sendPasswordResetEmail({
+      to: user.email,
+      resetLink,
+      expiresAt,
+    });
+
+    return sendOk(res, {
+      message: "If an account with that email exists, a reset link has been sent.",
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/**
+ * Validate password reset token (Phase 8.2)
+ * Called by frontend when reset page loads to check if link is valid/expired
+ * Supports both email+token (preferred) and token-only (backward compatibility) validation
+ * @param {Object} req - Express request with email (optional) and token in body
+ * @param {Object} res - Express response
+ * @param {Function} next - Express next middleware
+ */
+export async function validatePasswordResetToken(req, res, next) {
+  try {
+    const { email, token } = req.body;
+
+    if (!token) {
+      return sendError(res, {
+        code: "INVALID_RESET_REQUEST",
+        message: "Reset link is invalid.",
+        statusCode: 400,
+      });
+    }
+
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    let user = null;
+    let resetToken = null;
+
+    // If email is provided, use it to find user (preferred path)
+    if (email && email.trim()) {
+      const normalizedEmail = email.trim().toLowerCase();
+
+      // Find user by email
+      const [userRows] = await pool.query(
+        "SELECT id, email, status FROM User WHERE email = ? LIMIT 1",
+        [normalizedEmail]
+      );
+      user = userRows[0];
+
+      if (user) {
+        resetToken = await findValidPasswordResetToken(user.id, token);
+      }
+    } else {
+      // Token-only lookup (for backward compatibility with old links)
+      // Find token first, then get user from token's userId
+      const [tokenRows] = await pool.query(
+        `SELECT prt.userId, u.email, u.status 
+         FROM PasswordResetToken prt
+         INNER JOIN User u ON prt.userId = u.id
+         WHERE prt.token = ?
+           AND prt.usedAt IS NULL
+           AND prt.expiresAt > NOW()
+         ORDER BY prt.createdAt DESC
+         LIMIT 1`,
+        [tokenHash]
+      );
+
+      if (tokenRows.length > 0) {
+        const tokenRow = tokenRows[0];
+        user = {
+          id: tokenRow.userId,
+          email: tokenRow.email,
+          status: tokenRow.status,
+        };
+        // Verify token is valid for this user
+        resetToken = await findValidPasswordResetToken(user.id, token);
+      }
+    }
+
+    if (!user || !resetToken) {
+      return sendError(res, {
+        code: "INVALID_RESET_TOKEN",
+        message: "Reset link is invalid or has expired.",
+        statusCode: 400,
+      });
+    }
+
+    return sendOk(res, {
+      valid: true,
+      email: user.email,
+      // optional: expiresAt: resetToken.expiresAt
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/**
+ * Complete password reset with token (Phase 8.2)
+ * Validates token, resets password, marks token as used, and revokes all sessions
+ * Supports both email+token (preferred) and token-only (backward compatibility) validation
+ * @param {Object} req - Express request with email (optional), token, and password in body
+ * @param {Object} res - Express response
+ * @param {Function} next - Express next middleware
+ */
+export async function resetPasswordWithToken(req, res, next) {
+  try {
+    const { email, token, password } = req.body;
+
+    if (!token || !password) {
+      return sendError(res, {
+        code: "INVALID_RESET_REQUEST",
+        message: "Missing required fields.",
+        statusCode: 400,
+      });
+    }
+
+    if (typeof password !== "string" || password.length < 8) {
+      return sendError(res, {
+        code: "WEAK_PASSWORD",
+        message: "Password must be at least 8 characters long.",
+        statusCode: 400,
+      });
+    }
+
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    let user = null;
+    let resetToken = null;
+
+    // If email is provided, use it to find user (preferred path)
+    if (email && email.trim()) {
+      const normalizedEmail = email.trim().toLowerCase();
+
+      // Find user by email
+      const [userRows] = await pool.query(
+        "SELECT id, email, status FROM User WHERE email = ? LIMIT 1",
+        [normalizedEmail]
+      );
+      user = userRows[0];
+
+      if (user) {
+        // Validate token
+        resetToken = await findValidPasswordResetToken(user.id, token);
+      }
+    } else {
+      // Token-only lookup (for backward compatibility with old links)
+      // Find token first, then get user from token's userId
+      const [tokenRows] = await pool.query(
+        `SELECT prt.userId, prt.id as tokenId, u.email, u.status 
+         FROM PasswordResetToken prt
+         INNER JOIN User u ON prt.userId = u.id
+         WHERE prt.token = ?
+           AND prt.usedAt IS NULL
+           AND prt.expiresAt > NOW()
+         ORDER BY prt.createdAt DESC
+         LIMIT 1`,
+        [tokenHash]
+      );
+
+      if (tokenRows.length > 0) {
+        const tokenRow = tokenRows[0];
+        user = {
+          id: tokenRow.userId,
+          email: tokenRow.email,
+          status: tokenRow.status,
+        };
+        // Verify token is valid for this user and get full token record
+        resetToken = await findValidPasswordResetToken(user.id, token);
+      }
+    }
+
+    if (!user || !resetToken) {
+      return sendError(res, {
+        code: "INVALID_RESET_TOKEN",
+        message: "Reset link is invalid or has expired.",
+        statusCode: 400,
+      });
+    }
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Update password
+    await pool.query(
+      "UPDATE User SET password = ? WHERE id = ?",
+      [passwordHash, user.id]
+    );
+
+    // Mark token as used
+    await markPasswordResetTokenUsed(resetToken.id);
+
+    // Revoke all sessions for that user (force re-login everywhere)
+    await revokeAllUserSessions(user.id);
+
+    // Log security activity
+    const ipAddress = req.ip || req.headers['x-forwarded-for']?.split(",")[0].trim() || req.socket?.remoteAddress || req.connection.remoteAddress || null;
+    const userAgent = req.headers['user-agent'] || null;
+    await logUserActivity({
+      userId: user.id,
+      actorId: user.id, // Self-action (user resetting their own password)
+      type: 'PASSWORD_CHANGED',
+      ipAddress,
+      userAgent,
+      metadata: {
+        via: 'RESET_TOKEN',
+        resetTokenId: resetToken.id,
+      },
+    });
+
+    // Phase 8.3: Send password changed alert email
+    try {
+      await sendPasswordChangedAlertEmail({
+        to: user.email,
+        changedAt: new Date(),
+        ipAddress,
+        userAgent,
+      });
+    } catch (emailErr) {
+      // Do NOT fail the password reset if email fails
+      console.warn("[Auth] Failed to send password-changed alert (reset):", emailErr);
+    }
+
+    return sendOk(res, {
+      message: "Your password has been reset. You can now sign in with your new password.",
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/**
  * Verify 2FA code during login and complete authentication
  * @param {Object} req - Express request with challengeToken and token
  * @param {Object} res - Express response
@@ -672,8 +1005,9 @@ export async function verifyTwoFactorLogin(req, res) {
       const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
       const userAgent = req.headers['user-agent'];
       try {
-        await recordUserActivity({
+        await logUserActivity({
           userId,
+          actorId: userId,
           type: 'TWO_FACTOR_FAILED',
           ipAddress,
           userAgent,
@@ -705,6 +1039,13 @@ export async function verifyTwoFactorLogin(req, res) {
     const user = userRows[0];
 
     // Check account status
+    if (user.status === 'DELETED') {
+      const error = new Error('This account has been deleted and can no longer be used to sign in.');
+      error.statusCode = 403;
+      error.code = 'ACCOUNT_DELETED';
+      throw error;
+    }
+
     if (user.status === 'disabled') {
       const error = new Error('Account is disabled');
       error.statusCode = 403;
@@ -726,8 +1067,9 @@ export async function verifyTwoFactorLogin(req, res) {
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     try {
-      await recordUserActivity({
+      await logUserActivity({
         userId,
+        actorId: userId,
         type: 'LOGIN_SUCCESS_2FA',
         ipAddress,
         userAgent,
@@ -757,6 +1099,205 @@ export async function verifyTwoFactorLogin(req, res) {
 }
 
 /**
+ * Phase S6: Complete 2FA login with ticket + TOTP or recovery code
+ * @param {Object} req - Express request with ticket, mode, and code in body
+ * @param {Object} res - Express response
+ * @param {Function} next - Express next middleware
+ */
+export async function postLoginTwoFactor(req, res, next) {
+  try {
+    const { ticket, mode, code } = req.body;
+
+    // Validate input
+    if (!ticket || !mode || !code) {
+      return sendError(res, {
+        code: 'VALIDATION_ERROR',
+        message: 'Ticket, mode, and code are required.',
+        statusCode: 400,
+      });
+    }
+
+    if (mode !== 'totp' && mode !== 'recovery') {
+      return sendError(res, {
+        code: 'VALIDATION_ERROR',
+        message: 'Mode must be either "totp" or "recovery".',
+        statusCode: 400,
+      });
+    }
+
+    // Verify the ticket
+    let decoded;
+    try {
+      decoded = verifyTwoFactorTicket(ticket);
+    } catch (err) {
+      return sendError(res, {
+        code: 'INVALID_2FA_TICKET',
+        message: 'Two-factor challenge has expired or is invalid.',
+        statusCode: 401,
+      });
+    }
+
+    const userId = decoded.userId;
+
+    // Fetch user record
+    const [userRows] = await pool.query(
+      'SELECT id, email, fullName, role, status FROM User WHERE id = ?',
+      [userId]
+    );
+
+    if (userRows.length === 0) {
+      return sendError(res, {
+        code: 'ACCOUNT_NOT_FOUND',
+        message: 'User account not found.',
+        statusCode: 401,
+      });
+    }
+
+    const user = userRows[0];
+
+    // Check account status
+    if (user.status === 'DELETED') {
+      return sendError(res, {
+        code: 'ACCOUNT_DELETED',
+        message: 'This account has been deleted and can no longer be used to sign in.',
+        statusCode: 403,
+      });
+    }
+
+    if (user.status === 'disabled') {
+      return sendError(res, {
+        code: 'ACCOUNT_DISABLED',
+        message: 'Account is disabled.',
+        statusCode: 403,
+      });
+    }
+
+    if (user.status === 'pending_verification') {
+      return sendError(res, {
+        code: 'ACCOUNT_NOT_VERIFIED',
+        message: 'Account not activated.',
+        statusCode: 403,
+      });
+    }
+
+    const ipAddress = req.ip || req.headers['x-forwarded-for']?.split(',')[0].trim() || req.connection?.remoteAddress || req.socket?.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    // Verify 2FA code based on mode
+    if (mode === 'totp') {
+      // Validate TOTP code format
+      if (!/^\d{6}$/.test(code)) {
+        return sendError(res, {
+          code: 'INVALID_TOTP_CODE',
+          message: 'TOTP code must be 6 digits.',
+          statusCode: 400,
+        });
+      }
+
+      try {
+        await verifyUserTotpCode(userId, code);
+      } catch (verifyError) {
+        // Log failed 2FA attempt
+        try {
+          await logUserActivity({
+            userId,
+            actorId: userId,
+            type: 'LOGIN_2FA_FAILED',
+            ipAddress,
+            userAgent,
+            metadata: { method: 'totp' }
+          });
+        } catch (activityError) {
+          console.error('Failed to record 2FA failure activity:', activityError);
+        }
+
+        return sendError(res, {
+          code: 'INVALID_TOTP_CODE',
+          message: 'The code from your authenticator app is not correct.',
+          statusCode: 400,
+        });
+      }
+    } else if (mode === 'recovery') {
+      // Normalize recovery code (remove spaces and dashes, convert to uppercase)
+      const normalizedCode = code.replace(/[\s-]/g, '').toUpperCase();
+      // Re-add dashes for validation (format: XXXX-XXXX-XXXX-XXXX)
+      const formattedCode = normalizedCode.length === 16 
+        ? `${normalizedCode.slice(0, 4)}-${normalizedCode.slice(4, 8)}-${normalizedCode.slice(8, 12)}-${normalizedCode.slice(12, 16)}`
+        : code;
+
+      const result = await consumeRecoveryCode(userId, formattedCode);
+      if (!result.ok) {
+        // Log failed recovery code attempt
+        try {
+          await logUserActivity({
+            userId,
+            actorId: userId,
+            type: 'LOGIN_2FA_FAILED',
+            ipAddress,
+            userAgent,
+            metadata: { method: 'recovery', reason: result.reason }
+          });
+        } catch (activityError) {
+          console.error('Failed to record recovery code failure activity:', activityError);
+        }
+
+        return sendError(res, {
+          code: 'INVALID_RECOVERY_CODE',
+          message: 'This recovery code is invalid or has already been used.',
+          statusCode: 400,
+        });
+      }
+
+      // Log recovery code usage
+      try {
+        await logUserActivity({
+          userId,
+          actorId: userId,
+          type: 'LOGIN_RECOVERY_CODE_USED',
+          ipAddress,
+          userAgent,
+          metadata: { method: 'recovery' }
+        });
+      } catch (activityError) {
+        console.error('Failed to record recovery code usage activity:', activityError);
+      }
+    }
+
+    // 2FA verification successful - create session
+    const sessionResult = await createAuthSessionForUser(res, user, req);
+
+    // Record successful 2FA login
+    try {
+      await logUserActivity({
+        userId,
+        actorId: userId,
+        type: 'LOGIN_2FA_SUCCEEDED',
+        ipAddress,
+        userAgent,
+        metadata: { loginMethod: 'email_password_2fa', method: mode }
+      });
+    } catch (activityError) {
+      console.error('Failed to record 2FA login activity:', activityError);
+    }
+
+    // Return success response matching the normal login format
+    return sendOk(res, {
+      access: sessionResult.access,
+      refresh: sessionResult.refresh,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role || 'STANDARD_USER',
+        status: user.status
+      }
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/**
  * Social login callback handler
  * Called after successful OAuth authentication
  * Creates auth session and redirects to frontend
@@ -769,7 +1310,8 @@ export async function socialLoginCallback(req, res, next) {
       return res.redirect('/auth/login?provider=github&error=authentication_failed');
     }
     
-    await createAuthSessionForUser(res, user);
+    // Pass req parameter to ensure session is created with IP and user agent
+    await createAuthSessionForUser(res, user, req);
     
     const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
     const provider = req.user?.authProvider || 'github';

@@ -16,9 +16,12 @@ import {
   revokeAllOtherSecuritySessions,
   getTwoFactorStatusHandler,
   setupTwoFactorHandler,
+  verifyTwoFactorHandler,
   disableTwoFactorHandler,
   getUserRole,
   getUserFeatures,
+  deleteOwnAccount,
+  exportOwnAccountData,
 } from "../controllers/userController.js";
 import { requireAuth } from "../middleware/auth.js";
 
@@ -27,12 +30,27 @@ const router = Router();
 // Validation schemas
 // TODO: Expand in Phase 2 (permissions, device tracking, verification, wallet linking)
 const updateProfileSchema = z.object({
-  fullName: z.string().max(255).optional(),
-  username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_-]+$/).optional(),
-  country: z.string().max(100).optional(),
-  bio: z.string().max(2000).optional(),
-  phone: z.string().max(20).optional(),
-  avatarUrl: z.string().url().max(500).optional().or(z.literal("")),
+  fullName: z.string().max(255).optional().or(z.literal("")),
+  username: z.union([
+    z.literal(""), // Allow empty string
+    z.string().min(3).max(50).regex(/^[a-zA-Z0-9_-]+$/) // Or valid username
+  ]).optional(),
+  country: z.string().max(100).optional().or(z.literal("")),
+  bio: z.string().max(2000).optional().or(z.literal("")),
+  phone: z.string().max(20).optional().or(z.literal("")),
+  avatarUrl: z.union([
+    z.literal(""), // Allow empty string
+    z.string().url().max(500) // Or valid URL
+  ]).optional(),
+}).transform((data) => {
+  // Convert empty strings to null for optional fields
+  const transformed = { ...data };
+  for (const key in transformed) {
+    if (transformed[key] === "") {
+      transformed[key] = null;
+    }
+  }
+  return transformed;
 });
 
 const changePasswordSchema = z.object({
@@ -60,6 +78,8 @@ router.get("/profile", requireAuth, getProfile);
 /**
  * PUT /api/v1/user/profile
  * Update current authenticated user's profile
+ * 
+ * Note: POST is also supported as an alias for PUT (RESTful alternative)
  */
 router.put("/profile", requireAuth, async (req, res, next) => {
   try {
@@ -68,11 +88,43 @@ router.put("/profile", requireAuth, async (req, res, next) => {
     return updateProfile(req, res);
   } catch (error) {
     if (error.name === "ZodError") {
+      // Provide more detailed error messages
+      const errorMessages = error.errors.map(err => ({
+        field: err.path.join('.'),
+        message: err.message
+      }));
       return res.status(400).json({
         status: "ERROR",
         message: "Invalid request data",
         code: "VALIDATION_ERROR",
-        details: error.errors,
+        details: errorMessages,
+      });
+    }
+    return next(error);
+  }
+});
+
+/**
+ * POST /api/v1/user/profile
+ * Update current authenticated user's profile (alias for PUT)
+ */
+router.post("/profile", requireAuth, async (req, res, next) => {
+  try {
+    const body = updateProfileSchema.parse(req.body);
+    req.body = body;
+    return updateProfile(req, res);
+  } catch (error) {
+    if (error.name === "ZodError") {
+      // Provide more detailed error messages
+      const errorMessages = error.errors.map(err => ({
+        field: err.path.join('.'),
+        message: err.message
+      }));
+      return res.status(400).json({
+        status: "ERROR",
+        message: "Invalid request data",
+        code: "VALIDATION_ERROR",
+        details: errorMessages,
       });
     }
     return next(error);
@@ -120,20 +172,24 @@ router.get("/security/devices", requireAuth, getSecurityDevices);
 router.delete("/security/devices/:deviceId", requireAuth, revokeSecurityDevice);
 
 /**
- * GET /api/v1/security/sessions
+ * GET /api/v1/user/security/sessions
  * Get all active sessions for the current user
+ * Returns: { status: "OK", data: { sessions: [...] } }
  */
 router.get("/security/sessions", requireAuth, getSecuritySessions);
 
 /**
- * POST /api/v1/security/sessions/revoke
+ * POST /api/v1/user/security/sessions/revoke
  * Revoke a specific session
+ * Body: { sessionId }
+ * Returns: { status: "OK", data: { success: true } }
  */
 router.post("/security/sessions/revoke", requireAuth, revokeSecuritySession);
 
 /**
- * POST /api/v1/security/sessions/revoke-all-others
+ * POST /api/v1/user/security/sessions/revoke-all-others
  * Revoke all sessions except the current one
+ * Returns: { status: "OK", data: { success: true } }
  */
 router.post("/security/sessions/revoke-all-others", requireAuth, revokeAllOtherSecuritySessions);
 
@@ -145,9 +201,15 @@ router.get("/security/2fa/status", requireAuth, getTwoFactorStatusHandler);
 
 /**
  * POST /api/v1/user/security/2fa/setup
- * Begin 2FA setup (placeholder - Phase 2 skeleton)
+ * Begin 2FA setup (step: "start" to generate QR code)
  */
 router.post("/security/2fa/setup", requireAuth, setupTwoFactorHandler);
+
+/**
+ * POST /api/v1/user/security/2fa/verify
+ * Verify 2FA code and enable 2FA
+ */
+router.post("/security/2fa/verify", requireAuth, verifyTwoFactorHandler);
 
 /**
  * POST /api/v1/user/security/2fa/disable
@@ -170,5 +232,17 @@ router.get("/role", requireAuth, getUserRole);
  * Get current user's feature flags (merged with defaults)
  */
 router.get("/features", requireAuth, getUserFeatures);
+
+/**
+ * POST /api/v1/user/account/delete
+ * Delete own account (soft delete with password confirmation) - Phase 9.1
+ */
+router.post("/account/delete", requireAuth, deleteOwnAccount);
+
+/**
+ * GET /api/v1/user/account/export
+ * Export own account data as JSON (Phase 9.3)
+ */
+router.get("/account/export", requireAuth, exportOwnAccountData);
 
 export default router;

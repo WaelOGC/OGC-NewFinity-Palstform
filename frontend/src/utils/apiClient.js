@@ -18,11 +18,31 @@ const API_BASE_URL = import.meta.env.DEV ? DEV_BASE : PROD_BASE;
 const isDev = import.meta.env.DEV;
 
 /**
+ * AppError - Rich error object for API errors
+ * Provides structured error information with user-friendly messages
+ */
+class AppError extends Error {
+  constructor({ message, code, httpStatus, raw }) {
+    super(message || "Request failed");
+    this.name = "AppError";
+    this.code = code || "REQUEST_FAILED";
+    this.httpStatus = httpStatus || 0;
+    this.raw = raw || null;
+    // For backward compatibility
+    this.backendCode = code;
+    this.backendMessage = message;
+    this.statusCode = httpStatus;
+    this.status = httpStatus;
+  }
+}
+
+/**
  * Whitelist of allowed API routes
  * Routes must be in the format: 'METHOD /api/v1/path'
  */
 const ALLOWED_ROUTES = {
   'POST /api/v1/auth/login': true,
+  'POST /api/v1/auth/login/2fa': true,
   'POST /api/v1/auth/register': true,
   'POST /api/v1/auth/refresh': true,
   'POST /api/v1/auth/logout': true,
@@ -30,11 +50,18 @@ const ALLOWED_ROUTES = {
   'GET /api/v1/auth/activate': true,
   'POST /api/v1/auth/resend-activation': true,
   'POST /api/v1/auth/forgot-password': true,
+  // Phase 8.1: Password reset request
+  'POST /api/v1/auth/password/reset/request': true,
+  // Phase 8.2: Password reset validation and completion
+  'POST /api/v1/auth/password/reset/validate': true,
+  'POST /api/v1/auth/password/reset/complete': true,
+  // Legacy routes (kept for backward compatibility)
   'POST /api/v1/auth/reset-password/validate': true,
   'POST /api/v1/auth/reset-password': true,
   // Account System Expansion (Phase 1) - User Profile Routes
   'GET /api/v1/user/profile': true,
   'PUT /api/v1/user/profile': true,
+  'POST /api/v1/user/profile': true,
   'PUT /api/v1/user/change-password': true,
   // Account System Expansion (Phase 2) - Security Routes
   'GET /api/v1/user/security/activity': true,
@@ -42,6 +69,7 @@ const ALLOWED_ROUTES = {
   // DELETE /api/v1/user/security/devices/:deviceId is handled by pattern matching
   'GET /api/v1/user/security/2fa/status': true,
   'POST /api/v1/user/security/2fa/setup': true,
+  'POST /api/v1/user/security/2fa/verify': true,
   'POST /api/v1/user/security/2fa/disable': true,
   // Phase 7.1: Active Sessions & Device Security
   // Note: Sessions routes are under /user/security/ in userRoutes.js
@@ -65,6 +93,51 @@ const ALLOWED_ROUTES = {
   'GET /api/v1/admin/users/:userId/sessions': true,
   'POST /api/v1/admin/users/:userId/sessions/revoke': true,
   'POST /api/v1/admin/users/:userId/sessions/revoke-all': true,
+  // Phase 9.2: Account Deletion
+  'POST /api/v1/user/account/delete': true,
+  // Phase 9.3: Data Export
+  'GET /api/v1/user/account/export': true,
+  // PHASE S1: Secure Change Password
+  'POST /api/v1/account/change-password': true,
+  // PHASE S3: Account Data Export
+  'GET /api/v1/account/export': true,
+  // PHASE S4: Account Deletion
+  'POST /api/v1/account/delete': true,
+  // 2FA Foundations
+  'GET /api/v1/account/2fa/status': true,
+  'POST /api/v1/account/2fa/setup': true,
+  'POST /api/v1/account/2fa/confirm': true,
+  'POST /api/v1/account/2fa/disable': true,
+  // PHASE S5: 2FA Recovery Codes
+  'GET /api/v1/account/2fa/recovery': true,
+  'POST /api/v1/account/2fa/recovery/regenerate': true,
+  // PHASE S2: Sessions & Devices
+  'GET /api/v1/security/sessions': true,
+  'DELETE /api/v1/security/sessions/:sessionId': true,
+  'DELETE /api/v1/security/sessions/others': true,
+  // Phase W2.1: Wallet Summary
+  'GET /api/v1/wallet/summary': true,
+  // Phase W2.3: Wallet Transactions
+  'GET /api/v1/wallet/transactions': true,
+  // Phase W2.4: Staking (mock/preview only)
+  'GET /api/v1/wallet/staking/summary': true,
+  'POST /api/v1/wallet/staking/preview': true,
+  // Phase W2.6: Wallet Overview
+  'GET /api/v1/wallet/overview': true,
+  // Phase W2.7: Wallet Activity + Charts
+  'GET /api/v1/wallet/activity': true,
+  // Phase W2.8: Rewards Timeline (mini bar chart)
+  'GET /api/v1/wallet/rewards/timeline': true,
+  // Phase W2.9: Wallet Badges
+  'GET /api/v1/wallet/badges': true,
+  // PHASE D2 — Challenge Program (mock)
+  'GET /api/v1/challenge/overview': true,
+  'GET /api/v1/challenge/tracks': true,
+  'GET /api/v1/challenge/timeline': true,
+  // PHASE D3 — Amy Agent Shell (mock)
+  'GET /api/v1/amy/sessions': true,
+  'POST /api/v1/amy/sessions': true,
+  // Dynamic routes with sessionId are handled by pattern matching below
 };
 
 /**
@@ -141,7 +214,9 @@ export async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE_URL}${normalizedEndpoint}`;
   
   // Check if route is in whitelist
-  const routeKey = `${method} ${url}`;
+  // Strip query string for route matching (ALLOWED_ROUTES doesn't include query params)
+  const urlWithoutQuery = url.split('?')[0];
+  const routeKey = `${method} ${urlWithoutQuery}`;
   
   // Check exact match first
   if (ALLOWED_ROUTES[routeKey]) {
@@ -150,17 +225,28 @@ export async function apiRequest(endpoint, options = {}) {
     // Check for dynamic routes (e.g., DELETE /api/v1/user/security/devices/:deviceId)
     // Also check for admin routes with userId parameter
     const isDynamicRoute = Object.keys(ALLOWED_ROUTES).some(allowedRoute => {
+      // Extract method from allowedRoute (format: "METHOD /api/v1/path")
+      const [allowedMethod, allowedPath] = allowedRoute.split(' ', 2);
+      
       // For DELETE routes with deviceId, check if it matches the pattern
       if (method === 'DELETE' && url.includes('/user/security/devices/')) {
-        return allowedRoute.includes('/user/security/devices');
+        return allowedMethod === method && allowedRoute.includes('/user/security/devices');
       }
       // For admin routes with userId, check if it matches the pattern
       if (url.includes('/admin/users/') && !url.endsWith('/admin/users')) {
-        return allowedRoute.includes('/admin/users/');
+        return allowedMethod === method && allowedRoute.includes('/admin/users/');
       }
       // For session routes, check if it matches the pattern
       if (url.includes('/user/security/sessions')) {
-        return allowedRoute.includes('/user/security/sessions');
+        return allowedMethod === method && allowedRoute.includes('/user/security/sessions');
+      }
+      // For Amy routes with sessionId, check if it matches the pattern
+      if (url.includes('/amy/sessions/') && !url.endsWith('/amy/sessions')) {
+        return allowedMethod === method && allowedRoute.includes('/amy/sessions');
+      }
+      // For security routes with sessionId, check if it matches the pattern
+      if (url.includes('/security/sessions/') && !url.endsWith('/security/sessions') && !url.endsWith('/security/sessions/others')) {
+        return allowedMethod === method && allowedRoute.includes('/security/sessions/');
       }
       return false;
     });
@@ -195,132 +281,130 @@ export async function apiRequest(endpoint, options = {}) {
     const res = await fetch(url, fetchOptions);
 
     // Try to parse JSON response
-    let data;
+    let data = null;
     let rawText = '';
     try {
       rawText = await res.text();
-      if (!rawText) {
-        throw new Error('Empty response from server');
+      if (rawText) {
+        data = JSON.parse(rawText);
       }
-      data = JSON.parse(rawText);
     } catch (parseError) {
-      // Log detailed error information in development
-      if (isDev) {
-        console.error(`[API] ${method} ${url} → Parse Error:`, {
-          status: res.status,
-          statusText: res.statusText,
-          rawBody: rawText,
-          parseError: parseError.message
-        });
-      }
+      // Log detailed error information for developers
+      console.error("[API] Failed to parse JSON", {
+        method,
+        url,
+        httpStatus: res.status,
+        statusText: res.statusText,
+        rawBody: rawText,
+        parseError: parseError.message
+      });
       
-      // If we couldn't parse JSON, create error with raw text
-      const error = new Error(rawText || 'Invalid response from server. Please try again.');
-      error.statusCode = res.status;
-      error.status = res.status;
-      error.backendMessage = rawText || 'Server returned non-JSON response';
-      error.backendCode = 'PARSE_ERROR';
-      error.rawResponse = rawText;
-      throw error;
+      // If we couldn't parse JSON, create AppError
+      throw new AppError({
+        message: "The server returned an invalid response. Please try again.",
+        code: "PARSE_ERROR",
+        httpStatus: res.status,
+        raw: rawText
+      });
     }
 
     logApiResponse(method, url, res.status, data);
 
-    // If response is not OK, extract error details and throw
-    if (!res.ok) {
-      // Log detailed error in development
-      if (isDev) {
-        console.error(`[API] ${method} ${url} → Error Response:`, {
-          status: res.status,
-          statusText: res.statusText,
-          body: data
-        });
-      }
+    // Check for error responses (either !res.ok or data.status === "ERROR")
+    if (!res.ok || (data && data.status === "ERROR")) {
+      const backendMessage = data?.message || data?.error || null;
+      const backendCode = data?.code || data?.errorCode || null;
+      const httpStatus = res.status;
 
-      // Handle 401 (Unauthorized) - redirect to login
-      if (res.status === 401) {
+      // Log detailed info for developers
+      console.error("[API] Request failed", {
+        method,
+        url,
+        httpStatus,
+        backendCode,
+        backendMessage,
+        raw: data,
+      });
+
+      // Build user-facing message with sane defaults
+      let friendlyMessage = backendMessage || "Something went wrong";
+
+      if (httpStatus === 401) {
+        friendlyMessage = "Your session has expired. Please sign in again.";
         // Clear any stored auth data
         window.localStorage.removeItem('ogc_token');
         // Only redirect if we're not already on auth pages
         if (!window.location.pathname.startsWith('/auth')) {
           window.location.href = '/auth?redirect=' + encodeURIComponent(window.location.pathname);
         }
-      }
-
-      // Handle 403 (Forbidden) - redirect to dashboard
-      if (res.status === 403) {
+      } else if (httpStatus === 403) {
+        friendlyMessage = "You don't have permission to perform this action.";
         // Only redirect if we're not already on dashboard or auth pages
         if (!window.location.pathname.startsWith('/dashboard') && !window.location.pathname.startsWith('/auth')) {
           window.location.href = '/dashboard';
         }
+      } else if (httpStatus >= 500) {
+        friendlyMessage = "The server encountered an error. Please try again later.";
       }
 
-      // Extract error message with priority: message > error > code
-      const backendMessage = data.message || data.error || (data.code ? `Error: ${data.code}` : null);
-      const backendCode = data.code || data.errorCode || null;
-      
-      const error = new Error(backendMessage || `HTTP ${res.status}`);
-      error.statusCode = res.status;
-      error.status = res.status;
-      error.backendMessage = backendMessage;
-      error.backendCode = backendCode;
-      error.code = backendCode; // Keep for backward compatibility
-      error.data = data;
-      throw error;
+      throw new AppError({
+        message: friendlyMessage,
+        code: backendCode || "REQUEST_FAILED",
+        httpStatus,
+        raw: data,
+      });
     }
 
-    // Success response - check if it matches expected format
-    // Backend sends { status: 'OK', success: true, ... } for success
-    // Also accept responses with just success: true or status: 'OK'
-    if (data.status === 'OK' || data.success === true || res.status >= 200 && res.status < 300) {
-      return data;
+    // Success response - standardized format: { status: "OK", data: { ... } }
+    if (data && data.status === 'OK' && data.data !== undefined) {
+      // Return the inner data object
+      return data.data;
+    }
+
+    // Legacy support: if status is OK but no data wrapper, return as-is (for backward compatibility)
+    if (data && (data.status === 'OK' || data.success === true) || res.status >= 200 && res.status < 300) {
+      // For backward compatibility, if there's no data wrapper, return the whole object
+      // but log a warning in dev
+      if (isDev && data && !data.data) {
+        console.warn(`[API] ${method} ${url} → Legacy response format (no data wrapper):`, data);
+      }
+      return (data && data.data !== undefined) ? data.data : (data || {});
     }
 
     // If response is OK but doesn't match expected format, log warning but return data
-    if (isDev) {
+    if (isDev && data) {
       console.warn(`[API] ${method} ${url} → Unexpected success format:`, data);
     }
-    return data;
+    return data || {};
   } catch (error) {
-    // Network errors (CORS, connection refused, etc.)
-    if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
-      const networkError = new Error('Unable to reach the server. Please check that the backend is running on localhost:4000 or try again in a moment.');
-      networkError.statusCode = 0;
-      networkError.status = 0;
-      networkError.backendMessage = 'Network error: Unable to connect to server';
-      networkError.backendCode = 'NETWORK_ERROR';
-      networkError.originalError = error;
-      logApiError(method, url, networkError);
-      throw networkError;
-    }
-
-    // If error already has backendMessage/backendCode, preserve it
-    if (error.backendMessage || error.backendCode) {
+    // If it's already an AppError, just log and rethrow
+    if (error instanceof AppError) {
       logApiError(method, url, error);
       throw error;
     }
 
-    // Try to extract message from error.data if available
-    if (error.data) {
-      const backendMessage = error.data.message || error.data.error || null;
-      const backendCode = error.data.code || error.data.errorCode || null;
-      
-      if (backendMessage) {
-        error.backendMessage = backendMessage;
-      }
-      if (backendCode) {
-        error.backendCode = backendCode;
-        error.code = backendCode;
-      }
+    // Network errors (CORS, connection refused, etc.)
+    if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
+      const networkError = new AppError({
+        message: "Unable to reach the server. Please check that the backend is running or try again in a moment.",
+        code: "NETWORK_ERROR",
+        httpStatus: 0,
+        raw: null
+      });
+      logApiError(method, url, networkError);
+      throw networkError;
     }
 
-    // If we still don't have a backend message, use the error message or generic fallback
-    if (!error.backendMessage) {
-      error.backendMessage = error.message || 'An unexpected error occurred. Please try again.';
-    }
-
-    logApiError(method, url, error);
-    throw error;
+    // For any other error, wrap it in AppError
+    const appError = new AppError({
+      message: error.message || "An unexpected error occurred. Please try again.",
+      code: error.code || error.backendCode || "UNKNOWN_ERROR",
+      httpStatus: error.statusCode || error.status || 0,
+      raw: error.data || null
+    });
+    
+    logApiError(method, url, appError);
+    throw appError;
   }
 }
 
@@ -334,5 +418,672 @@ export const api = {
   delete: (endpoint, options = {}) => apiRequest(endpoint, { ...options, method: 'DELETE' }),
 };
 
-export { API_BASE_URL };
+/**
+ * Profile API Helpers
+ * These functions handle the standardized API response format and return the profile data directly
+ */
+
+/**
+ * Get current user's profile
+ * @returns {Promise<Object>} Profile object
+ */
+export async function getUserProfile() {
+  const data = await apiRequest('/user/profile', {
+    method: 'GET',
+  });
+  // data should be { profile: {...} }
+  return data.profile || {};
+}
+
+/**
+ * Update current user's profile
+ * @param {Object} payload - Profile fields to update
+ * @returns {Promise<Object>} Updated profile object
+ */
+export async function updateUserProfile(payload) {
+  const data = await apiRequest('/user/profile', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  // data should be { profile: {...} }
+  return data.profile || {};
+}
+
+/**
+ * Security Activity API Helpers
+ * These functions handle the standardized API response format and return activity data directly
+ */
+
+/**
+ * Get user's security activity log
+ * @returns {Promise<Array>} Array of activity entries
+ */
+export async function getUserSecurityActivity() {
+  const data = await apiRequest('/user/security/activity', {
+    method: 'GET',
+  });
+  // data should be { items: [...] }
+  return data.items || [];
+}
+
+/**
+ * Get user's registered devices
+ * @returns {Promise<Array>} Array of device records
+ */
+export async function getUserSecurityDevices() {
+  const data = await apiRequest('/user/security/devices', {
+    method: 'GET',
+  });
+  // data should be { devices: [...] }
+  return data.devices || [];
+}
+
+/**
+ * Session API Helpers
+ * These functions handle the standardized API response format and return session data directly
+ */
+
+/**
+ * Get all active sessions for the current user
+ * @returns {Promise<Array>} Array of session objects with isCurrent flag
+ */
+export async function getUserSessions() {
+  const data = await apiRequest('/user/security/sessions', {
+    method: 'GET',
+  });
+  // data should be { sessions: [...] }
+  return data.sessions || [];
+}
+
+/**
+ * Revoke a specific session
+ * @param {string|number} sessionId - Session ID to revoke
+ * @returns {Promise<Object>} Success response with { success: true }
+ */
+export async function revokeUserSession(sessionId) {
+  const data = await apiRequest('/user/security/sessions/revoke', {
+    method: 'POST',
+    body: JSON.stringify({ sessionId }),
+  });
+  // data should be { success: true }
+  return data;
+}
+
+/**
+ * Revoke all sessions except the current one
+ * @returns {Promise<Object>} Success response with { success: true }
+ */
+export async function revokeAllOtherSessions() {
+  const data = await apiRequest('/user/security/sessions/revoke-all-others', {
+    method: 'POST',
+  });
+  // data should be { success: true }
+  return data;
+}
+
+/**
+ * Two-Factor Authentication API Helpers
+ * These functions handle the standardized API response format and return 2FA data directly
+ */
+
+/**
+ * 2FA Foundations API Helpers
+ * These functions use the /account/2fa/* endpoints
+ */
+
+/**
+ * Get 2FA status for the current user
+ * @returns {Promise<Object>} Status object with { enabled, createdAt, confirmedAt }
+ */
+export async function getTwoFactorStatus() {
+  const data = await apiRequest('/account/2fa/status', { method: 'GET' });
+  // apiRequest already unwraps { status: 'OK', data: {...} } to just the data
+  return data || { enabled: false, createdAt: null, confirmedAt: null };
+}
+
+/**
+ * Start 2FA setup - Generate secret
+ * @returns {Promise<Object>} Setup data with { secret, otpauthUrl }
+ */
+export async function startTwoFactorSetup() {
+  const data = await apiRequest('/account/2fa/setup', { method: 'POST' });
+  // apiRequest already unwraps { status: 'OK', data: {...} } to just the data
+  const { secret, otpauthUrl } = data || {};
+  return { secret: secret || '', otpauthUrl: otpauthUrl || '' };
+}
+
+/**
+ * Confirm 2FA setup with verification code
+ * @param {string} token - 6-digit TOTP code
+ * @returns {Promise<Object>} Success response
+ */
+export async function confirmTwoFactorSetup(token) {
+  const data = await apiRequest('/account/2fa/confirm', {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  });
+  // apiRequest already unwraps the response
+  return data || {};
+}
+
+/**
+ * Disable 2FA for the current user
+ * @returns {Promise<Object>} Success response
+ */
+export async function disableTwoFactor() {
+  const data = await apiRequest('/account/2fa/disable', { method: 'POST' });
+  // apiRequest already unwraps the response
+  return data || {};
+}
+
+/**
+ * Get recovery codes status for the current user (Phase S5)
+ * @returns {Promise<Array>} Array of recovery code status objects (masked, no plain codes)
+ */
+export async function getRecoveryCodesStatus() {
+  const data = await apiRequest('/account/2fa/recovery', { method: 'GET' });
+  // apiRequest unwraps { status: 'OK', data: { codes: [...] } } to just the data
+  return data?.codes || [];
+}
+
+/**
+ * Regenerate recovery codes for the current user (Phase S5)
+ * Returns plain codes (only shown once) and invalidates old unused codes
+ * @returns {Promise<Array<string>>} Array of plain recovery codes
+ */
+export async function regenerateRecoveryCodes() {
+  const data = await apiRequest('/account/2fa/recovery/regenerate', { method: 'POST' });
+  // apiRequest unwraps { status: 'OK', data: { codes: [...] } } to just the data
+  if (!data || !data.codes) {
+    throw new Error('Failed to generate recovery codes.');
+  }
+  return data.codes;
+}
+
+/**
+ * Admin API Helpers
+ * These functions handle admin operations for user management
+ */
+
+/**
+ * Get detailed user information for admin view
+ * @param {number|string} userId - User ID
+ * @returns {Promise<Object>} User object with profile, role, status, etc.
+ */
+export async function getAdminUser(userId) {
+  const data = await apiRequest(`/admin/users/${userId}`, {
+    method: "GET",
+  });
+  // data = { user, recentActivity, devices }
+  return data.user;
+}
+
+/**
+ * Get all sessions for a user (admin)
+ * @param {number|string} userId - User ID
+ * @returns {Promise<Array>} Array of session objects with isCurrent flag
+ */
+export async function getAdminUserSessions(userId) {
+  const data = await apiRequest(`/admin/users/${userId}/sessions`, {
+    method: "GET",
+  });
+  // data = { sessions }
+  return data.sessions || [];
+}
+
+/**
+ * Revoke a specific session for a user (admin)
+ * @param {number|string} userId - User ID
+ * @param {number|string} sessionId - Session ID to revoke
+ * @returns {Promise<Object>} Success response with { success: true }
+ */
+export async function adminRevokeUserSession(userId, sessionId) {
+  const data = await apiRequest(`/admin/users/${userId}/sessions/revoke`, {
+    method: "POST",
+    body: JSON.stringify({ sessionId }),
+  });
+  // data = { success: true }
+  return data;
+}
+
+/**
+ * Revoke all sessions for a user (admin)
+ * @param {number|string} userId - User ID
+ * @returns {Promise<Object>} Success response with { success: true }
+ */
+export async function adminRevokeAllUserSessions(userId) {
+  const data = await apiRequest(`/admin/users/${userId}/sessions/revoke-all`, {
+    method: "POST",
+  });
+  // data = { success: true }
+  return data;
+}
+
+/**
+ * Password Reset API Helpers
+ */
+
+/**
+ * Request a password reset email
+ * @param {string} email - User's email address
+ * @returns {Promise<Object>} Response with message
+ */
+export async function requestPasswordResetEmail(email) {
+  const payload = { email };
+
+  const data = await apiRequest("/api/v1/auth/password/reset/request", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  // data should be { message }
+  return data;
+}
+
+/**
+ * Phase S6: Complete 2FA login with ticket + TOTP or recovery code
+ * @param {Object} params - 2FA login parameters
+ * @param {string} params.ticket - 2FA ticket from initial login response
+ * @param {string} params.mode - Either 'totp' or 'recovery'
+ * @param {string} params.code - TOTP code (6 digits) or recovery code
+ * @returns {Promise<Object>} Response with access token, refresh token, and user data
+ */
+export async function loginWithTwoFactor({ ticket, mode, code }) {
+  const payload = { ticket, mode, code };
+  
+  const data = await apiRequest('/auth/login/2fa', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  
+  // apiRequest unwraps { status: 'OK', data: {...} } to just the data
+  return data;
+}
+
+/**
+ * Account Deletion API Helpers
+ */
+
+/**
+ * Delete the current user's account
+ * @param {string} password - Current password for verification
+ * @returns {Promise<Object>} Response with message
+ */
+export async function deleteOwnAccount(password) {
+  const payload = { password };
+
+  const data = await apiRequest("/api/v1/user/account/delete", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  // data = { message }
+  return data;
+}
+
+/**
+ * Change password (PHASE S1)
+ * @param {Object} payload - Password change payload
+ * @param {string} payload.currentPassword - Current password
+ * @param {string} payload.newPassword - New password
+ * @param {string} payload.confirmPassword - Password confirmation
+ * @returns {Promise<Object>} Response object with status and message
+ */
+export async function changePasswordApi(payload) {
+  // Use fetch directly to get the full response with status
+  const url = `${API_BASE_URL}/account/change-password`;
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || data.status !== 'OK') {
+    const msg = data.message || 'Failed to change password.';
+    const error = new Error(msg);
+    error.code = data.code;
+    error.details = data.details;
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Fetch security sessions (PHASE S2)
+ * @returns {Promise<Array>} Array of session objects
+ */
+export async function fetchSecuritySessions() {
+  const response = await apiRequest('/security/sessions', { method: 'GET' });
+  // apiRequest unwraps the data from { status: 'OK', data: [...] }
+  return response || [];
+}
+
+/**
+ * Revoke a specific session (PHASE S2)
+ * @param {number} sessionId - Session ID to revoke
+ * @returns {Promise<Object>} Response object
+ */
+export async function revokeSession(sessionId) {
+  const urlWithoutQuery = `/security/sessions/${sessionId}`.split('?')[0];
+  const response = await apiRequest(urlWithoutQuery, { method: 'DELETE' });
+  if (!response || (response.status && response.status !== 'OK')) {
+    throw new Error(response?.message || 'Failed to revoke session.');
+  }
+  return response;
+}
+
+/**
+ * Revoke all other sessions (PHASE S2)
+ * @returns {Promise<Object>} Response object
+ */
+export async function revokeOtherSessions() {
+  const response = await apiRequest('/security/sessions/others', { method: 'DELETE' });
+  if (!response || (response.status && response.status !== 'OK')) {
+    throw new Error(response?.message || 'Failed to revoke other sessions.');
+  }
+  return response;
+}
+
+/**
+ * Export the current user's account data as JSON (PHASE S3)
+ * Returns a Blob that can be downloaded as a file
+ * @returns {Promise<Blob>} Blob containing the JSON export file
+ */
+export async function exportAccountData() {
+  const url = `${API_BASE_URL}/account/export`;
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    // Try to parse error message from JSON if available
+    let errorMessage = 'Failed to export account data';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorMessage;
+    } catch (e) {
+      // If response isn't JSON, use status text
+      errorMessage = response.statusText || errorMessage;
+    }
+    
+    const error = new Error(errorMessage);
+    error.code = 'ACCOUNT_EXPORT_FAILED';
+    error.httpStatus = response.status;
+    throw error;
+  }
+
+  const blob = await response.blob();
+  return blob;
+}
+
+/**
+ * Delete the current user's account (PHASE S4)
+ * Requires password verification and optional 2FA (if enabled)
+ * @param {Object} payload - Deletion payload
+ * @param {string} payload.password - Current password for verification
+ * @param {string} [payload.otp] - Optional 2FA code (required if 2FA is enabled)
+ * @param {string} payload.confirmText - Must be "DELETE" to confirm
+ * @returns {Promise<Object>} Response object with status and message
+ */
+export async function deleteAccountApi(payload) {
+  const url = `${API_BASE_URL}/account/delete`;
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || data.status !== 'OK') {
+    const msg = data.message || 'Failed to delete account.';
+    const error = new Error(msg);
+    error.code = data.code;
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Export the current user's account data as JSON (legacy function - kept for backward compatibility)
+ * @deprecated Use exportAccountData() instead, which returns a Blob for direct download
+ * @returns {Promise<Object>} Export payload with user, security, sessions, and activity data
+ */
+export async function exportOwnAccountData() {
+  const data = await apiRequest("/user/account/export", {
+    method: "GET",
+  });
+
+  // data is the payload from sendOk, already unwrapped by apiRequest.
+  // It should look like: { exportedAt, user, security: { twoFactor, sessions, activity } }
+  return data;
+}
+
+/**
+ * Wallet API Helpers
+ */
+
+/**
+ * Get wallet summary for the current user
+ * @returns {Promise<Object|null>} Wallet summary object with mainBalance, lockedBalance, pendingRewards, estimatedUsdValue, lastUpdated, or null if missing
+ */
+export async function getWalletSummary() {
+  const data = await apiRequest('/wallet/summary', {
+    method: 'GET',
+  });
+  // Backend returns { status: 'OK', data: { summary: {...} } }
+  return data.summary || null;
+}
+
+/**
+ * Get wallet transactions for the current user with pagination
+ * @param {Object} params - Query parameters { limit, offset }
+ * @returns {Promise<Object>} Object with items array and pagination metadata
+ */
+export async function getWalletTransactions(params = {}) {
+  const searchParams = new URLSearchParams();
+
+  if (params.limit != null) searchParams.set('limit', params.limit);
+  if (params.offset != null) searchParams.set('offset', params.offset);
+
+  const url =
+    '/wallet/transactions' +
+    (searchParams.toString() ? `?${searchParams.toString()}` : '');
+
+  const data = await apiRequest(url, {
+    method: 'GET',
+  });
+  // Backend returns { status: 'OK', data: { transactions: [...], pagination: {...} } }
+  return {
+    items: data.transactions || [],
+    pagination: data.pagination || { total: 0, limit: params.limit || 10, offset: params.offset || 0 },
+  };
+}
+
+/**
+ * Get staking summary for the current user
+ * @returns {Promise<Object|null>} Staking summary object with stakedAmount, claimableRewards, lifetimeRewards, apy, etc., or null if missing
+ */
+export async function getStakingSummary() {
+  const data = await apiRequest('/wallet/staking/summary', {
+    method: 'GET',
+  });
+  // backend: { status: "OK", data: { staking: {...} } }
+  return data.staking || null;
+}
+
+/**
+ * Get staking preview for a potential stake amount
+ * @param {number} amount - Amount to stake (OGC)
+ * @returns {Promise<Object|null>} Preview object with estimated rewards, or null if missing
+ */
+export async function getStakingPreview(amount) {
+  const payload = { amount: Number(amount || 0) };
+  const data = await apiRequest('/wallet/staking/preview', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  // backend: { status: "OK", data: { preview: {...} } }
+  return data.preview || null;
+}
+
+/**
+ * Get wallet overview for the current user (Phase W2.6)
+ * Returns wallet snapshot and balances
+ * @returns {Promise<Object|null>} Wallet overview object with snapshot and balances, or null if missing
+ */
+export async function getWalletOverview() {
+  const data = await apiRequest('/wallet/overview', {
+    method: 'GET',
+  });
+  // backend: { status: "OK", data: { snapshot: {...}, balances: {...} } }
+  // apiRequest already unwraps the data, so we get { snapshot: {...}, balances: {...} } directly
+  return data || null;
+}
+
+/**
+ * Get wallet activity for the current user (Phase W2.7)
+ * Returns timeseries data and summary for charting
+ * @param {string} range - Time range: '7d' or '30d' (default: '30d')
+ * @returns {Promise<Object>} Activity object with timeseries array and summary object
+ */
+export async function getWalletActivity(range = '30d') {
+  const params = new URLSearchParams({ range });
+  const data = await apiRequest(`/wallet/activity?${params.toString()}`, {
+    method: 'GET',
+  });
+  // backend: { status: "OK", data: { timeseries: [...], summary: {...} } }
+  // apiRequest already unwraps the data, so we get { timeseries: [...], summary: {...} } directly
+  return data || { timeseries: [], summary: null };
+}
+
+/**
+ * Get rewards timeline for the current user (Phase W2.8)
+ * Returns rewards events and upcoming payout for mini bar chart
+ * @param {string} range - Time range: '7d' or '30d' (default: '30d')
+ * @returns {Promise<Object>} Rewards timeline object with events array, upcoming object, and summary object
+ */
+export async function getRewardsTimeline(range = '30d') {
+  const params = new URLSearchParams({ range });
+  const data = await apiRequest(`/wallet/rewards/timeline?${params.toString()}`, {
+    method: 'GET',
+  });
+  // backend: { status: "OK", data: { events: [...], upcoming: {...}, summary: {...} } }
+  // apiRequest already unwraps the data, so we get { events: [...], upcoming: {...}, summary: {...} } directly
+  return data || { events: [], upcoming: null, summary: null };
+}
+
+/**
+ * Get wallet badges for the current user (Phase W2.9)
+ * Returns badge data including staking tier, rewards level, contribution score, and badges array
+ * @returns {Promise<Object|null>} Badges object with stakingTier, rewardsLevel, contributionScore, and badges array, or null if missing
+ */
+export async function getWalletBadges() {
+  const data = await apiRequest('/wallet/badges', {
+    method: 'GET',
+  });
+  // backend: { status: "OK", data: { stakingTier, rewardsLevel, contributionScore, badges: [...] } }
+  // apiRequest already unwraps the data, so we get the badges object directly
+  return data || null;
+}
+
+/**
+ * Get challenge overview for the current user (PHASE D2)
+ * @returns {Promise<Object>} Challenge overview object with season, status, totalTracks, etc.
+ */
+export async function getChallengeOverview() {
+  const response = await apiRequest('/challenge/overview', { method: 'GET' });
+  // apiRequest already unwraps the data from { status: 'OK', data: {...} }
+  return response || {};
+}
+
+/**
+ * Get challenge tracks (PHASE D2)
+ * @returns {Promise<Array>} Array of challenge track objects
+ */
+export async function getChallengeTracks() {
+  const response = await apiRequest('/challenge/tracks', { method: 'GET' });
+  // apiRequest already unwraps the data from { status: 'OK', data: [...] }
+  return response || [];
+}
+
+/**
+ * Get challenge timeline (PHASE D2)
+ * @returns {Promise<Array>} Array of timeline phase objects
+ */
+export async function getChallengeTimeline() {
+  const response = await apiRequest('/challenge/timeline', { method: 'GET' });
+  // apiRequest already unwraps the data from { status: 'OK', data: [...] }
+  return response || [];
+}
+
+/**
+ * Amy Agent API functions (PHASE D3)
+ */
+
+/**
+ * List all Amy sessions for the current user (PHASE D3)
+ * @returns {Promise<Array>} Array of session objects
+ */
+export async function amyListSessions() {
+  const data = await apiRequest('/amy/sessions', { method: 'GET' });
+  // apiRequest already unwraps the data from { status: 'OK', data: [...] }
+  return data || [];
+}
+
+/**
+ * Get a specific Amy session with messages (PHASE D3)
+ * @param {string} sessionId - The session ID
+ * @returns {Promise<Object>} Session object with messages array
+ */
+export async function amyGetSession(sessionId) {
+  const data = await apiRequest(`/amy/sessions/${sessionId}`, { method: 'GET' });
+  // apiRequest already unwraps the data from { status: 'OK', data: {...} }
+  return data || { id: sessionId, title: '', messages: [] };
+}
+
+/**
+ * Create a new Amy session (PHASE D3)
+ * @param {string} title - Optional session title
+ * @returns {Promise<Object>} Created session object
+ */
+export async function amyCreateSession(title) {
+  const data = await apiRequest('/amy/sessions', {
+    method: 'POST',
+    body: JSON.stringify({ title }),
+  });
+  // apiRequest already unwraps the data from { status: 'OK', data: {...} }
+  return data || null;
+}
+
+/**
+ * Send a message to an Amy session (PHASE D3)
+ * @param {string} sessionId - The session ID
+ * @param {string} content - Message content
+ * @returns {Promise<Object>} Object with userMessage and assistantMessage
+ */
+export async function amySendMessage(sessionId, content) {
+  const data = await apiRequest(`/amy/sessions/${sessionId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  });
+  // apiRequest already unwraps the data from { status: 'OK', data: {...} }
+  return data || null;
+}
+
+export { API_BASE_URL, AppError };
 

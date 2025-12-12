@@ -1,7 +1,9 @@
 import pool from "../db.js";
+import { logUserActivity } from "./activityService.js";
 import bcrypt from "bcryptjs";
 import speakeasy from "speakeasy";
 import { getDefaultPermissionsForRole, roleHasPermission } from "../config/rolePermissions.js";
+import { validatePasswordStrength } from "../utils/passwordPolicy.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -74,9 +76,10 @@ export async function verifyUserCredentials(email, password) {
  * @returns {Promise<Object|null>} User profile object or null if not found
  */
 export async function getUserProfile(userId) {
+  // First get required fields
   const [rows] = await pool.query(
     `SELECT 
-      id, email, fullName, username, country, bio, phone, avatarUrl,
+      id, email, fullName,
       COALESCE(accountStatus, status) as accountStatus,
       onboardingStep, lastLoginAt, createdAt, updatedAt,
       role, permissions, featureFlags
@@ -87,7 +90,31 @@ export async function getUserProfile(userId) {
   
   if (!rows[0]) return null;
   
+  // Try to get optional profile fields if they exist
+  let optionalFields = { username: null, country: null, bio: null, phone: null, avatarUrl: null };
+  try {
+    const [optionalRows] = await pool.query(
+      `SELECT username, country, bio, phone, avatarUrl FROM User WHERE id = ?`,
+      [userId]
+    );
+    if (optionalRows[0]) {
+      optionalFields = {
+        username: optionalRows[0].username || null,
+        country: optionalRows[0].country || null,
+        bio: optionalRows[0].bio || null,
+        phone: optionalRows[0].phone || null,
+        avatarUrl: optionalRows[0].avatarUrl || null,
+      };
+    }
+  } catch (err) {
+    // Columns don't exist yet (migration not run), use null values
+    // This is expected during initial setup
+  }
+  
   const user = rows[0];
+  
+  // Merge optional fields
+  Object.assign(user, optionalFields);
   
   // Parse JSON columns
   if (user.permissions) {
@@ -182,85 +209,89 @@ export async function updateUserProfile(userId, profileData) {
  * @param {number} userId - User ID
  * @param {string} currentPassword - Current password for verification
  * @param {string} newPassword - New password
- * @returns {Promise<boolean>} True if password changed successfully
+ * @returns {Promise<Object>} Object with success: true if password changed successfully
  */
 export async function changePassword(userId, currentPassword, newPassword) {
-  // First verify current password
+  if (!userId) {
+    const err = new Error('User id is required');
+    err.code = 'USER_ID_REQUIRED';
+    throw err;
+  }
+
+  const user = await getUserById(userId);
+  if (!user) {
+    const err = new Error('User not found');
+    err.code = 'USER_NOT_FOUND';
+    throw err;
+  }
+
+  // Get user with password hash
   const [rows] = await pool.query(
     "SELECT id, password FROM User WHERE id = ?",
     [userId]
   );
-  const user = rows[0];
-  if (!user) {
-    throw new Error('User not found');
+  const userWithPassword = rows[0];
+  
+  if (!userWithPassword || !userWithPassword.password) {
+    const err = new Error('Password login is not enabled for this account.');
+    err.code = 'PASSWORD_LOGIN_DISABLED';
+    throw err;
   }
 
-  const match = await bcrypt.compare(currentPassword, user.password);
-  if (!match) {
-    throw new Error('Current password is incorrect');
+  const hash = userWithPassword.password;
+
+  const matches = await bcrypt.compare(currentPassword || '', hash);
+  if (!matches) {
+    const err = new Error('Current password is incorrect.');
+    err.code = 'CURRENT_PASSWORD_INVALID';
+    throw err;
   }
 
-  // Hash new password
-  const newPasswordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  const { ok, errors } = validatePasswordStrength(newPassword);
+  if (!ok) {
+    const err = new Error(errors[0] || 'New password does not meet requirements.');
+    err.code = 'NEW_PASSWORD_WEAK';
+    err.details = errors;
+    throw err;
+  }
+
+  const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
 
   // Update password
   const [result] = await pool.query(
     "UPDATE User SET password = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
-    [newPasswordHash, userId]
+    [newHash, userId]
   );
 
-  return result.affectedRows > 0;
+  if (result.affectedRows === 0) {
+    throw new Error('Failed to update password');
+  }
+
+  return { success: true };
 }
 
 /**
- * Record user activity (Phase 2 - Enhanced)
+ * Record user activity (Phase 8.6 - Backward compatibility wrapper)
+ * @deprecated Use logUserActivity from activityService.js instead
  * @param {Object} params - Activity parameters
  * @param {number} params.userId - User ID
- * @param {string} params.type - Activity type (LOGIN_SUCCESS, LOGIN_FAILED, PASSWORD_CHANGED, PROFILE_UPDATED, etc.)
+ * @param {number} [params.actorId] - Actor ID (optional, defaults to userId)
+ * @param {string} params.type - Activity type
  * @param {string} [params.ipAddress] - IP address
  * @param {string} [params.userAgent] - User agent string
  * @param {Object} [params.metadata] - Additional metadata
  * @returns {Promise<void>}
  */
-export async function recordUserActivity({ userId, type, ipAddress, userAgent, metadata = {} }) {
-  // Map activity types to human-readable descriptions
-  const activityDescriptions = {
-    LOGIN_SUCCESS: 'Successful login',
-    LOGIN_FAILED: 'Failed login attempt',
-    LOGIN_CHALLENGE_2FA: '2FA challenge required',
-    LOGIN_SUCCESS_2FA: 'Successful login with 2FA',
-    PASSWORD_CHANGED: 'Password changed',
-    PROFILE_UPDATED: 'Profile updated',
-    DEVICE_REVOKED: 'Device revoked',
-    TWO_FACTOR_ENABLED: 'Two-factor authentication enabled',
-    TWO_FACTOR_DISABLED: 'Two-factor authentication disabled',
-    TWO_FACTOR_FAILED: 'Failed 2FA verification attempt',
-    // Phase 6: Admin Console activity types
-    ROLE_CHANGED: 'User role changed',
-    STATUS_CHANGED: 'Account status changed',
-    FEATURE_FLAGS_UPDATED: 'Feature flags updated',
-    ACCESS_DENIED_ADMIN: 'Access denied to admin console',
-    // Phase 7.1: Session management activity types
-    SESSION_REVOKED: 'Session revoked',
-    SESSIONS_REVOKED_ALL_OTHERS: 'All other sessions revoked',
-    ADMIN_SESSION_REVOKED: 'Admin revoked session',
-    ADMIN_SESSIONS_REVOKED_ALL: 'Admin revoked all sessions',
-  };
-
-  const description = activityDescriptions[type] || type;
-
-  await pool.query(
-    `INSERT INTO UserActivityLog (userId, activityType, description, ipAddress, userAgent, metadata)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [
-      userId,
-      type,
-      description,
-      ipAddress || null,
-      userAgent || null,
-      JSON.stringify(metadata)
-    ]
-  );
+export async function recordUserActivity({ userId, actorId, type, ipAddress, userAgent, metadata = {} }) {
+  // Use the centralized activity service
+  return logUserActivity({
+    userId,
+    actorId: actorId !== undefined ? actorId : null, // null means default to userId in the service
+    type,
+    ipAddress,
+    userAgent,
+    metadata
+  });
 }
 
 /**
@@ -269,6 +300,7 @@ export async function recordUserActivity({ userId, type, ipAddress, userAgent, m
  * @param {Object} activityData - Activity metadata
  * @param {string} [activityData.ipAddress] - IP address
  * @param {string} [activityData.userAgent] - User agent string
+ * @param {Object} [activityData.metadata] - Additional metadata
  * @returns {Promise<void>}
  */
 export async function recordLoginActivity(userId, activityData = {}) {
@@ -278,9 +310,10 @@ export async function recordLoginActivity(userId, activityData = {}) {
     [userId]
   );
 
-  // Log activity using new recordUserActivity function
-  await recordUserActivity({
+  // Log activity using centralized activity service
+  await logUserActivity({
     userId,
+    actorId: userId, // Self-action
     type: 'LOGIN_SUCCESS',
     ipAddress: activityData.ipAddress,
     userAgent: activityData.userAgent,
@@ -464,16 +497,57 @@ export async function updateDeviceLastSeen({ userId, deviceId }) {
  * Get all devices for a user
  * @param {number} userId - User ID
  * @returns {Promise<Array>} Array of device records
+ * Note: Falls back to AuthSession data if UserDevices table doesn't exist
  */
 export async function getUserDevices(userId) {
-  const [rows] = await pool.query(
-    `SELECT id, deviceFingerprint, deviceName, userAgent, ipAddress, isTrusted, lastSeenAt, createdAt
-     FROM UserDevices
-     WHERE userId = ?
-     ORDER BY lastSeenAt DESC`,
-    [userId]
-  );
-  return rows;
+  try {
+    // Try to query UserDevices table first
+    const [rows] = await pool.query(
+      `SELECT id, deviceFingerprint, deviceName, userAgent, ipAddress, isTrusted, lastSeenAt, createdAt
+       FROM UserDevices
+       WHERE userId = ?
+       ORDER BY lastSeenAt DESC`,
+      [userId]
+    );
+    return rows;
+  } catch (err) {
+    // If UserDevices table doesn't exist, fall back to AuthSession data
+    if (err.code === 'ER_NO_SUCH_TABLE' || err.code === '42S02') {
+      try {
+        // Map AuthSession records to device-like format
+        const [sessionRows] = await pool.query(
+          `SELECT 
+            id,
+            CONCAT('session_', id) as deviceFingerprint,
+            COALESCE(deviceLabel, CONCAT(SUBSTRING_INDEX(SUBSTRING_INDEX(userAgent, ' ', 1), '/', 1), ' on ', 
+              CASE 
+                WHEN userAgent LIKE '%Windows%' THEN 'Windows'
+                WHEN userAgent LIKE '%Mac%' THEN 'macOS'
+                WHEN userAgent LIKE '%Linux%' THEN 'Linux'
+                WHEN userAgent LIKE '%Android%' THEN 'Android'
+                WHEN userAgent LIKE '%iOS%' THEN 'iOS'
+                ELSE 'Unknown'
+              END)) as deviceName,
+            userAgent,
+            ipAddress,
+            1 as isTrusted,
+            lastSeenAt,
+            createdAt
+           FROM AuthSession
+           WHERE userId = ?
+           ORDER BY lastSeenAt DESC`,
+          [userId]
+        );
+        return sessionRows;
+      } catch (sessionErr) {
+        // If AuthSession also doesn't exist, return empty array
+        console.warn('[getUserDevices] Both UserDevices and AuthSession tables not found, returning empty array');
+        return [];
+      }
+    }
+    // For other errors, rethrow
+    throw err;
+  }
 }
 
 /**
@@ -874,4 +948,32 @@ export async function updateUserFeatureFlags(userId, featureFlags) {
   }
 
   return await getUserProfile(userId);
+}
+
+/**
+ * Soft delete user account (Phase 9.1)
+ * Marks account as deleted without physically removing it
+ * @param {number} userId - User ID
+ * @param {string} [reason] - Reason for deletion (e.g., 'USER_SELF_DELETE', 'ADMIN_DELETE')
+ * @returns {Promise<Object>} Object with deletedAt and reason
+ */
+export async function softDeleteUserAccount(userId, reason = null) {
+  if (!userId) {
+    return;
+  }
+
+  const deletedAt = new Date();
+
+  await pool.query(
+    `
+    UPDATE User
+    SET status = 'DELETED',
+        deletedAt = ?,
+        deletedReason = ?
+    WHERE id = ?
+    `,
+    [deletedAt, reason, userId]
+  );
+
+  return { deletedAt, reason };
 }
