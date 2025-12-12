@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { fetchAdminUserDetail, toggleAdminUserStatus } from "../../utils/apiClient.js";
 import "./user-detail-drawer.css";
 
-function UserDetailDrawer({ userId, isOpen, onClose }) {
+function UserDetailDrawer({ userId, isOpen, onClose, onUserStatusChange }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -61,12 +61,18 @@ function UserDetailDrawer({ userId, isOpen, onClose }) {
 
     try {
       const response = await toggleAdminUserStatus(userId);
+      const newStatus = response.data.accountStatus;
       
       // Update the user state with new accountStatus
       setUser(prev => ({
         ...prev,
-        accountStatus: response.data.accountStatus
+        accountStatus: newStatus
       }));
+
+      // Propagate the status change to parent component
+      if (onUserStatusChange) {
+        onUserStatusChange(userId, newStatus);
+      }
     } catch (err) {
       console.error("Error toggling user status:", err);
       setError(err?.message || "Failed to toggle user status");

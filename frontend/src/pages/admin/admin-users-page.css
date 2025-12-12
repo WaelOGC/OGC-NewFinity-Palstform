@@ -67,8 +67,7 @@
 }
 
 .admin-users-loading,
-.admin-users-error,
-.admin-users-empty {
+.admin-users-error {
   padding: 2rem;
   text-align: center;
   color: var(--text-secondary);
@@ -81,6 +80,48 @@
   color: var(--accent-danger);
   background: var(--accent-danger-soft);
   border-color: var(--accent-danger);
+}
+
+.admin-users-empty-state {
+  padding: 3rem 2rem;
+  text-align: center;
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+}
+
+.admin-users-empty-state-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.admin-users-empty-state-message {
+  margin: 0 0 1.5rem 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.admin-users-empty-state-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--button-text-on-accent, #ffffff);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.admin-users-empty-state-button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.admin-users-empty-state-button:active {
+  transform: translateY(0);
 }
 
 .admin-users-table-container {
@@ -137,9 +178,68 @@
   font-size: 0.95rem;
 }
 
+.admin-users-email-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
 .admin-users-email {
   color: var(--text-secondary);
   font-size: 0.85rem;
+}
+
+.admin-users-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.admin-users-copy-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-soft, var(--accent));
+  background: var(--bg-card-soft);
+}
+
+.admin-users-copy-btn:active {
+  transform: scale(0.95);
+}
+
+.admin-users-copy-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.admin-users-copy-feedback {
+  position: absolute;
+  left: calc(100% + 0.5rem);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.25rem 0.5rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+}
+
+.admin-users-copy-feedback-error {
+  color: var(--accent-danger, var(--text-primary));
 }
 
 .admin-users-username {
@@ -193,6 +293,11 @@
   color: var(--badge-banned-text);
 }
 
+.status-badge-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
 .status-badge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
@@ -216,6 +321,41 @@
 .status-badge-banned {
   background: var(--badge-banned-bg);
   color: var(--badge-banned-text);
+}
+
+.status-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  margin-bottom: 8px;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.status-badge-wrapper:hover .status-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-8px);
+}
+
+.status-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--bg-elevated);
 }
 
 .admin-users-pagination {

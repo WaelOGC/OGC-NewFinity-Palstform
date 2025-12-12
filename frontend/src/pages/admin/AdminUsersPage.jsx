@@ -17,8 +17,11 @@ function AdminUsersPage() {
   // Selected user for detail drawer
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  
+  // Track which user's email was copied
+  const [copiedUserId, setCopiedUserId] = useState(null);
 
-  const fetchUsers = async (page = 1) => {
+  const fetchUsers = async (page = 1, searchOverride = null, roleFilterOverride = null) => {
     try {
       setLoading(true);
       setError(null);
@@ -26,8 +29,8 @@ function AdminUsersPage() {
       const data = await fetchAdminUsers({ 
         page, 
         pageSize: 20,
-        search,
-        role: roleFilter,
+        search: searchOverride !== null ? searchOverride : search,
+        role: roleFilterOverride !== null ? roleFilterOverride : roleFilter,
       });
       
       if (data && Array.isArray(data.items)) {
@@ -68,6 +71,37 @@ function AdminUsersPage() {
     setSelectedUserId(null);
   };
 
+  const handleUserStatusChange = (userId, newStatus) => {
+    setUsers(prev =>
+      prev.map(u =>
+        u.id === userId
+          ? { ...u, accountStatus: newStatus }
+          : u
+      )
+    );
+  };
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setRoleFilter('');
+    setPagination(prev => ({ ...prev, page: 1 }));
+    fetchUsers(1, '', '');
+  };
+
+  const getEmptyStateMessage = () => {
+    const hasSearch = search.trim() !== '';
+    const hasRoleFilter = roleFilter !== '';
+
+    if (hasSearch && hasRoleFilter) {
+      return "No users match your search and role filter.";
+    } else if (hasSearch) {
+      return "No users match your search.";
+    } else if (hasRoleFilter) {
+      return "No users match this role filter.";
+    }
+    return "No users found.";
+  };
+
   const getRoleBadgeClass = (role) => {
     const classes = {
       FOUNDER: "role-badge-founder",
@@ -105,10 +139,41 @@ function AdminUsersPage() {
     return classes[status] || "";
   };
 
+  const getStatusTooltipText = (status) => {
+    const tooltips = {
+      ACTIVE: "User account is active",
+      DISABLED: "User account was disabled by an administrator",
+    };
+    return tooltips[status] || "";
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "Never";
     const date = new Date(dateString);
     return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const handleCopyEmail = async (e, email, userId) => {
+    e.stopPropagation(); // Prevent opening the drawer
+    
+    if (!email) return;
+    
+    try {
+      await navigator.clipboard.writeText(email);
+      setCopiedUserId(userId);
+      
+      // Clear the feedback after 1.2 seconds
+      setTimeout(() => {
+        setCopiedUserId(null);
+      }, 1200);
+    } catch (err) {
+      console.error("Failed to copy email:", err);
+      // Show error feedback
+      setCopiedUserId(`error-${userId}`);
+      setTimeout(() => {
+        setCopiedUserId(null);
+      }, 1200);
+    }
   };
 
   return (
@@ -169,8 +234,17 @@ function AdminUsersPage() {
       {!loading && !error && (
         <>
           {users.length === 0 ? (
-            <div className="admin-users-empty">
-              No users found for this filter. Try adjusting your search.
+            <div className="admin-users-empty-state">
+              <h3 className="admin-users-empty-state-title">No users found</h3>
+              <p className="admin-users-empty-state-message">
+                {getEmptyStateMessage()}
+              </p>
+              <button
+                className="admin-users-empty-state-button"
+                onClick={handleClearFilters}
+              >
+                Clear filters
+              </button>
             </div>
           ) : (
             <>
@@ -199,7 +273,30 @@ function AdminUsersPage() {
                           <td>
                             <div className="admin-users-name">
                               <strong>{user.fullName || "No name"}</strong>
-                              <span className="admin-users-email">{user.email || "No email"}</span>
+                              <div className="admin-users-email-wrapper">
+                                <span className="admin-users-email">{user.email || "No email"}</span>
+                                {user.email && (
+                                  <>
+                                    <button
+                                      className="admin-users-copy-btn"
+                                      onClick={(e) => handleCopyEmail(e, user.email, user.id)}
+                                      aria-label="Copy email"
+                                      title="Copy email"
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                      </svg>
+                                    </button>
+                                    {copiedUserId === user.id && (
+                                      <span className="admin-users-copy-feedback">Copied!</span>
+                                    )}
+                                    {copiedUserId === `error-${user.id}` && (
+                                      <span className="admin-users-copy-feedback admin-users-copy-feedback-error">Copy failed</span>
+                                    )}
+                                  </>
+                                )}
+                              </div>
                               {user.username && (
                                 <span className="admin-users-username">@{user.username}</span>
                               )}
@@ -213,9 +310,16 @@ function AdminUsersPage() {
                             )}
                           </td>
                           <td>
-                            <span className={`status-badge ${getStatusBadgeClass(user.accountStatus)}`}>
-                              {user.accountStatus || "ACTIVE"}
-                            </span>
+                            <div className="status-badge-wrapper">
+                              <span className={`status-badge ${getStatusBadgeClass(user.accountStatus)}`}>
+                                {user.accountStatus || "ACTIVE"}
+                              </span>
+                              {getStatusTooltipText(user.accountStatus) && (
+                                <div className="status-tooltip">
+                                  {getStatusTooltipText(user.accountStatus)}
+                                </div>
+                              )}
+                            </div>
                           </td>
                           <td>{formatDate(user.lastLoginAt)}</td>
                           <td>{formatDate(user.createdAt)}</td>
@@ -256,6 +360,7 @@ function AdminUsersPage() {
         userId={selectedUserId}
         isOpen={drawerOpen}
         onClose={handleCloseDrawer}
+        onUserStatusChange={handleUserStatusChange}
       />
     </div>
   );
