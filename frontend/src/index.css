@@ -1,68 +1,207 @@
 :root {
   color-scheme: light;
-  /* Light theme defaults */
-  --bg-body: #f3f5ff;
-  --bg-dashboard: #f3f5ff;
-  --bg-header: #ffffff;
-  --sidebar-bg: #0b1020; /* sidebar stays dark for contrast */
-  --bg-card: #ffffff;
-  --bg-card-soft: #edf1ff;
-  --border-card: rgba(8, 16, 40, 0.08);
-  --text-main: #080d1f;
-  --text-muted: rgba(8, 13, 31, 0.65);
-  --accent-primary: #00bfa6;
-  --accent-secondary: #5864ff;
-  --accent-warning: #ffbc25;
-  --accent-danger: #ff3c5c;
-  --chip-bg: rgba(8, 16, 40, 0.04);
-  
-  /* Legacy vars for backward compatibility */
-  --ogc-bg: #f3f5ff;
-  --ogc-fg: #080d1f;
 }
 
-[data-theme='dark'] {
-  color-scheme: dark;
-  --bg-body: #050712;
-  --bg-dashboard: #050712;
-  --bg-header: #050712;
-  --sidebar-bg: #050712;
-  --bg-card: #081426;
-  --bg-card-soft: #091a30;
-  --border-card: rgba(255, 255, 255, 0.06);
-  --text-main: #ffffff;
-  --text-muted: rgba(255, 255, 255, 0.7);
-  --accent-primary: #00ffc6;
+/* ============================================
+   LIGHT THEME
+   ============================================ */
+[data-theme='light'] {
+  color-scheme: light;
+  
+  /* Backgrounds */
+  --bg-primary: #f3f5ff;
+  --bg-secondary: #ffffff;
+  --bg-elevated: #edf1ff;
+  --bg-body: var(--bg-primary);
+  --bg-dashboard: var(--bg-primary);
+  --bg-header: var(--bg-secondary);
+  --sidebar-bg: var(--bg-secondary);
+  --bg-card: var(--bg-secondary);
+  --bg-card-soft: var(--bg-elevated);
+  
+  /* Borders */
+  --border-subtle: rgba(8, 16, 40, 0.08);
+  --border-strong: rgba(8, 16, 40, 0.15);
+  --border-card: var(--border-subtle);
+  
+  /* Text */
+  --text-primary: #080d1f;
+  --text-secondary: rgba(8, 13, 31, 0.85);
+  --text-muted: rgba(8, 13, 31, 0.65);
+  --text-main: var(--text-primary);
+  
+  /* Accents */
+  --accent: #00bfa6;
+  --accent-soft: rgba(0, 191, 166, 0.15);
+  --accent-primary: var(--accent);
   --accent-secondary: #5864ff;
   --accent-warning: #ffbc25;
   --accent-danger: #ff3c5c;
+  --accent-danger-soft: rgba(255, 60, 92, 0.15);
+  --accent-success: #22c55e;
+  --accent-success-soft: rgba(34, 197, 94, 0.15);
+  
+  /* Button text on accent */
+  --button-text-on-accent: #ffffff;
+  
+  /* Chips and overlays */
+  --chip-bg: rgba(8, 16, 40, 0.04);
+  
+  /* Badge colors */
+  --badge-founder-bg: #ffd700;
+  --badge-founder-text: #333;
+  --badge-core-team-bg: #4caf50;
+  --badge-core-team-text: #ffffff;
+  --badge-admin-bg: #2196f3;
+  --badge-admin-text: #ffffff;
+  --badge-moderator-bg: #ff9800;
+  --badge-moderator-text: #ffffff;
+  --badge-creator-bg: #9c27b0;
+  --badge-creator-text: #ffffff;
+  --badge-suspended-bg: #ff9800;
+  --badge-suspended-text: #ffffff;
+  --badge-banned-bg: #f44336;
+  --badge-banned-text: #ffffff;
+  --badge-active-bg: #4caf50;
+  --badge-active-text: #ffffff;
+  
+  /* Legacy vars for backward compatibility */
+  --ogc-bg: var(--bg-primary);
+  --ogc-fg: var(--text-primary);
+}
+
+/* ============================================
+   DARK THEME
+   ============================================ */
+[data-theme='dark'] {
+  color-scheme: dark;
+  
+  /* Backgrounds */
+  --bg-primary: #050712;
+  --bg-secondary: #081426;
+  --bg-elevated: #091a30;
+  --bg-body: var(--bg-primary);
+  --bg-dashboard: var(--bg-primary);
+  --bg-header: var(--bg-primary);
+  --sidebar-bg: var(--bg-secondary);
+  --bg-card: var(--bg-secondary);
+  --bg-card-soft: var(--bg-elevated);
+  
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --border-card: var(--border-subtle);
+  
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.85);
+  --text-muted: rgba(255, 255, 255, 0.7);
+  --text-main: var(--text-primary);
+  
+  /* Accents */
+  --accent: #00ffc6;
+  --accent-soft: rgba(0, 255, 198, 0.15);
+  --accent-primary: var(--accent);
+  --accent-secondary: #5864ff;
+  --accent-warning: #ffbc25;
+  --accent-danger: #ff3c5c;
+  --accent-danger-soft: rgba(255, 60, 92, 0.2);
+  --accent-success: #22c55e;
+  --accent-success-soft: rgba(34, 197, 94, 0.2);
+  
+  /* Button text on accent */
+  --button-text-on-accent: #050712;
+  
+  /* Chips and overlays */
   --chip-bg: rgba(255, 255, 255, 0.04);
+  
+  /* Badge colors */
+  --badge-founder-bg: #ffd700;
+  --badge-founder-text: #050712;
+  --badge-core-team-bg: #4caf50;
+  --badge-core-team-text: #ffffff;
+  --badge-admin-bg: #2196f3;
+  --badge-admin-text: #ffffff;
+  --badge-moderator-bg: #ff9800;
+  --badge-moderator-text: #ffffff;
+  --badge-creator-bg: #9c27b0;
+  --badge-creator-text: #ffffff;
+  --badge-suspended-bg: #ff9800;
+  --badge-suspended-text: #ffffff;
+  --badge-banned-bg: #f44336;
+  --badge-banned-text: #ffffff;
+  --badge-active-bg: #4caf50;
+  --badge-active-text: #ffffff;
   
   /* Legacy vars for backward compatibility */
   --ogc-bg: #020617;
   --ogc-fg: #e5e7eb;
 }
 
-[data-theme='light'] {
+/* Default to light theme if no data-theme is set */
+:root:not([data-theme]) {
   color-scheme: light;
-  --bg-body: #f3f5ff;
-  --bg-dashboard: #f3f5ff;
-  --bg-header: #ffffff;
-  --sidebar-bg: #0b1020; /* sidebar stays dark for contrast */
-  --bg-card: #ffffff;
-  --bg-card-soft: #edf1ff;
-  --border-card: rgba(8, 16, 40, 0.08);
-  --text-main: #080d1f;
+  
+  /* Backgrounds */
+  --bg-primary: #f3f5ff;
+  --bg-secondary: #ffffff;
+  --bg-elevated: #edf1ff;
+  --bg-body: var(--bg-primary);
+  --bg-dashboard: var(--bg-primary);
+  --bg-header: var(--bg-secondary);
+  --sidebar-bg: var(--bg-secondary);
+  --bg-card: var(--bg-secondary);
+  --bg-card-soft: var(--bg-elevated);
+  
+  /* Borders */
+  --border-subtle: rgba(8, 16, 40, 0.08);
+  --border-strong: rgba(8, 16, 40, 0.15);
+  --border-card: var(--border-subtle);
+  
+  /* Text */
+  --text-primary: #080d1f;
+  --text-secondary: rgba(8, 13, 31, 0.85);
   --text-muted: rgba(8, 13, 31, 0.65);
-  --accent-primary: #00bfa6;
+  --text-main: var(--text-primary);
+  
+  /* Accents */
+  --accent: #00bfa6;
+  --accent-soft: rgba(0, 191, 166, 0.15);
+  --accent-primary: var(--accent);
   --accent-secondary: #5864ff;
   --accent-warning: #ffbc25;
   --accent-danger: #ff3c5c;
+  --accent-danger-soft: rgba(255, 60, 92, 0.15);
+  --accent-success: #22c55e;
+  --accent-success-soft: rgba(34, 197, 94, 0.15);
+  
+  /* Button text on accent */
+  --button-text-on-accent: #ffffff;
+  
+  /* Chips and overlays */
   --chip-bg: rgba(8, 16, 40, 0.04);
   
+  /* Badge colors */
+  --badge-founder-bg: #ffd700;
+  --badge-founder-text: #333;
+  --badge-core-team-bg: #4caf50;
+  --badge-core-team-text: #ffffff;
+  --badge-admin-bg: #2196f3;
+  --badge-admin-text: #ffffff;
+  --badge-moderator-bg: #ff9800;
+  --badge-moderator-text: #ffffff;
+  --badge-creator-bg: #9c27b0;
+  --badge-creator-text: #ffffff;
+  --badge-suspended-bg: #ff9800;
+  --badge-suspended-text: #ffffff;
+  --badge-banned-bg: #f44336;
+  --badge-banned-text: #ffffff;
+  --badge-active-bg: #4caf50;
+  --badge-active-text: #ffffff;
+  
   /* Legacy vars for backward compatibility */
-  --ogc-bg: #f3f5ff;
-  --ogc-fg: #080d1f;
+  --ogc-bg: var(--bg-primary);
+  --ogc-fg: var(--text-primary);
 }
 
 html,

@@ -2,7 +2,7 @@
 
 .amy-shell-root {
   min-height: 100vh;
-  background: radial-gradient(circle at top, rgba(0, 255, 198, 0.12), transparent 55%),
+  background: radial-gradient(circle at top, var(--accent-soft), transparent 55%),
               var(--bg-dashboard);
   color: var(--text-main);
   display: flex;
@@ -196,7 +196,7 @@
 
 .amy-session-item--active {
   border-color: var(--accent-primary);
-  background: radial-gradient(circle at top left, rgba(0, 255, 198, 0.2), transparent 60%),
+  background: radial-gradient(circle at top left, var(--accent-soft), transparent 60%),
               var(--bg-card-soft);
 }
 
@@ -332,7 +332,7 @@
 
 .amy-alert--warning {
   background: rgba(255, 188, 37, 0.12);
-  border: 1px solid rgba(255, 188, 37, 0.4);
+  border: 1px solid var(--accent-warning);
   color: var(--text-main);
 }
 

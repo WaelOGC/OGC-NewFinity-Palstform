@@ -63,7 +63,42 @@ export async function createActivationToken(userId) {
 }
 
 /**
- * Verify and use an activation token
+ * Find a valid activation token and return the full record
+ * Checks token exists, not used, and not expired
+ * @param {string} token - Plain activation token from URL
+ * @returns {Promise<Object|null>} - ActivationToken record with userId, id, or null if invalid
+ */
+export async function findValidActivationToken(token) {
+  const hashedToken = hashToken(token);
+
+  const [rows] = await pool.query(
+    `SELECT at.id, at.userId, at.token, at.used, at.expiresAt, at.createdAt, u.status as userStatus
+     FROM ActivationToken at
+     JOIN User u ON at.userId = u.id
+     WHERE at.token = ?
+       AND at.used = 0
+       AND at.expiresAt > NOW()
+     LIMIT 1`,
+    [hashedToken]
+  );
+
+  return rows[0] || null;
+}
+
+/**
+ * Mark activation token as used
+ * @param {number} tokenId - ActivationToken.id
+ * @returns {Promise<void>}
+ */
+export async function markActivationTokenUsed(tokenId) {
+  await pool.query(
+    'UPDATE ActivationToken SET used = 1 WHERE id = ?',
+    [tokenId]
+  );
+}
+
+/**
+ * Verify and use an activation token (legacy function - kept for backward compatibility)
  * @param {string} token - Plain activation token from URL
  * @returns {Promise<{userId: number, valid: boolean}>}
  */

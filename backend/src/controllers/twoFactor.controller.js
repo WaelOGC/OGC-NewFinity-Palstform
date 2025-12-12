@@ -10,16 +10,18 @@ import {
   generateRecoveryCodesForUser,
   getRecoveryCodesStatusForUser,
 } from '../services/twoFactorRecoveryService.js';
+import { sendOk, sendError } from '../utils/apiResponse.js';
 
 async function getStatus(req, res, next) {
   try {
     const userId = req.user.id;
     const status = await getTwoFactorStatusForUser(userId);
 
-    return res.status(200).json({
-      status: 'OK',
-      data: status,
-    });
+    return sendOk(res, {
+      enabled: status.enabled,
+      method: status.enabled ? 'totp' : null,
+      enabledAt: status.confirmedAt || status.createdAt,
+    }, 200, 'TWO_FACTOR_STATUS', 'Two-factor authentication status retrieved.');
   } catch (err) {
     next(err);
   }
@@ -30,13 +32,11 @@ async function startSetup(req, res, next) {
     const userId = req.user.id;
     const { secret, otpauthUrl } = await startTwoFactorSetup(userId);
 
-    return res.status(200).json({
-      status: 'OK',
-      data: {
-        secret,
-        otpauthUrl,
-      },
-    });
+    return sendOk(res, {
+      secret,
+      otpauthUrl,
+      secretMasked: secret ? `${secret.slice(0, 4)}...${secret.slice(-4)}` : null,
+    }, 200, 'TWO_FACTOR_SETUP_STARTED', '2FA setup initialized. Scan the QR code or enter the secret manually.');
   } catch (err) {
     next(err);
   }
@@ -45,40 +45,49 @@ async function startSetup(req, res, next) {
 async function confirmSetup(req, res, next) {
   try {
     const userId = req.user.id;
-    const { token } = req.body || {};
+    const { token, code } = req.body || {};
+    const totpCode = token || code; // Accept both 'token' and 'code'
 
-    if (!token) {
-      return res.status(400).json({
-        status: 'ERROR',
+    if (!totpCode) {
+      return sendError(res, {
+        code: 'TWO_FACTOR_CODE_INVALID',
         message: 'Verification code is required.',
-        code: 'TOTP_REQUIRED',
+        statusCode: 400,
+      });
+    }
+
+    if (!/^\d{6}$/.test(totpCode)) {
+      return sendError(res, {
+        code: 'TWO_FACTOR_CODE_INVALID',
+        message: 'Verification code must be 6 digits.',
+        statusCode: 400,
       });
     }
 
     const secret = await getSecretForUser(userId);
     if (!secret) {
-      return res.status(400).json({
-        status: 'ERROR',
-        message: '2FA setup not started.',
-        code: 'TOTP_NOT_INITIALIZED',
+      return sendError(res, {
+        code: 'TWO_FACTOR_NOT_INITIALIZED',
+        message: '2FA setup not started. Please begin setup first.',
+        statusCode: 400,
       });
     }
 
-    const isValid = verifyTOTP(token, secret);
+    const isValid = verifyTOTP(totpCode, secret);
     if (!isValid) {
-      return res.status(400).json({
-        status: 'ERROR',
-        message: 'Invalid verification code.',
-        code: 'TOTP_INVALID',
+      return sendError(res, {
+        code: 'TWO_FACTOR_CODE_INVALID',
+        message: 'The verification code is invalid or has expired.',
+        statusCode: 400,
       });
     }
 
     await confirmTwoFactorSetup(userId);
 
-    return res.status(200).json({
-      status: 'OK',
-      message: 'Two-factor authentication enabled.',
-    });
+    return sendOk(res, {
+      enabled: true,
+      method: 'totp',
+    }, 200, 'ACCOUNT_2FA_ENABLED', 'Two-factor authentication enabled successfully.');
   } catch (err) {
     next(err);
   }
@@ -87,12 +96,22 @@ async function confirmSetup(req, res, next) {
 async function disable(req, res, next) {
   try {
     const userId = req.user.id;
+    
+    // Check if 2FA is enabled before attempting to disable
+    const status = await getTwoFactorStatusForUser(userId);
+    if (!status.enabled) {
+      return sendError(res, {
+        code: 'TWO_FACTOR_NOT_ENABLED',
+        message: 'Two-factor authentication is not enabled for this account.',
+        statusCode: 400,
+      });
+    }
+    
     await disableTwoFactor(userId);
 
-    return res.status(200).json({
-      status: 'OK',
-      message: '2FA disabled successfully',
-    });
+    return sendOk(res, {
+      enabled: false,
+    }, 200, 'ACCOUNT_2FA_DISABLED', 'Two-factor authentication disabled successfully.');
   } catch (err) {
     next(err);
   }

@@ -62,8 +62,8 @@ export function requireRole(requiredRole) {
 
         return res.status(403).json({
           status: 'ERROR',
-          message: 'Insufficient permissions',
-          code: 'ACCESS_DENIED',
+          code: 'INSUFFICIENT_ROLE',
+          message: 'You do not have permission to access this resource.',
           details: {
             requiredRole,
             userRole: user.role,
@@ -71,6 +71,7 @@ export function requireRole(requiredRole) {
         });
       }
 
+      req.currentUser = user;
       next();
     } catch (error) {
       console.error('requireRole middleware error:', error);
@@ -128,8 +129,8 @@ export function requireAnyRole(roles) {
 
         return res.status(403).json({
           status: 'ERROR',
-          message: 'Insufficient permissions',
-          code: 'ACCESS_DENIED',
+          code: 'INSUFFICIENT_ROLE',
+          message: 'You do not have permission to access this resource.',
           details: {
             requiredRoles: roles,
             userRole: user.role,
@@ -137,6 +138,7 @@ export function requireAnyRole(roles) {
         });
       }
 
+      req.currentUser = user;
       next();
     } catch (error) {
       console.error('requireAnyRole middleware error:', error);
@@ -159,7 +161,8 @@ export function requirePermission(permission) {
       if (!req.user || !req.user.id) {
         return res.status(401).json({
           status: 'ERROR',
-          message: 'Authentication required',
+          code: 'AUTH_REQUIRED',
+          message: 'You must be logged in.',
         });
       }
 
@@ -170,6 +173,7 @@ export function requirePermission(permission) {
         if (!user) {
           return res.status(401).json({
             status: 'ERROR',
+            code: 'USER_NOT_FOUND',
             message: 'User not found',
           });
         }
@@ -194,8 +198,8 @@ export function requirePermission(permission) {
 
         return res.status(403).json({
           status: 'ERROR',
-          message: 'Insufficient permissions',
-          code: 'ACCESS_DENIED',
+          code: 'INSUFFICIENT_PERMISSIONS',
+          message: 'You do not have permission to access this resource.',
           details: {
             requiredPermission: permission,
             userRole: user.role,
@@ -203,9 +207,79 @@ export function requirePermission(permission) {
         });
       }
 
+      req.currentUser = user;
       next();
     } catch (error) {
       console.error('requirePermission middleware error:', error);
+      return res.status(500).json({
+        status: 'ERROR',
+        message: 'Internal server error',
+      });
+    }
+  };
+}
+
+/**
+ * Require user to have at least one of the specified permissions
+ * @param {string[]} requiredPermissions - Array of permissions (user needs at least one)
+ * @returns {Function} Express middleware function
+ */
+export function requireAnyPermission(requiredPermissions = []) {
+  return async (req, res, next) => {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({
+          status: 'ERROR',
+          code: 'AUTH_REQUIRED',
+          message: 'You must be logged in.',
+        });
+      }
+
+      // Load full user data with role/permissions if not already loaded
+      let user = req.user;
+      if (!user.role) {
+        user = await getUserWithAccessData(req.user.id);
+        if (!user) {
+          return res.status(401).json({
+            status: 'ERROR',
+            code: 'USER_NOT_FOUND',
+            message: 'User not found',
+          });
+        }
+        req.user = user;
+      }
+
+      if (!hasAnyPermission(user, requiredPermissions)) {
+        // Log access denied
+        await recordUserActivity({
+          userId: user.id,
+          type: 'ACCESS_DENIED',
+          ipAddress: req.ip || req.connection.remoteAddress,
+          userAgent: req.get('user-agent'),
+          metadata: {
+            reason: 'Missing required permissions',
+            requiredPermissions,
+            userRole: user.role,
+            endpoint: req.path,
+            method: req.method,
+          },
+        }).catch(err => console.error('Failed to log access denied:', err));
+
+        return res.status(403).json({
+          status: 'ERROR',
+          code: 'INSUFFICIENT_PERMISSIONS',
+          message: 'You do not have permission to access this resource.',
+          details: {
+            requiredPermissions,
+            userRole: user.role,
+          },
+        });
+      }
+
+      req.currentUser = user;
+      next();
+    } catch (error) {
+      console.error('requireAnyPermission middleware error:', error);
       return res.status(500).json({
         status: 'ERROR',
         message: 'Internal server error',

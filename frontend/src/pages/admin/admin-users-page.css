@@ -1,6 +1,8 @@
 .admin-users-page {
   max-width: 1400px;
   margin: 0 auto;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .admin-users-header {
@@ -10,12 +12,12 @@
 .admin-users-header h1 {
   font-size: 2rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin: 0 0 0.5rem 0;
 }
 
 .admin-users-subtitle {
-  color: #666;
+  color: var(--text-muted);
   font-size: 0.95rem;
   margin: 0;
 }
@@ -31,18 +33,37 @@
   flex: 1;
   min-width: 250px;
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   font-size: 0.95rem;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.admin-users-search::placeholder {
+  color: var(--text-muted);
+}
+
+.admin-users-search:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .admin-users-filter {
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   font-size: 0.95rem;
-  background: white;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
   cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.admin-users-filter:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .admin-users-loading,
@@ -50,22 +71,22 @@
 .admin-users-empty {
   padding: 2rem;
   text-align: center;
-  color: #666;
-  background: white;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-subtle);
 }
 
 .admin-users-error {
-  color: #d32f2f;
-  background: #ffebee;
-  border-color: #ffcdd2;
+  color: var(--accent-danger);
+  background: var(--accent-danger-soft);
+  border-color: var(--accent-danger);
 }
 
 .admin-users-table-container {
-  background: white;
+  background: var(--bg-elevated);
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-subtle);
   overflow: hidden;
   margin-bottom: 1.5rem;
 }
@@ -76,18 +97,18 @@
 }
 
 .admin-users-table thead {
-  background: #f5f5f5;
+  background: var(--bg-card-soft);
 }
 
 .admin-users-table th {
   padding: 1rem;
   text-align: left;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 2px solid var(--border-subtle);
 }
 
 .admin-users-table-row {
@@ -96,12 +117,13 @@
 }
 
 .admin-users-table-row:hover {
-  background: #f9f9f9;
+  background: var(--bg-card-soft);
 }
 
 .admin-users-table td {
   padding: 1rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
 }
 
 .admin-users-name {
@@ -111,17 +133,17 @@
 }
 
 .admin-users-name strong {
-  color: #333;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
 .admin-users-email {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.85rem;
 }
 
 .admin-users-username {
-  color: #999;
+  color: var(--text-muted);
   font-size: 0.8rem;
   font-style: italic;
 }
@@ -137,38 +159,38 @@
 }
 
 .role-badge-founder {
-  background: #ffd700;
-  color: #333;
+  background: var(--badge-founder-bg);
+  color: var(--badge-founder-text);
 }
 
 .role-badge-core-team {
-  background: #4caf50;
-  color: white;
+  background: var(--badge-core-team-bg);
+  color: var(--badge-core-team-text);
 }
 
 .role-badge-admin {
-  background: #2196f3;
-  color: white;
+  background: var(--badge-admin-bg);
+  color: var(--badge-admin-text);
 }
 
 .role-badge-moderator {
-  background: #ff9800;
-  color: white;
+  background: var(--badge-moderator-bg);
+  color: var(--badge-moderator-text);
 }
 
 .role-badge-creator {
-  background: #9c27b0;
-  color: white;
+  background: var(--badge-creator-bg);
+  color: var(--badge-creator-text);
 }
 
 .role-badge-suspended {
-  background: #ff9800;
-  color: white;
+  background: var(--badge-suspended-bg);
+  color: var(--badge-suspended-text);
 }
 
 .role-badge-banned {
-  background: #f44336;
-  color: white;
+  background: var(--badge-banned-bg);
+  color: var(--badge-banned-text);
 }
 
 .status-badge {
@@ -182,18 +204,18 @@
 }
 
 .status-badge-active {
-  background: #4caf50;
-  color: white;
+  background: var(--badge-active-bg);
+  color: var(--badge-active-text);
 }
 
 .status-badge-suspended {
-  background: #ff9800;
-  color: white;
+  background: var(--badge-suspended-bg);
+  color: var(--badge-suspended-text);
 }
 
 .status-badge-banned {
-  background: #f44336;
-  color: white;
+  background: var(--badge-banned-bg);
+  color: var(--badge-banned-text);
 }
 
 .admin-users-pagination {
@@ -206,17 +228,18 @@
 
 .admin-users-pagination-btn {
   padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
-  background: white;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 0.9rem;
   transition: all 0.2s;
 }
 
 .admin-users-pagination-btn:hover:not(:disabled) {
-  background: #f5f5f5;
-  border-color: #999;
+  background: var(--bg-card-soft);
+  border-color: var(--accent);
 }
 
 .admin-users-pagination-btn:disabled {
@@ -225,6 +248,6 @@
 }
 
 .admin-users-pagination-info {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }

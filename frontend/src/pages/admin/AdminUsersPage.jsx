@@ -1,49 +1,49 @@
 import { useState, useEffect } from "react";
-import { api } from "../../utils/apiClient.js";
-import AdminUserDetailPanel from "../../components/admin/AdminUserDetailPanel.jsx";
+import { fetchAdminUsers } from "../../utils/apiClient.js";
+import UserDetailDrawer from "../../components/admin/UserDetailDrawer.jsx";
 import "./admin-users-page.css";
 
 function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 20, total: 0 });
   
   // Filters
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   
-  // Selected user for detail panel
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [showDetailPanel, setShowDetailPanel] = useState(false);
+  // Selected user for detail drawer
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const fetchUsers = async (page = 1) => {
     try {
       setLoading(true);
       setError(null);
       
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: "20",
+      const data = await fetchAdminUsers({ 
+        page, 
+        pageSize: 20,
+        search,
+        role: roleFilter,
       });
       
-      if (search) params.append("search", search);
-      if (roleFilter) params.append("role", roleFilter);
-      if (statusFilter) params.append("status", statusFilter);
-
-      // API client now returns data directly (from { status: "OK", data: { items, pagination } })
-      const data = await api.get(`/admin/users?${params.toString()}`);
-      
-      if (data) {
-        setUsers(Array.isArray(data.items) ? data.items : []);
-        setPagination(data.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
+      if (data && Array.isArray(data.items)) {
+        setUsers(data.items);
+        setPagination({
+          page: data.page || page,
+          pageSize: data.pageSize || 20,
+          total: data.total || 0,
+          totalPages: Math.ceil((data.total || 0) / (data.pageSize || 20)),
+        });
       } else {
         setError("Failed to load users");
       }
     } catch (err) {
       console.error("Error fetching users:", err);
-      setError(err?.message || "Unable to load users.");
+      setError(err?.message || "The server encountered an error. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -51,27 +51,21 @@ function AdminUsersPage() {
 
   useEffect(() => {
     fetchUsers(1);
-  }, [search, roleFilter, statusFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only fetch on mount - filter changes are handled explicitly
 
-  const handleUserClick = async (user) => {
-    if (!user || !user.id) {
-      console.error("Invalid user object:", user);
+  const openUserDrawer = (userId) => {
+    if (!userId) {
+      console.error("Invalid user ID:", userId);
       return;
     }
-    // Just set the userId - AdminUserDetailPanel will load the data
-    setSelectedUser({ id: user.id });
-    setShowDetailPanel(true);
+    setSelectedUserId(userId);
+    setDrawerOpen(true);
   };
 
-  const handleCloseDetailPanel = () => {
-    setShowDetailPanel(false);
-    setSelectedUser(null);
-  };
-
-  const handleUserUpdated = () => {
-    // Refresh users list
-    fetchUsers(pagination.page);
-    // Note: AdminUserDetailPanel will auto-refresh when userId changes
+  const handleCloseDrawer = () => {
+    setDrawerOpen(false);
+    setSelectedUserId(null);
   };
 
   const getRoleBadgeClass = (role) => {
@@ -132,11 +126,19 @@ function AdminUsersPage() {
           placeholder="Search by email, name, or username..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              fetchUsers(1);
+            }
+          }}
           className="admin-users-search"
         />
         <select
           value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
+          onChange={(e) => {
+            setRoleFilter(e.target.value);
+            fetchUsers(1);
+          }}
           className="admin-users-filter"
         >
           <option value="">All Roles</option>
@@ -191,7 +193,7 @@ function AdminUsersPage() {
                       return (
                         <tr
                           key={user.id}
-                          onClick={() => handleUserClick(user)}
+                          onClick={() => openUserDrawer(user.id)}
                           className="admin-users-table-row"
                         >
                           <td>
@@ -224,37 +226,37 @@ function AdminUsersPage() {
                 </table>
               </div>
 
-              <div className="admin-users-pagination">
-                <button
-                  onClick={() => fetchUsers(pagination.page - 1)}
-                  disabled={pagination.page <= 1}
-                  className="admin-users-pagination-btn"
-                >
-                  Previous
-                </button>
-                <span className="admin-users-pagination-info">
-                  Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
-                </span>
-                <button
-                  onClick={() => fetchUsers(pagination.page + 1)}
-                  disabled={pagination.page >= pagination.totalPages}
-                  className="admin-users-pagination-btn"
-                >
-                  Next
-                </button>
-              </div>
+              {pagination.totalPages > 0 && (
+                <div className="admin-users-pagination">
+                  <button
+                    onClick={() => fetchUsers(pagination.page - 1)}
+                    disabled={pagination.page <= 1}
+                    className="admin-users-pagination-btn"
+                  >
+                    Previous
+                  </button>
+                  <span className="admin-users-pagination-info">
+                    Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
+                  </span>
+                  <button
+                    onClick={() => fetchUsers(pagination.page + 1)}
+                    disabled={pagination.page >= pagination.totalPages}
+                    className="admin-users-pagination-btn"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </>
           )}
         </>
       )}
 
-      {showDetailPanel && selectedUser && (
-        <AdminUserDetailPanel
-          userId={selectedUser.id}
-          onClose={handleCloseDetailPanel}
-          onUserUpdated={handleUserUpdated}
-        />
-      )}
+      <UserDetailDrawer
+        userId={selectedUserId}
+        isOpen={drawerOpen}
+        onClose={handleCloseDrawer}
+      />
     </div>
   );
 }

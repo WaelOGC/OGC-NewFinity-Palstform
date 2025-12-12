@@ -163,10 +163,14 @@ function LoginForm() {
         setTwoFactorRequired(false);
         setTwoFactorTicket(null);
         setTwoFactorCode("");
-      } else if (errorCode === 'INVALID_TOTP_CODE') {
+      } else if (errorCode === 'INVALID_TOTP_CODE' || errorCode === 'TWO_FACTOR_CODE_INVALID') {
         errorMessage = "The code from your authenticator app is not correct.";
       } else if (errorCode === 'INVALID_RECOVERY_CODE') {
         errorMessage = "This recovery code is invalid or has already been used.";
+      } else if (errorCode === 'RATE_LIMIT_EXCEEDED') {
+        errorMessage = "Too many verification attempts. Please wait a few minutes and try again.";
+      } else if (errorCode === 'VALIDATION_ERROR') {
+        errorMessage = err.backendMessage || "Please check your input and try again.";
       }
       
       setStatus({

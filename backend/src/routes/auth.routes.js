@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
 import passport from 'passport';
-import { login, register, refresh, logout, forgotPassword, resetPassword, validateResetToken, socialLoginCallback, verifyTwoFactorLogin, requestPasswordReset, validatePasswordResetToken, resetPasswordWithToken, postLoginTwoFactor } from '../controllers/auth.controller.js';
+import { login, register, refresh, logout, forgotPassword, resetPassword, validateResetToken, socialLoginCallback, handleOAuthCallback, verifyTwoFactorLogin, requestPasswordReset, validatePasswordResetToken, resetPasswordWithToken, postLoginTwoFactor, checkSession } from '../controllers/auth.controller.js';
 import { activate, resendActivation } from '../controllers/activationController.js';
 import { requireAuth } from '../middleware/auth.js';
 import { createAuthSessionForUser } from '../utils/authSession.js';
@@ -38,10 +38,6 @@ const validateResetTokenSchema = z.object({
 const resetPasswordSchema = z.object({
   token: z.string().min(1),
   password: z.string().min(8),
-  confirmPassword: z.string().min(8),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
 });
 
 router.post('/register', async (req, res, next) => {
@@ -164,11 +160,15 @@ router.post('/login', async (req, res, next) => {
     }
     
     // Use standardized response format
-    return sendOk(res, {
-      access: result.access,
-      refresh: result.refresh,
-      user: userData
-    });
+    return sendOk(
+      res,
+      {
+        user: userData // no password - userData only contains id, email, fullName, role, status
+      },
+      200,
+      'LOGIN_SUCCESS',
+      'Login successful.'
+    );
   } catch (err) { 
     // Ensure error has proper format before passing to error handler
     if (!err.statusCode) {
@@ -198,21 +198,42 @@ router.post('/login', async (req, res, next) => {
 });
 
 // Phase S6: New 2FA login endpoint with ticket system
+// Accept both 'ticket'/'twoFactorTicket' and 'mode'/'method' for backward compatibility
 const loginTwoFactorSchema = z.object({
-  ticket: z.string().min(1),
-  mode: z.enum(['totp', 'recovery']),
+  ticket: z.string().min(1).optional(),
+  twoFactorTicket: z.string().min(1).optional(),
+  mode: z.enum(['totp', 'recovery']).optional(),
+  method: z.enum(['totp', 'recovery']).optional(),
   code: z.string().min(1),
+}).refine((data) => (data.ticket || data.twoFactorTicket) && (data.mode || data.method), {
+  message: 'Either ticket/twoFactorTicket and mode/method must be provided',
 });
 
-router.post('/login/2fa', async (req, res, next) => {
+// Rate limiter for 2FA login (stricter than general rate limit - 10 attempts per 15 minutes)
+const loginTwoFactorLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 attempts per 15 minutes
+  message: { 
+    status: 'ERROR',
+    message: 'Too many 2FA verification attempts. Please try again later.',
+    code: 'RATE_LIMIT_EXCEEDED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post('/login/2fa', loginTwoFactorLimiter, async (req, res, next) => {
   try {
     const body = loginTwoFactorSchema.parse(req.body);
+    // Normalize to use 'ticket' and 'mode' internally
+    req.body.ticket = req.body.ticket || req.body.twoFactorTicket;
+    req.body.mode = req.body.mode || req.body.method;
     await postLoginTwoFactor(req, res, next);
   } catch (err) {
     if (err.name === 'ZodError') {
       return sendError(res, {
         code: 'VALIDATION_ERROR',
-        message: 'Invalid request data.',
+        message: 'Invalid request data. Ticket, mode/method, and code are required.',
         statusCode: 400,
       });
     }
@@ -282,18 +303,19 @@ router.post('/logout', requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Protected route: returns current user
-// This endpoint is the single source of truth for the frontend auth store and must always include user.role
+// Lightweight session health check endpoint (no database calls, no auth required)
+router.get('/session', checkSession);
+
+// Protected route: returns current user with full access data
+// This endpoint is the single source of truth for the frontend auth store and must always include user.role, permissions, and featureFlags
 router.get('/me', requireAuth, async (req, res, next) => {
   try {
     // req.user is set by requireAuth middleware
-    // Fetch full user details from database
-    const [rows] = await pool.query(
-      'SELECT id, email, fullName, role, status FROM User WHERE id = ?',
-      [req.user.id]
-    );
+    // Use getUserWithAccessData to get full role/permissions/flags data
+    const { getUserWithAccessData } = await import('../services/userService.js');
+    const user = await getUserWithAccessData(req.user.id);
     
-    if (rows.length === 0) {
+    if (!user) {
       return sendError(res, {
         code: 'USER_NOT_FOUND',
         message: 'User not found',
@@ -301,10 +323,8 @@ router.get('/me', requireAuth, async (req, res, next) => {
       });
     }
     
-    const user = rows[0];
-    
     // Check if account is deleted (Phase 9.1)
-    if (user.status === 'DELETED') {
+    if (user.status === 'DELETED' || user.accountStatus === 'DELETED') {
       return sendError(res, {
         code: 'ACCOUNT_DELETED',
         message: 'This account has been deleted.',
@@ -312,25 +332,40 @@ router.get('/me', requireAuth, async (req, res, next) => {
       });
     }
     
-    // Return user with role - use STANDARD_USER as fallback if role is null (shouldn't happen after Phase 5 migration)
+    // Return user with role, permissions, effectivePermissions, featureFlags, and connectedProviders
     return sendOk(res, {
       user: {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
         role: user.role || 'STANDARD_USER', // Role must always be present for frontend auth checks
-        status: user.status
+        permissions: user.permissions, // Raw permissions (may be null)
+        effectivePermissions: user.effectivePermissions, // Computed permissions (null for FOUNDER = all permissions)
+        featureFlags: user.featureFlags, // Merged feature flags
+        connectedProviders: user.connectedProviders || [], // Connected OAuth providers
+        accountStatus: user.accountStatus || user.status,
+        lastLoginAt: user.lastLoginAt,
+        createdAt: user.createdAt,
       }
-    });
+    }, 200, 'CURRENT_USER_PROFILE', 'User profile retrieved successfully.');
   } catch (err) {
     next(err);
   }
 });
 
 // Activation routes
+// Supports both GET (for direct link clicks) and POST (for frontend API calls with token in body)
 router.get('/activate', async (req, res, next) => {
   try {
-    await activate(req, res);
+    await activate(req, res, next);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/activate', async (req, res, next) => {
+  try {
+    await activate(req, res, next);
   } catch (err) {
     next(err);
   }
@@ -375,11 +410,8 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res, next) =>
   try {
     const body = forgotPasswordSchema.parse(req.body);
     const result = await forgotPassword(body);
-    res.status(200).json({
-      status: 'OK',
-      success: true,
-      message: result.message,
-    });
+    // Return the result directly (controller already formats it correctly)
+    res.status(200).json(result);
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 400;
@@ -438,18 +470,21 @@ router.post('/reset-password', async (req, res, next) => {
   try {
     const body = resetPasswordSchema.parse(req.body);
     const result = await resetPassword(body);
-    res.status(200).json({
-      status: 'OK',
-      success: true,
-      message: result.message,
-      code: result.code,
-    });
+    // Return the result directly (controller already formats it correctly)
+    res.status(200).json(result);
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 400;
     }
+    // Map error codes to match requirements
     if (!err.code) {
-      err.code = 'RESET_PASSWORD_ERROR';
+      if (err.message?.includes('token')) {
+        err.code = 'RESET_TOKEN_INVALID_OR_EXPIRED';
+      } else if (err.message?.includes('password')) {
+        err.code = 'PASSWORD_INVALID';
+      } else {
+        err.code = 'RESET_PASSWORD_ERROR';
+      }
     }
     next(err);
   }
@@ -465,10 +500,15 @@ const SOCIAL_FAILURE_REDIRECT = `${FRONTEND_URL}/auth/social/callback?status=err
 
 // Google OAuth Routes
 router.get('/google', (req, res, next) => {
+  // Check if state parameter is present (for connect flow)
+  // Pass it through to the OAuth provider
+  const stateParam = req.query.state;
+  
   // Wrap passport.authenticate to catch any initialization errors
   passport.authenticate('google', {
     scope: ['profile', 'email'],
-    session: false
+    session: false,
+    state: stateParam || undefined, // Pass state through if present
   })(req, res, (err) => {
     if (err) {
       console.error('[GOOGLE_AUTH] Error:', err);
@@ -490,46 +530,7 @@ router.get('/google', (req, res, next) => {
 router.get('/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: SOCIAL_FAILURE_REDIRECT }),
   async (req, res, next) => {
-    try {
-      const user = req.user; // set by passport verify callback
-      
-      if (!user) {
-        console.error('[GOOGLE_CALLBACK] No user object from passport');
-        return res.redirect(SOCIAL_FAILURE_REDIRECT + '&provider=google&error=authentication_failed');
-      }
-      
-      await createAuthSessionForUser(res, user, req);
-      
-      // Phase 2: Record login activity and register device for social login
-      const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-      const userAgent = req.headers['user-agent'];
-      try {
-        await recordLoginActivity(user.id, {
-          ipAddress,
-          userAgent,
-          metadata: { loginMethod: 'google_oauth' }
-        });
-        await registerDevice({
-          userId: user.id,
-          userAgent,
-          ipAddress
-        });
-      } catch (activityError) {
-        console.error('Failed to record social login activity:', activityError);
-        // Don't fail login if activity recording fails
-      }
-      
-      return res.redirect(SOCIAL_SUCCESS_REDIRECT + '&provider=google');
-    } catch (err) {
-      console.error('[GOOGLE_CALLBACK] Error:', {
-        message: err.message,
-        code: err.code,
-        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-      });
-      // Ensure we always redirect, never return raw error
-      const errorMsg = encodeURIComponent(err.message || 'Authentication failed');
-      return res.redirect(SOCIAL_FAILURE_REDIRECT + '&provider=google&error=' + errorMsg);
-    }
+    await handleOAuthCallback(req, res, next, 'google');
   }
 );
 
@@ -546,33 +547,7 @@ router.get(
     session: false,
   }),
   async (req, res, next) => {
-    try {
-      const user = req.user; // set by passport verify callback
-      await createAuthSessionForUser(res, user, req);
-      
-      // Phase 2: Record login activity and register device for social login
-      const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-      const userAgent = req.headers['user-agent'];
-      try {
-        await recordLoginActivity(user.id, {
-          ipAddress,
-          userAgent,
-          metadata: { loginMethod: 'github_oauth' }
-        });
-        await registerDevice({
-          userId: user.id,
-          userAgent,
-          ipAddress
-        });
-      } catch (activityError) {
-        console.error('Failed to record social login activity:', activityError);
-      }
-      
-      return res.redirect(SOCIAL_SUCCESS_REDIRECT + '&provider=github');
-    } catch (err) {
-      console.error('[GITHUB_CALLBACK] Error:', err);
-      return res.redirect(SOCIAL_FAILURE_REDIRECT + '&provider=github');
-    }
+    await handleOAuthCallback(req, res, next, 'github');
   }
 );
 
@@ -584,33 +559,7 @@ router.get('/twitter', passport.authenticate('twitter', {
 router.get('/twitter/callback',
   passport.authenticate('twitter', { session: false, failureRedirect: SOCIAL_FAILURE_REDIRECT }),
   async (req, res, next) => {
-    try {
-      const user = req.user;
-      await createAuthSessionForUser(res, user, req);
-      
-      // Phase 2: Record login activity and register device for social login
-      const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-      const userAgent = req.headers['user-agent'];
-      try {
-        await recordLoginActivity(user.id, {
-          ipAddress,
-          userAgent,
-          metadata: { loginMethod: 'twitter_oauth' }
-        });
-        await registerDevice({
-          userId: user.id,
-          userAgent,
-          ipAddress
-        });
-      } catch (activityError) {
-        console.error('Failed to record social login activity:', activityError);
-      }
-      
-      return res.redirect(SOCIAL_SUCCESS_REDIRECT + '&provider=twitter');
-    } catch (err) {
-      console.error('[TWITTER_CALLBACK] Error:', err);
-      return res.redirect(SOCIAL_FAILURE_REDIRECT + '&provider=twitter');
-    }
+    await handleOAuthCallback(req, res, next, 'twitter');
   }
 );
 
@@ -641,46 +590,7 @@ router.get('/linkedin', (req, res, next) => {
 router.get('/linkedin/callback',
   passport.authenticate('linkedin', { session: false, failureRedirect: SOCIAL_FAILURE_REDIRECT }),
   async (req, res, next) => {
-    try {
-      const user = req.user;
-      
-      if (!user) {
-        console.error('[LINKEDIN_CALLBACK] No user object from passport');
-        return res.redirect(SOCIAL_FAILURE_REDIRECT + '&provider=linkedin&error=authentication_failed');
-      }
-      
-      await createAuthSessionForUser(res, user, req);
-      
-      // Phase 2: Record login activity and register device for social login
-      const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-      const userAgent = req.headers['user-agent'];
-      try {
-        await recordLoginActivity(user.id, {
-          ipAddress,
-          userAgent,
-          metadata: { loginMethod: 'linkedin_oauth' }
-        });
-        await registerDevice({
-          userId: user.id,
-          userAgent,
-          ipAddress
-        });
-      } catch (activityError) {
-        console.error('Failed to record social login activity:', activityError);
-        // Don't fail login if activity recording fails
-      }
-      
-      return res.redirect(SOCIAL_SUCCESS_REDIRECT + '&provider=linkedin');
-    } catch (err) {
-      console.error('[LINKEDIN_CALLBACK] Error:', {
-        message: err.message,
-        code: err.code,
-        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-      });
-      // Ensure we always redirect, never return raw error
-      const errorMsg = encodeURIComponent(err.message || 'Authentication failed');
-      return res.redirect(SOCIAL_FAILURE_REDIRECT + '&provider=linkedin&error=' + errorMsg);
-    }
+    await handleOAuthCallback(req, res, next, 'linkedin');
   }
 );
 
@@ -693,35 +603,133 @@ router.get('/discord', passport.authenticate('discord', {
 router.get('/discord/callback',
   passport.authenticate('discord', { session: false, failureRedirect: SOCIAL_FAILURE_REDIRECT }),
   async (req, res, next) => {
-    try {
-      const user = req.user;
-      await createAuthSessionForUser(res, user, req);
-      
-      // Phase 2: Record login activity and register device for social login
-      const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-      const userAgent = req.headers['user-agent'];
-      try {
-        await recordLoginActivity(user.id, {
-          ipAddress,
-          userAgent,
-          metadata: { loginMethod: 'discord_oauth' }
-        });
-        await registerDevice({
-          userId: user.id,
-          userAgent,
-          ipAddress
-        });
-      } catch (activityError) {
-        console.error('Failed to record social login activity:', activityError);
-      }
-      
-      return res.redirect(SOCIAL_SUCCESS_REDIRECT + '&provider=discord');
-    } catch (err) {
-      console.error('[DISCORD_CALLBACK] Error:', err);
-      return res.redirect(SOCIAL_FAILURE_REDIRECT + '&provider=discord');
-    }
+    await handleOAuthCallback(req, res, next, 'discord');
   }
 );
+
+// ============================================================================
+// OAuth Connect Routes (for linking providers to existing accounts)
+// ============================================================================
+// These routes require authentication and allow logged-in users to connect OAuth providers
+
+/**
+ * Connect OAuth provider to existing account
+ * Requires: User must be logged in
+ * Usage: GET /api/v1/auth/oauth/connect/:provider
+ */
+router.get('/oauth/connect/:provider', requireAuth, async (req, res, next) => {
+  try {
+    const provider = req.params.provider.toLowerCase();
+    const validProviders = ['google', 'github', 'twitter', 'linkedin', 'discord'];
+    
+    if (!validProviders.includes(provider)) {
+      return sendError(res, {
+        code: 'INVALID_PROVIDER',
+        message: `Invalid OAuth provider: ${provider}`,
+        statusCode: 400,
+      });
+    }
+    
+    // Store userId in OAuth state for connect flow
+    // We'll use a signed JWT as state to pass the userId securely
+    const jwt = await import('jsonwebtoken');
+    const stateToken = jwt.sign(
+      { userId: req.user.id, action: 'connect' },
+      process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET,
+      { expiresIn: '10m' }
+    );
+    
+    // Redirect to OAuth provider with state parameter
+    const oauthUrl = `/api/v1/auth/${provider}?state=${encodeURIComponent(stateToken)}`;
+    return res.redirect(oauthUrl);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * Disconnect OAuth provider from account
+ * Requires: User must be logged in
+ * Usage: POST /api/v1/auth/oauth/disconnect/:provider
+ */
+router.post('/oauth/disconnect/:provider', requireAuth, async (req, res, next) => {
+  try {
+    const provider = req.params.provider.toLowerCase();
+    const validProviders = ['google', 'github', 'twitter', 'linkedin', 'discord'];
+    
+    if (!validProviders.includes(provider)) {
+      return sendError(res, {
+        code: 'INVALID_PROVIDER',
+        message: `Invalid OAuth provider: ${provider}`,
+        statusCode: 400,
+      });
+    }
+    
+    const providerColumnMap = {
+      google: 'googleId',
+      github: 'githubId',
+      twitter: 'twitterId',
+      linkedin: 'linkedinId',
+      discord: 'discordId',
+    };
+    
+    const providerColumn = providerColumnMap[provider];
+    const userId = req.user.id;
+    
+    // Check if provider is connected
+    const [rows] = await pool.query(
+      `SELECT ${providerColumn} FROM User WHERE id = ?`,
+      [userId]
+    );
+    
+    if (rows.length === 0 || !rows[0][providerColumn]) {
+      return sendError(res, {
+        code: 'PROVIDER_NOT_CONNECTED',
+        message: `This ${provider} account is not connected to your account.`,
+        statusCode: 400,
+      });
+    }
+    
+    // Disconnect provider (set column to NULL)
+    await pool.query(
+      `UPDATE User SET ${providerColumn} = NULL, updatedAt = CURRENT_TIMESTAMP WHERE id = ?`,
+      [userId]
+    );
+    
+    // If this was the only auth method, prevent disconnection (user would be locked out)
+    const [userRows] = await pool.query(
+      `SELECT password, googleId, githubId, twitterId, linkedinId, discordId FROM User WHERE id = ?`,
+      [userId]
+    );
+    
+    if (userRows.length > 0) {
+      const user = userRows[0];
+      const hasPassword = !!user.password;
+      const hasOtherProviders = !!(user.googleId || user.githubId || user.twitterId || user.linkedinId || user.discordId);
+      
+      if (!hasPassword && !hasOtherProviders) {
+        // Revert the disconnect - user would be locked out
+        await pool.query(
+          `UPDATE User SET ${providerColumn} = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?`,
+          [rows[0][providerColumn], userId]
+        );
+        
+        return sendError(res, {
+          code: 'CANNOT_DISCONNECT_LAST_AUTH',
+          message: 'Cannot disconnect the last authentication method. Please set a password first.',
+          statusCode: 400,
+        });
+      }
+    }
+    
+    return sendOk(res, {
+      provider,
+      disconnected: true,
+    }, 200, 'OAUTH_DISCONNECTED', `${provider} account disconnected successfully.`);
+  } catch (err) {
+    next(err);
+  }
+});
 
 export default router;
 

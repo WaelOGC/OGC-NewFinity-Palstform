@@ -11,7 +11,7 @@ import "./dashboard-layout.css";
 const ADMIN_ROLES = ['FOUNDER', 'CORE_TEAM', 'ADMIN'];
 
 function DashboardLayout() {
-  const { logout, user } = useAuth();
+  const { logout, user, hasAnyRole, hasAnyPermission } = useAuth();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
@@ -72,8 +72,8 @@ function DashboardLayout() {
 
   const roleBadge = user?.role ? getRoleBadge(user.role) : null;
   
-  // Phase 6: Check if user has admin access
-  const isAdmin = user && ADMIN_ROLES.includes(user.role);
+  // Phase 6: Check if user has admin access (role OR permission)
+  const isAdmin = hasAnyRole(ADMIN_ROLES) || hasAnyPermission(['VIEW_ADMIN_DASHBOARD', 'MANAGE_USERS']);
 
   return (
     <div className="ogc-dashboard-root">

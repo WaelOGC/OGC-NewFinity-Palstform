@@ -8,98 +8,95 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(
     () => window.localStorage.getItem("ogc_token") || null
   );
-  const [loading, setLoading] = useState(!!token);
+  const [loading, setLoading] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(true);
   const [authError, setAuthError] = useState(null);
-  // Phase 5: Role, permissions, and feature flags
-  const [userRole, setUserRole] = useState(null);
-  const [userPermissions, setUserPermissions] = useState(null);
-  const [userFeatureFlags, setUserFeatureFlags] = useState(null);
-
-  // Phase 5: Fetch user role, permissions, and feature flags
-  const fetchUserAccessData = async () => {
-    try {
-      // API client now returns data directly (from { status: "OK", data: { role, permissions, featureFlags } })
-      const roleData = await api.get('/user/role', token ? {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      } : {});
-      
-      if (roleData) {
-        setUserRole(roleData.role);
-        setUserPermissions(roleData.permissions);
-        setUserFeatureFlags(roleData.featureFlags);
-      }
-    } catch (err) {
-      // Silently fail - user might not be authenticated yet
-      console.debug("Failed to fetch user access data:", err);
-    }
-  };
 
   useEffect(() => {
-    async function fetchMe() {
+    let cancelled = false;
+
+    async function checkSessionHealth() {
       try {
-        // Always try to fetch /auth/me to check if we're authenticated
-        // This works for both token-based auth (Authorization header) and cookie-based auth (social login)
-        // The apiClient uses credentials: 'include', so cookies will be sent automatically
-        // API client now returns data directly (from { status: "OK", data: { user } })
-        const data = await api.get('/auth/me', token ? {
+        // First, check session health (lightweight, no database calls)
+        const sessionCheck = await api.get('/auth/session', token ? {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         } : {});
 
-        if (data && data.user) {
-          setUser(data.user);
-          setAuthError(null);
-          // Temporary debug log to verify role is being loaded
-          console.log('[Auth] Loaded user:', data.user);
-          // Phase 5: Fetch role, permissions, and feature flags
-          await fetchUserAccessData();
-          // If we got user data but no token in localStorage, cookies are likely being used
-          // This is fine - we don't need to store token for cookie-based auth
-        } else {
-          // Not authenticated
-          setUser(null);
-          setUserRole(null);
-          setUserPermissions(null);
-          setUserFeatureFlags(null);
-          setToken(null);
-          setAuthError(null);
-          window.localStorage.removeItem("ogc_token");
+        if (!cancelled) {
+          if (sessionCheck && sessionCheck.authenticated === true) {
+            // Session is valid, proceed to fetch full user data
+            try {
+              const data = await api.get('/auth/me', token ? {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              } : {});
+
+              if (!cancelled && data && data.user) {
+                setUser(data.user);
+                setAuthError(null);
+                console.log('[Auth] Loaded user:', data.user);
+              } else if (!cancelled) {
+                setUser(null);
+                setToken(null);
+                setAuthError(null);
+                window.localStorage.removeItem("ogc_token");
+              }
+            } catch (err) {
+              if (!cancelled) {
+                if (err?.httpStatus === 401 || err?.status === 401 || err?.statusCode === 401) {
+                  setUser(null);
+                  setToken(null);
+                  window.localStorage.removeItem("ogc_token");
+                  setAuthError(null);
+                }
+                console.error("[Auth] Failed to load current user", err);
+              }
+            }
+          } else {
+            // Session invalid, reset state
+            setUser(null);
+            setToken(null);
+            setAuthError(null);
+            window.localStorage.removeItem("ogc_token");
+          }
         }
       } catch (err) {
-        console.error("[Auth] Failed to load current user", err);
-        setUser(null);
-        setUserRole(null);
-        setUserPermissions(null);
-        setUserFeatureFlags(null);
-        // Only set auth error if we had a token (to avoid showing error on initial load)
-        if (token) {
-          setAuthError(err?.message || "Unable to verify your session.");
+        // Session check failed, reset state
+        if (!cancelled) {
+          setUser(null);
           setToken(null);
           window.localStorage.removeItem("ogc_token");
-        } else {
-          // Not logged in - this is expected, don't show error
           setAuthError(null);
+          console.error("[Auth] Session health check failed", err);
         }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setIsInitializing(false);
+        }
       }
     }
 
-    fetchMe();
-  }, [token]);
+    checkSessionHealth();
+    return () => {
+      cancelled = true;
+    };
+  }, []); // Run only once on mount
 
   async function login(email, password) {
     try {
+      // apiClient unwraps { status: 'OK', data: {...} } to just the data object
       const data = await api.post('/auth/login', { email, password });
 
       // Phase S6: Check if 2FA is required (new format)
-      if (data.status === "2FA_REQUIRED" || (data.status === "OK" && data.data?.status === "2FA_REQUIRED")) {
-        // Return ticket and methods for 2FA verification
-        const ticket = data.data?.ticket || data.ticket;
-        const methods = data.data?.methods || data.methods || { totp: true, recovery: false };
+      // Note: 2FA required response might come through differently - check raw response structure
+      // For now, if data has status property, it might not be unwrapped
+      if (data?.status === "2FA_REQUIRED" || (data?.data && data.data.status === "2FA_REQUIRED")) {
+        const ticket = data?.ticket || data?.data?.ticket;
+        const methods = data?.methods || data?.data?.methods || { totp: true, recovery: false };
         return {
           status: '2FA_REQUIRED',
           ticket,
@@ -108,55 +105,39 @@ export function AuthProvider({ children }) {
       }
 
       // Legacy Phase 3: Check if 2FA is required (old format)
-      if (data.status === "OK" && data.data?.twoFactorRequired) {
-        // Return challenge token for 2FA verification
+      if (data?.twoFactorRequired || data?.data?.twoFactorRequired) {
         return {
           twoFactorRequired: true,
-          challengeToken: data.data.challengeToken
+          challengeToken: data?.challengeToken || data?.data?.challengeToken
         };
       }
 
-      // Check for success (backend sends status: 'OK' or success: true)
-      if (data.status !== "OK" && data.success !== true) {
-        const error = new Error(data.message || data.error || "Login failed");
-        error.code = data.code;
-        error.backendCode = data.code;
-        error.backendMessage = data.message || data.error;
-        throw error;
-      }
-
-      // Store tokens from response or cookies
-      if (data.access) {
-        setToken(data.access);
-        window.localStorage.setItem("ogc_token", data.access);
-      }
-
-      // Fetch user info if available
-      if (data.user) {
+      // Trust the backend login response and set user directly if available
+      // Backend returns { access, refresh, user } in the data wrapper
+      if (data?.user) {
         setUser(data.user);
-        // Temporary debug log to verify role is being loaded
-        console.log('[Auth] Loaded user:', data.user);
-        // Phase 5: Fetch role, permissions, and feature flags
-        await fetchUserAccessData();
-      } else if (data.access) {
-        // If no user in response, fetch it
+        console.log('[Auth] Login successful, user loaded:', data.user);
+      } else {
+        // If no user in response, fetch from /auth/me (cookies are already set by backend)
         try {
-          const meData = await api.get('/auth/me', {
-            headers: {
-              Authorization: `Bearer ${data.access}`,
-            },
-          });
-          if (meData.status === "OK") {
+          const meData = await api.get('/auth/me');
+          if (meData && meData.user) {
             setUser(meData.user);
-            // Phase 5: Fetch role, permissions, and feature flags
-            await fetchUserAccessData();
+            console.log('[Auth] Login successful, user loaded from /auth/me:', meData.user);
           }
         } catch (err) {
+          // Only log error, don't fail login if /auth/me fails (shouldn't happen)
           console.error("Failed to fetch user after login:", err);
         }
       }
 
-      return data.user || user;
+      // Store token if present in response (for token-based auth)
+      if (data?.access) {
+        setToken(data.access);
+        window.localStorage.setItem("ogc_token", data.access);
+      }
+
+      return { ok: true };
     } catch (error) {
       // Re-throw with backend message if available
       if (error.backendMessage || error.backendCode) {
@@ -191,22 +172,16 @@ export function AuthProvider({ children }) {
         setUser(data.user);
         // Temporary debug log to verify role is being loaded
         console.log('[Auth] Loaded user:', data.user);
-        // Phase 5: Fetch role, permissions, and feature flags
-        await fetchUserAccessData();
       } else if (data.access) {
-        // If no user in response, fetch it
+        // If no user in response, fetch it from /auth/me (which now includes role/permissions)
         try {
           const meData = await api.get('/auth/me', {
             headers: {
               Authorization: `Bearer ${data.access}`,
             },
           });
-          if (meData.status === "OK") {
+          if (meData && meData.user) {
             setUser(meData.user);
-            // Temporary debug log to verify role is being loaded
-            console.log('[Auth] Loaded user:', meData.user);
-            // Phase 5: Fetch role, permissions, and feature flags
-            await fetchUserAccessData();
           }
         } catch (err) {
           console.error("Failed to fetch user after 2FA login:", err);
@@ -248,22 +223,16 @@ export function AuthProvider({ children }) {
         setUser(data.user);
         // Temporary debug log to verify role is being loaded
         console.log('[Auth] Loaded user:', data.user);
-        // Phase 5: Fetch role, permissions, and feature flags
-        await fetchUserAccessData();
       } else if (data.access) {
-        // If no user in response, fetch it
+        // If no user in response, fetch it from /auth/me (which now includes role/permissions)
         try {
           const meData = await api.get('/auth/me', {
             headers: {
               Authorization: `Bearer ${data.access}`,
             },
           });
-          if (meData.status === "OK") {
+          if (meData && meData.user) {
             setUser(meData.user);
-            // Temporary debug log to verify role is being loaded
-            console.log('[Auth] Loaded user:', meData.user);
-            // Phase 5: Fetch role, permissions, and feature flags
-            await fetchUserAccessData();
           }
         } catch (err) {
           console.error("Failed to fetch user after 2FA login:", err);
@@ -332,23 +301,65 @@ export function AuthProvider({ children }) {
 
   function logout() {
     setUser(null);
-    setUserRole(null);
-    setUserPermissions(null);
-    setUserFeatureFlags(null);
     setToken(null);
     window.localStorage.removeItem("ogc_token");
   }
+
+  // Helper functions for role and permission checks
+  const hasRole = (requiredRole) => {
+    if (!user) return false;
+    return user.role === requiredRole;
+  };
+
+  const hasAnyRole = (roles) => {
+    if (!user || !Array.isArray(roles) || roles.length === 0) {
+      return false;
+    }
+    return roles.includes(user.role);
+  };
+
+  const hasPermission = (permission) => {
+    if (!user) return false;
+    // FOUNDER has all permissions (effectivePermissions is null)
+    if (user.role === 'FOUNDER' || user.effectivePermissions === null) {
+      return true;
+    }
+    // Check if user has the permission in their effectivePermissions array
+    return Array.isArray(user.effectivePermissions) && user.effectivePermissions.includes(permission);
+  };
+
+  const hasAnyPermission = (requiredPermissions = []) => {
+    if (!user || !Array.isArray(requiredPermissions) || requiredPermissions.length === 0) {
+      return false;
+    }
+    // FOUNDER has all permissions (effectivePermissions is null)
+    if (user.role === 'FOUNDER' || user.effectivePermissions === null) {
+      return true;
+    }
+    // Check if user has at least one of the required permissions
+    return requiredPermissions.some((perm) => 
+      Array.isArray(user.effectivePermissions) && user.effectivePermissions.includes(perm)
+    );
+  };
 
   const value = {
     user,
     token,
     loading,
+    isInitializing,
     authError,
     isAuthenticated: !!user,
-    // Phase 5: Role, permissions, and feature flags
-    userRole,
-    userPermissions,
-    userFeatureFlags,
+    // Phase 5: Role, permissions, and feature flags (from user object)
+    userRole: user?.role || null,
+    userPermissions: user?.permissions || null,
+    effectivePermissions: user?.effectivePermissions || null,
+    userFeatureFlags: user?.featureFlags || null,
+    // Helper functions
+    hasRole,
+    hasAnyRole,
+    hasPermission,
+    hasAnyPermission,
+    // Auth functions
     login,
     verifyTwoFactor,
     loginWithTwoFactorStep,

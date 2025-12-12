@@ -6,13 +6,15 @@ const ADMIN_ROLES = ['FOUNDER', 'CORE_TEAM', 'ADMIN'];
 /**
  * AdminRouteGuard - Protects admin routes
  * Handles both authentication (redirects to /auth if not logged in)
- * and authorization (redirects to /dashboard if not admin role)
- * Only allows access to users with FOUNDER, CORE_TEAM, or ADMIN role
+ * and authorization (redirects to /dashboard if not admin role/permission)
+ * Allows access to users with:
+ * - FOUNDER, CORE_TEAM, or ADMIN role, OR
+ * - VIEW_ADMIN_DASHBOARD or MANAGE_USERS permission
  * 
  * Uses <Outlet /> to render child routes (React Router v6 pattern)
  */
 function AdminRouteGuard() {
-  const { user, loading } = useAuth();
+  const { user, loading, hasAnyRole, hasAnyPermission } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -28,7 +30,11 @@ function AdminRouteGuard() {
     return <Navigate to="/auth" replace />;
   }
 
-  if (!user.role || !ADMIN_ROLES.includes(user.role)) {
+  // Check if user has admin access (role OR permission)
+  const hasAdminRole = hasAnyRole(ADMIN_ROLES);
+  const hasAdminPermission = hasAnyPermission(['VIEW_ADMIN_DASHBOARD', 'MANAGE_USERS']);
+
+  if (!hasAdminRole && !hasAdminPermission) {
     // Logged in but not an admin → send to normal dashboard
     return <Navigate to="/dashboard" replace />;
   }

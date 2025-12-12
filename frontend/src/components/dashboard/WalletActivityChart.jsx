@@ -91,7 +91,7 @@ export default function WalletActivityChart({ data, loading, error, summary, ran
                 <Line
                   type="monotone"
                   dataKey="balance"
-                  stroke="rgba(0, 255, 198, 0.9)"
+                  stroke="var(--accent-primary)"
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 4 }}

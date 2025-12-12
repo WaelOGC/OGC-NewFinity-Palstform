@@ -2,13 +2,25 @@
 
 /**
  * Standard success response helper
- * Usage: return sendOk(res, { profile }, 200)
+ * Usage: 
+ *   return sendOk(res, { profile }, 200)
+ *   return sendOk(res, { profile }, 200, 'SUCCESS_CODE', 'Success message')
  */
-export function sendOk(res, data = {}, statusCode = 200) {
-  res.status(statusCode).json({
+export function sendOk(res, data = {}, statusCode = 200, code = null, message = null) {
+  const response = {
     status: "OK",
     data,
-  });
+  };
+  
+  // Add code and message if provided (for consistency with error responses)
+  if (code) {
+    response.code = code;
+  }
+  if (message) {
+    response.message = message;
+  }
+  
+  res.status(statusCode).json(response);
 }
 
 /**

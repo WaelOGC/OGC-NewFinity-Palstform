@@ -270,7 +270,7 @@ function AdminUserDetailPanel({ userId, onClose, onUserUpdated }) {
           <div className="admin-detail-content">
             <div className="admin-detail-message admin-detail-error">
               {errorMessage}
-              {errorCode && <span className="error-code" style={{ marginLeft: '8px', opacity: 0.7, fontSize: '0.9em' }}>(Code: {errorCode})</span>}
+              {errorCode && <span className="error-code">(Code: {errorCode})</span>}
             </div>
           </div>
         </div>
@@ -487,22 +487,13 @@ function AdminUserDetailPanel({ userId, onClose, onUserUpdated }) {
 
           {/* Sessions (Phase 7.1) */}
           <section className="admin-detail-section">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <div className="admin-detail-sessions-header">
               <h3>Active Sessions</h3>
               {sessions.length > 0 && (
                 <button
                   onClick={handleAdminRevokeAllSessions}
                   disabled={sessionsActionLoading}
-                  style={{
-                    padding: "6px 12px",
-                    backgroundColor: "rgba(255, 0, 0, 0.2)",
-                    border: "1px solid rgba(255, 0, 0, 0.3)",
-                    borderRadius: "4px",
-                    color: "#fff",
-                    cursor: sessionsActionLoading ? "not-allowed" : "pointer",
-                    opacity: sessionsActionLoading ? 0.5 : 1,
-                    fontSize: "0.85em",
-                  }}
+                  className="admin-detail-revoke-all-btn"
                 >
                   {sessionsActionLoading ? "Logging out..." : "Log out user from all devices"}
                 </button>
@@ -514,7 +505,7 @@ function AdminUserDetailPanel({ userId, onClose, onUserUpdated }) {
               <div className="admin-detail-message admin-detail-error">
                 {typeof sessionsError === 'string' ? sessionsError : sessionsError.message}
                 {typeof sessionsError === 'object' && sessionsError.code && (
-                  <span className="error-code" style={{ marginLeft: '8px', opacity: 0.7, fontSize: '0.9em' }}>(Code: {sessionsError.code})</span>
+                  <span className="error-code">(Code: {sessionsError.code})</span>
                 )}
               </div>
             ) : sessions.length === 0 ? (
@@ -522,8 +513,8 @@ function AdminUserDetailPanel({ userId, onClose, onUserUpdated }) {
             ) : (
               <div className="admin-detail-devices-list">
                 {sessions.map((session) => (
-                  <div key={session.id} className="admin-detail-device-item" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ flex: 1 }}>
+                  <div key={session.id} className="admin-detail-device-item admin-detail-session-item">
+                    <div className="admin-detail-session-item-content">
                       <div className="admin-detail-device-name">
                         {session.userAgent ? (() => {
                           let browser = "Unknown";
@@ -541,7 +532,7 @@ function AdminUserDetailPanel({ userId, onClose, onUserUpdated }) {
                           return `${browser} on ${os}`;
                         })() : "Unknown device"}
                         {session.isCurrent && (
-                          <span style={{ fontSize: "0.75em", marginLeft: "8px", padding: "2px 6px", backgroundColor: "rgba(0, 255, 0, 0.2)", borderRadius: "4px" }}>
+                          <span className="admin-detail-current-session-badge">
                             Current session (approx.)
                           </span>
                         )}
@@ -556,17 +547,7 @@ function AdminUserDetailPanel({ userId, onClose, onUserUpdated }) {
                       <button
                         onClick={() => handleAdminRevokeSession(session.id)}
                         disabled={sessionsActionLoading}
-                        style={{
-                          padding: "4px 8px",
-                          backgroundColor: "rgba(255, 0, 0, 0.2)",
-                          border: "1px solid rgba(255, 0, 0, 0.3)",
-                          borderRadius: "4px",
-                          color: "#fff",
-                          cursor: sessionsActionLoading ? "not-allowed" : "pointer",
-                          opacity: sessionsActionLoading ? 0.5 : 1,
-                          fontSize: "0.8em",
-                          marginLeft: "12px",
-                        }}
+                        className="admin-detail-revoke-btn"
                       >
                         {sessionsActionLoading ? "Revoking..." : "Revoke"}
                       </button>

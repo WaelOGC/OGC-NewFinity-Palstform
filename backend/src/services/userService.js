@@ -141,6 +141,36 @@ export async function getUserProfile(userId) {
 }
 
 /**
+ * Get connected OAuth providers for a user
+ * @param {number} userId - User ID
+ * @returns {Promise<string[]>} Array of provider names (e.g., ['google', 'github'])
+ */
+export async function getConnectedProviders(userId) {
+  const [rows] = await pool.query(
+    `SELECT 
+      googleId, githubId, twitterId, linkedinId, discordId
+    FROM User 
+    WHERE id = ?`,
+    [userId]
+  );
+  
+  if (rows.length === 0) {
+    return [];
+  }
+  
+  const user = rows[0];
+  const providers = [];
+  
+  if (user.googleId) providers.push('google');
+  if (user.githubId) providers.push('github');
+  if (user.twitterId) providers.push('twitter');
+  if (user.linkedinId) providers.push('linkedin');
+  if (user.discordId) providers.push('discord');
+  
+  return providers;
+}
+
+/**
  * Get user with full role/permissions/flags data (Phase 5)
  * @param {number} userId - User ID
  * @returns {Promise<Object|null>} User object with computed permissions and merged feature flags
@@ -156,6 +186,9 @@ export async function getUserWithAccessData(userId) {
   // Merge feature flags with defaults
   const mergedFeatureFlags = mergeFeatureFlags(user.featureFlags, getDefaultFeatureFlags());
   user.featureFlags = mergedFeatureFlags;
+  
+  // Add connected OAuth providers
+  user.connectedProviders = await getConnectedProviders(userId);
   
   return user;
 }
@@ -322,42 +355,249 @@ export async function recordLoginActivity(userId, activityData = {}) {
 }
 
 /**
- * Sync OAuth profile data (preparation for future use)
- * @param {number} userId - User ID
- * @param {Object} oauthData - OAuth provider data
- * @param {string} [oauthData.name] - Name from OAuth provider
- * @param {string} [oauthData.avatarUrl] - Avatar URL from OAuth provider
- * @returns {Promise<Object>} Updated user profile
+ * Unified OAuth profile sync function
+ * Handles linking OAuth accounts to existing users or creating new users
+ * 
+ * @param {Object} params - OAuth sync parameters
+ * @param {string} params.provider - Provider name (google, github, twitter, linkedin, discord)
+ * @param {string} params.providerUserId - Provider-specific user ID
+ * @param {string|null} params.email - User email (may be null for some providers)
+ * @param {boolean} [params.emailVerified] - Whether email is verified by provider
+ * @param {string|null} [params.username] - Username from provider
+ * @param {string|null} [params.displayName] - Display name from provider
+ * @param {string|null} [params.avatarUrl] - Avatar URL from provider
+ * @param {Object} [params.profileJson] - Full provider profile JSON
+ * @param {number} [params.existingUserId] - Optional: when user is already logged in and connects provider
+ * @returns {Promise<Object>} Object with { user, isNewUser, isLinkedNewProvider }
+ * @throws {Error} With code 'OAUTH_EMAIL_REQUIRED' if no email and no existingUserId
+ * @throws {Error} With code 'OAUTH_EMAIL_CONFLICT' if email exists on different account during connect
  */
-export async function syncOAuthProfile(userId, oauthData) {
-  // TODO: Expand in Phase 2 (permissions, device tracking, verification, wallet linking)
-  const updates = [];
-  const values = [];
+export async function syncOAuthProfile({
+  provider,
+  providerUserId,
+  email,
+  emailVerified = false,
+  username = null,
+  displayName = null,
+  avatarUrl = null,
+  profileJson = null,
+  existingUserId = null,
+}) {
+  // Normalize provider name
+  const normalizedProvider = provider.toLowerCase();
+  
+  // Map provider names to database column names
+  const providerColumnMap = {
+    google: 'googleId',
+    github: 'githubId',
+    twitter: 'twitterId',
+    linkedin: 'linkedinId',
+    discord: 'discordId',
+  };
 
-  if (oauthData.name !== undefined) {
-    updates.push('fullName = ?');
-    values.push(oauthData.name || null);
+  const providerColumn = providerColumnMap[normalizedProvider];
+  if (!providerColumn) {
+    throw new Error(`Unknown provider: ${normalizedProvider}`);
   }
 
-  if (oauthData.avatarUrl !== undefined) {
-    updates.push('avatarUrl = ?');
-    values.push(oauthData.avatarUrl || null);
-  }
-
-  if (updates.length === 0) {
-    return await getUserProfile(userId);
-  }
-
-  values.push(userId);
-
-  await pool.query(
-    `UPDATE User 
-     SET ${updates.join(', ')}, updatedAt = CURRENT_TIMESTAMP
-     WHERE id = ?`,
-    values
+  // 1) Check if we already have an OAuth account for this providerUserId
+  const [existingOAuthRows] = await pool.query(
+    `SELECT * FROM User WHERE ${providerColumn} = ? LIMIT 1`,
+    [providerUserId]
   );
 
-  return await getUserProfile(userId);
+  if (existingOAuthRows.length > 0) {
+    const existingUser = existingOAuthRows[0];
+    
+    // If user is logged in and trying to connect, but this provider is already linked to a different user
+    if (existingUserId && existingUser.id !== existingUserId) {
+      const error = new Error('This OAuth account is already linked to another user.');
+      error.code = 'OAUTH_ACCOUNT_ALREADY_LINKED';
+      error.statusCode = 409;
+      throw error;
+    }
+    
+    // Update profile data if provided
+    const updates = [];
+    const values = [];
+    
+    if (avatarUrl && (!existingUser.avatarUrl || existingUser.avatarUrl !== avatarUrl)) {
+      updates.push('avatarUrl = ?');
+      values.push(avatarUrl);
+    }
+    
+    if (displayName && (!existingUser.fullName || existingUser.fullName !== displayName)) {
+      updates.push('fullName = COALESCE(fullName, ?)');
+      values.push(displayName);
+    }
+    
+    if (updates.length > 0) {
+      values.push(existingUser.id);
+      await pool.query(
+        `UPDATE User SET ${updates.join(', ')}, updatedAt = CURRENT_TIMESTAMP WHERE id = ?`,
+        values
+      );
+      
+      // Fetch updated user
+      const [updatedRows] = await pool.query('SELECT * FROM User WHERE id = ? LIMIT 1', [existingUser.id]);
+      return { user: updatedRows[0], isNewUser: false, isLinkedNewProvider: false };
+    }
+    
+    return { user: existingUser, isNewUser: false, isLinkedNewProvider: false };
+  }
+
+  // 2) If user is logged in (connect flow), link provider to that user
+  if (existingUserId) {
+    // Check if email conflict: email exists on a different account
+    if (email) {
+      const [emailRows] = await pool.query(
+        'SELECT id FROM User WHERE email = ? AND id != ? LIMIT 1',
+        [email.toLowerCase(), existingUserId]
+      );
+      
+      if (emailRows.length > 0) {
+        const error = new Error('This email is already used by another account.');
+        error.code = 'OAUTH_EMAIL_CONFLICT';
+        error.statusCode = 409;
+        throw error;
+      }
+    }
+    
+    // Link provider to existing user
+    const updates = [];
+    const values = [];
+    
+    updates.push(`${providerColumn} = ?`);
+    values.push(providerUserId);
+    
+    updates.push('authProvider = COALESCE(authProvider, ?)');
+    values.push(normalizedProvider);
+    
+    if (avatarUrl) {
+      updates.push('avatarUrl = COALESCE(avatarUrl, ?)');
+      values.push(avatarUrl);
+    }
+    
+    if (displayName) {
+      updates.push('fullName = COALESCE(fullName, ?)');
+      values.push(displayName);
+    }
+    
+    if (email) {
+      updates.push('email = COALESCE(email, ?)');
+      values.push(email.toLowerCase());
+    }
+    
+    values.push(existingUserId);
+    
+    await pool.query(
+      `UPDATE User SET ${updates.join(', ')}, updatedAt = CURRENT_TIMESTAMP WHERE id = ?`,
+      values
+    );
+    
+    const [rows] = await pool.query('SELECT * FROM User WHERE id = ? LIMIT 1', [existingUserId]);
+    return { user: rows[0], isNewUser: false, isLinkedNewProvider: true };
+  }
+
+  // 3) If we have an email, try to find existing account by email
+  let existingUser = null;
+  
+  if (email) {
+    const [userRows] = await pool.query(
+      'SELECT * FROM User WHERE email = ? LIMIT 1',
+      [email.toLowerCase()]
+    );
+    if (userRows.length > 0) {
+      existingUser = userRows[0];
+    }
+  }
+
+  // 4) If user exists by email, link provider to that user
+  if (existingUser) {
+    // Check if this provider is already linked to a different user
+    const [providerRows] = await pool.query(
+      `SELECT id FROM User WHERE ${providerColumn} = ? AND id != ? LIMIT 1`,
+      [providerUserId, existingUser.id]
+    );
+    
+    if (providerRows.length > 0) {
+      const error = new Error('This OAuth account is already linked to another user.');
+      error.code = 'OAUTH_ACCOUNT_ALREADY_LINKED';
+      error.statusCode = 409;
+      throw error;
+    }
+    
+    // Link provider to existing user
+    const updates = [];
+    const values = [];
+    
+    updates.push(`${providerColumn} = ?`);
+    values.push(providerUserId);
+    
+    updates.push('authProvider = COALESCE(authProvider, ?)');
+    values.push(normalizedProvider);
+    
+    if (avatarUrl && !existingUser.avatarUrl) {
+      updates.push('avatarUrl = ?');
+      values.push(avatarUrl);
+    }
+    
+    if (displayName && !existingUser.fullName) {
+      updates.push('fullName = COALESCE(fullName, ?)');
+      values.push(displayName);
+    }
+    
+    values.push(existingUser.id);
+    
+    await pool.query(
+      `UPDATE User SET ${updates.join(', ')}, updatedAt = CURRENT_TIMESTAMP WHERE id = ?`,
+      values
+    );
+    
+    const [rows] = await pool.query('SELECT * FROM User WHERE id = ? LIMIT 1', [existingUser.id]);
+    return { user: rows[0], isNewUser: false, isLinkedNewProvider: true };
+  }
+
+  // 5) No email and no existing user - require email for new account creation
+  if (!email) {
+    const error = new Error('Your OAuth provider did not share an email. Please sign up with email or link from an existing account.');
+    error.code = 'OAUTH_EMAIL_REQUIRED';
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // 6) Otherwise, create a new user + link provider
+  const now = new Date();
+  const termsVersion = process.env.TERMS_VERSION || '1.0';
+  const displayNameOrUsername = displayName || username || null;
+  
+  // Determine default role: first user becomes FOUNDER, others become STANDARD_USER
+  const [[{ totalUsers }]] = await pool.query('SELECT COUNT(*) AS totalUsers FROM User');
+  const initialRole = totalUsers === 0 ? 'FOUNDER' : 'STANDARD_USER';
+  
+  const [insertResult] = await pool.query(
+    `INSERT INTO User (email, password, fullName, role, status, accountStatus, authProvider, ${providerColumn}, avatarUrl, termsAccepted, termsAcceptedAt, termsVersion, termsSource, createdAt, updatedAt, emailVerified)
+     VALUES (?, NULL, ?, ?, 'active', 'ACTIVE', ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)`,
+    [
+      email.toLowerCase(),
+      displayNameOrUsername,
+      initialRole,
+      normalizedProvider,
+      providerUserId,
+      avatarUrl || null,
+      now,
+      termsVersion,
+      normalizedProvider,
+      now,
+      now,
+      emailVerified ? 1 : 0,
+    ]
+  );
+
+  const newUserId = insertResult.insertId;
+  const [createdRows] = await pool.query('SELECT * FROM User WHERE id = ? LIMIT 1', [newUserId]);
+
+  return { user: createdRows[0], isNewUser: true, isLinkedNewProvider: true };
 }
 
 /**

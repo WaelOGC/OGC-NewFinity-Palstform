@@ -4,115 +4,102 @@
  */
 
 import pool from '../db.js';
-import { activateAccount, createActivationToken } from '../services/activationService.js';
+import { findValidActivationToken, markActivationTokenUsed, createActivationToken } from '../services/activationService.js';
 import { sendResendActivationEmail } from '../services/emailService.js';
-import jwt from 'jsonwebtoken';
-
-const {
-  JWT_ACCESS_SECRET,
-  JWT_REFRESH_SECRET,
-  JWT_ACCESS_EXPIRES_IN = '15m',
-  JWT_REFRESH_EXPIRES_IN = '7d',
-  JWT_COOKIE_ACCESS_NAME = 'ogc_access',
-  JWT_COOKIE_REFRESH_NAME = 'ogc_refresh',
-} = process.env;
-
-function parseExpiresIn(expiresIn) {
-  const match = expiresIn.match(/^(\d+)([smhd])$/);
-  if (!match) return 15 * 60 * 1000;
-  const [, value, unit] = match;
-  const multipliers = { s: 1000, m: 60 * 1000, h: 60 * 60 * 1000, d: 24 * 60 * 60 * 1000 };
-  return parseInt(value) * (multipliers[unit] || 1000);
-}
+import { logUserActivity } from '../services/activityService.js';
 
 /**
  * Activate user account with token
+ * Returns JSON response only (no auto-login)
+ * Handles idempotency: clicking a valid link twice returns appropriate response
  */
-export async function activate(req, res) {
+export async function activate(req, res, next) {
   try {
-    const { token } = req.query;
+    const token = req.query.token || req.body.token;
 
     if (!token) {
       return res.status(400).json({
         status: 'ERROR',
-        message: 'Activation token is required',
-        code: 'TOKEN_MISSING',
+        code: 'ACTIVATION_TOKEN_MISSING',
+        message: 'Activation token is required.',
       });
     }
 
-    // Activate account
-    const result = await activateAccount(token);
+    // Find valid activation token
+    const activationRow = await findValidActivationToken(token);
 
-    // Get user details
+    if (!activationRow) {
+      return res.status(400).json({
+        status: 'ERROR',
+        code: 'ACTIVATION_TOKEN_INVALID_OR_EXPIRED',
+        message: 'This activation link is invalid or has expired.',
+      });
+    }
+
+    const userId = activationRow.userId;
+    
+    // Get user record
     const [userRows] = await pool.query(
-      'SELECT id, email, fullName, role FROM User WHERE id = ?',
-      [result.userId]
+      'SELECT id, email, fullName, status FROM User WHERE id = ?',
+      [userId]
     );
 
     if (userRows.length === 0) {
-      return res.status(404).json({
+      return res.status(400).json({
         status: 'ERROR',
-        message: 'User not found',
+        code: 'ACTIVATION_USER_NOT_FOUND',
+        message: 'Account not found for this activation link.',
       });
     }
 
     const user = userRows[0];
 
-    // Generate tokens for automatic login
-    const payload = { userId: user.id, role: user.role || 'user' };
+    // Check if user is already active (idempotency)
+    const currentStatus = user.status;
+    const isAlreadyActive = currentStatus && currentStatus.toUpperCase() === 'ACTIVE';
 
-    if (!JWT_ACCESS_SECRET || !JWT_REFRESH_SECRET) {
-      return res.status(500).json({
-        status: 'ERROR',
-        message: 'JWT secrets not configured',
-      });
+    if (!isAlreadyActive) {
+      // Update user status to ACTIVE
+      await pool.query(
+        `UPDATE User 
+         SET status = 'active',
+             updatedAt = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [userId]
+      );
     }
 
-    const accessToken = jwt.sign(payload, JWT_ACCESS_SECRET, {
-      expiresIn: JWT_ACCESS_EXPIRES_IN,
-    });
+    // Mark token as used
+    await markActivationTokenUsed(activationRow.id);
 
-    const refreshToken = jwt.sign({ userId: user.id }, JWT_REFRESH_SECRET, {
-      expiresIn: JWT_REFRESH_EXPIRES_IN,
-    });
+    // Log activity (optional - don't fail if logging fails)
+    try {
+      const ipAddress = req.ip || req.headers['x-forwarded-for']?.split(',')[0].trim() || req.connection?.remoteAddress || req.socket?.remoteAddress;
+      const userAgent = req.headers['user-agent'];
+      await logUserActivity({
+        userId,
+        actorId: userId,
+        type: isAlreadyActive ? 'ACCOUNT_ACTIVATION_ALREADY_ACTIVE' : 'ACCOUNT_ACTIVATION_COMPLETED',
+        ipAddress,
+        userAgent,
+        metadata: { activationTokenId: activationRow.id }
+      });
+    } catch (activityError) {
+      console.warn('[Activation] Failed to log activity:', activityError);
+      // Don't fail activation if logging fails
+    }
 
-    // Set cookies
-    const isProd = process.env.NODE_ENV === 'production';
-    res.cookie(JWT_COOKIE_ACCESS_NAME, accessToken, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? 'strict' : 'lax',
-      maxAge: parseExpiresIn(JWT_ACCESS_EXPIRES_IN),
-    });
-    res.cookie(JWT_COOKIE_REFRESH_NAME, refreshToken, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? 'strict' : 'lax',
-      maxAge: parseExpiresIn(JWT_REFRESH_EXPIRES_IN),
-    });
-
-    console.log(`✅ Account activated and user logged in: ${user.email}`);
-
+    // Return appropriate response based on whether account was already active
     return res.status(200).json({
       status: 'OK',
-      message: 'Account activated successfully',
-      access: accessToken,
-      refresh: refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-      },
+      code: isAlreadyActive ? 'ACCOUNT_ALREADY_ACTIVE' : 'ACCOUNT_ACTIVATED',
+      message: isAlreadyActive
+        ? 'This account is already active.'
+        : 'Your account has been activated successfully.',
     });
-  } catch (error) {
-    console.error('Activation error:', error);
-
-    // Generic error message to avoid revealing token validity
-    return res.status(400).json({
-      status: 'ERROR',
-      message: 'This activation link is invalid or has expired',
-      code: 'INVALID_TOKEN',
-    });
+  } catch (err) {
+    console.error('[Activation] Error:', err);
+    return next(err);
   }
 }
 

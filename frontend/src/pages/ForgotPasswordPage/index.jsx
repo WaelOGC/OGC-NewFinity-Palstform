@@ -20,20 +20,19 @@ function ForgotPasswordPage() {
       if (data.status === 'OK' || data.success) {
         setStatus({
           type: 'success',
-          message: data.message || "If this email is registered, we've sent a password reset link.",
+          message: "If an account exists for this email, a reset link has been sent.",
         });
       } else {
         setStatus({
           type: 'error',
-          message: data.message || 'An error occurred. Please try again.',
+          message: 'Something went wrong. Please try again in a moment.',
         });
       }
     } catch (error) {
       console.error('Forgot password error:', error);
-      const errorMessage = error.backendMessage || error.message || 'An error occurred. Please try again.';
       setStatus({
         type: 'error',
-        message: errorMessage,
+        message: 'Something went wrong. Please try again in a moment.',
       });
     } finally {
       setSubmitting(false);
@@ -44,9 +43,9 @@ function ForgotPasswordPage() {
     <div className="auth-page-container">
       <div className="auth-page-card">
         <div className="auth-page-header">
-          <h1 className="auth-page-title">Reset your password</h1>
+          <h1 className="auth-page-title">Forgot your password?</h1>
           <p className="auth-page-subtitle">
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your email and we'll send you a reset link.
           </p>
         </div>
 
@@ -57,6 +56,7 @@ function ForgotPasswordPage() {
                 <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
+            <h2 className="forgot-password-success-title">Check your email</h2>
             <p className="forgot-password-message">{status.message}</p>
             <button
               type="button"

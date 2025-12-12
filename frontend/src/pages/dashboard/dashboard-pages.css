@@ -28,10 +28,10 @@
   width: 100%;
   border-radius: 1rem;
   border: 1px solid var(--border-card);
-  background: radial-gradient(circle at top left, rgba(0, 255, 198, 0.08), transparent 55%),
+  background: radial-gradient(circle at top left, var(--accent-soft), transparent 55%),
               var(--bg-card);
   padding: 24px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 25px 50px -12px var(--chip-bg);
 }
 
 .ogc-dashboard-card-title {
@@ -49,8 +49,8 @@
 
 .ogc-dashboard-info-box {
   border-radius: 0.75rem;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  background-color: var(--card-bg, rgba(15, 23, 42, 0.6));
+  border: 1px solid var(--border-card);
+  background-color: var(--bg-card);
   padding: 16px;
   font-size: 0.875rem;
   margin-top: 16px;
@@ -92,7 +92,7 @@
 .ogc-form-textarea {
   padding: 10px 12px;
   border-radius: 0.5rem;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border: 1px solid var(--border-card);
   background-color: rgba(15, 23, 42, 0.8);
   color: var(--text-main);
   font-size: 0.875rem;
@@ -102,8 +102,8 @@
 .ogc-form-input:focus,
 .ogc-form-textarea:focus {
   outline: none;
-  border-color: rgba(0, 255, 198, 0.6);
-  box-shadow: 0 0 0 3px rgba(0, 255, 198, 0.1);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .ogc-form-textarea {
@@ -116,11 +116,11 @@
   align-items: center;
   justify-content: center;
   border-radius: 0.5rem;
-  background-color: rgba(0, 255, 198, 0.9);
+  background-color: var(--accent-primary);
   padding: 10px 20px;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #020617;
+  color: var(--button-text-on-accent);
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -128,9 +128,10 @@
 }
 
 .ogc-form-submit-btn:hover {
-  background-color: rgba(0, 255, 198, 1);
-  box-shadow: 0 0 16px rgba(0, 255, 198, 0.4);
+  background-color: var(--accent-primary);
+  box-shadow: 0 0 16px var(--accent-soft);
   transform: translateY(-1px);
+  opacity: 0.9;
 }
 
 .ogc-form-submit-btn:active {
@@ -154,11 +155,11 @@
 }
 
 .form-message--error {
-  color: #ff6b81;
+  color: var(--accent-danger);
 }
 
 .form-message--success {
-  color: #00ffc6;
+  color: var(--accent-primary);
 }
 
 /* PHASE S3: Account export form message styles */
@@ -170,15 +171,15 @@
 }
 
 .ogc-form-message--error {
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.6);
-  color: #fca5a5;
+  background: rgba(255, 60, 92, 0.1);
+  border: 1px solid var(--accent-danger);
+  color: var(--accent-danger);
 }
 
 .ogc-form-message--success {
-  background: rgba(0, 191, 166, 0.12);
-  border: 1px solid rgba(0, 191, 166, 0.6);
-  color: #00ffc6;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-primary);
+  color: var(--accent-primary);
 }
 
 /* PHASE S2: Session list styles */
@@ -197,15 +198,15 @@
   align-items: flex-start;
   padding: 0.5rem 0.6rem;
   border-radius: 10px;
-  border: 1px solid var(--border-card, rgba(255, 255, 255, 0.1));
-  background: var(--bg-card-soft, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border-card);
+  background: var(--bg-card-soft);
   font-size: 0.8rem;
 }
 
 .session-item--current {
-  border-color: var(--accent-primary, rgba(0, 255, 198, 0.6));
-  background: radial-gradient(circle at top left, rgba(0, 255, 198, 0.18), transparent 60%),
-              var(--bg-card-soft, rgba(255, 255, 255, 0.02));
+  border-color: var(--accent-primary);
+  background: radial-gradient(circle at top left, var(--accent-soft), transparent 60%),
+              var(--bg-card-soft);
 }
 
 .session-title-row {
@@ -223,8 +224,8 @@
   padding: 0.05rem 0.4rem;
   border-radius: 999px;
   font-size: 0.7rem;
-  background: rgba(0, 255, 198, 0.16);
-  color: var(--accent-primary, #00ffc6);
+  background: var(--accent-soft);
+  color: var(--accent-primary);
 }
 
 .session-meta {
@@ -236,11 +237,11 @@
 
 .session-revoke-btn {
   border-radius: 999px;
-  border: 1px solid var(--border-card, rgba(255, 255, 255, 0.1));
+  border: 1px solid var(--border-card);
   padding: 0.25rem 0.65rem;
   font-size: 0.78rem;
   background: transparent;
-  color: var(--text-main, #fff);
+  color: var(--text-main);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -262,18 +263,18 @@
 
 .btn-secondary {
   border-radius: 999px;
-  border: 1px solid var(--border-card, rgba(255, 255, 255, 0.1));
+  border: 1px solid var(--border-card);
   padding: 0.35rem 0.9rem;
   font-size: 0.78rem;
   background: transparent;
-  color: var(--text-main, #fff);
+  color: var(--text-main);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  border-color: var(--accent-primary, rgba(0, 255, 198, 0.6));
-  color: var(--accent-primary, #00ffc6);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
 }
 
 .btn-secondary:disabled {
@@ -296,8 +297,8 @@
   padding: 12px 16px;
   border-radius: 0.5rem;
   background-color: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  color: #86efac;
+  border: 1px solid var(--accent-success);
+  color: var(--accent-success);
   font-size: 0.875rem;
 }
 
@@ -322,17 +323,17 @@
 
 /* Danger Zone Styles */
 .security-danger-zone {
-  border-color: rgba(239, 68, 68, 0.4) !important;
-  background-color: rgba(239, 68, 68, 0.03) !important;
-  box-shadow: 0 25px 50px -12px rgba(239, 68, 68, 0.2) !important;
+  border-color: var(--accent-danger) !important;
+  background-color: rgba(255, 60, 92, 0.05) !important;
+  box-shadow: 0 25px 50px -12px var(--accent-soft) !important;
 }
 
 .security-danger-panel {
   margin-top: 1rem;
   padding: 1rem;
   border-radius: 0.5rem;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  background: rgba(239, 68, 68, 0.02);
+  border: 1px solid var(--accent-danger);
+  background: rgba(255, 60, 92, 0.05);
 }
 
 .security-danger-warning {
@@ -350,8 +351,8 @@
 }
 
 .danger-button {
-  background: #ef4444;
-  color: #ffffff;
+  background: var(--accent-danger);
+  color: var(--button-text-on-accent);
   border: none;
   padding: 10px 20px;
   border-radius: 0.5rem;
@@ -378,7 +379,7 @@
 
 .secondary-button {
   background: transparent;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border: 1px solid var(--border-card);
   color: var(--text-main);
   padding: 10px 20px;
   border-radius: 0.5rem;
@@ -402,7 +403,7 @@
 .security-privacy-export {
   margin-top: 2rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--border-card);
 }
 
 /* Wallet Transaction Styles */
@@ -518,8 +519,8 @@
 
 .wallet-input:focus {
   outline: none;
-  border-color: rgba(0, 255, 198, 0.6);
-  box-shadow: 0 0 0 3px rgba(0, 255, 198, 0.1);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .wallet-stake-preview {
@@ -547,8 +548,8 @@
 .wallet-btn {
   padding: 12px 24px;
   border-radius: 0.5rem;
-  background-color: rgba(0, 255, 198, 0.2);
-  border: 1px solid rgba(0, 255, 198, 0.4);
+  background-color: var(--accent-soft);
+  border: 1px solid var(--accent-primary);
   color: var(--text-main);
   font-size: 0.875rem;
   font-weight: 600;
@@ -557,8 +558,8 @@
 }
 
 .wallet-btn:hover:not(:disabled) {
-  background-color: rgba(0, 255, 198, 0.3);
-  border-color: rgba(0, 255, 198, 0.6);
+  background-color: var(--accent-soft);
+  border-color: var(--accent-primary);
   transform: translateY(-1px);
 }
 
@@ -568,11 +569,11 @@
 
 .wallet-btn.secondary {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid var(--border-subtle);
 }
 
 .wallet-btn.secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--chip-bg);
   border-color: rgba(255, 255, 255, 0.4);
 }
 
@@ -620,7 +621,7 @@
 .wallet-activity-range-btn--active {
   border-color: var(--accent-primary);
   color: var(--text-main);
-  background: rgba(0, 255, 198, 0.1);
+  background: var(--accent-soft);
 }
 
 .wallet-card-muted {
@@ -639,8 +640,8 @@
 
 .wallet-alert--warning {
   background-color: rgba(251, 191, 36, 0.1);
-  border: 1px solid rgba(251, 191, 36, 0.3);
-  color: #fde047;
+  border: 1px solid var(--accent-warning);
+  color: var(--accent-warning);
 }
 
 .wallet-activity-chart-wrapper {
@@ -674,7 +675,7 @@
 }
 
 .wallet-activity-summary-item .value.negative {
-  color: #ff3cac;
+  color: var(--accent-secondary);
 }
 
 /* Staking + Rewards Row (Phase W2.8) */
@@ -729,7 +730,7 @@
 .wallet-rewards-range-btn--active {
   border-color: var(--accent-primary);
   color: var(--text-main);
-  background: rgba(0, 255, 198, 0.1);
+  background: var(--accent-soft);
 }
 
 .wallet-rewards-chart-wrapper {
@@ -801,7 +802,7 @@
   border: 1px solid var(--border-card);
   background: linear-gradient(
     90deg,
-    rgba(0, 255, 198, 0.16),
+    var(--accent-soft),
     rgba(88, 100, 255, 0.08),
     transparent
   );
@@ -933,7 +934,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 10px 25px var(--chip-bg);
   z-index: 40;
   transition: all 0.2s ease;
 }
@@ -982,7 +983,7 @@
   border: 1px solid var(--border-card);
   background: linear-gradient(
     90deg,
-    rgba(0, 191, 166, 0.16),
+    var(--accent-soft),
     rgba(88, 100, 255, 0.08),
     transparent
   );
@@ -991,7 +992,7 @@
 [data-theme='dark'] .overview-summary-strip {
   background: linear-gradient(
     90deg,
-    rgba(0, 255, 198, 0.16),
+    var(--accent-soft),
     rgba(88, 100, 255, 0.08),
     transparent
   );
@@ -1071,7 +1072,7 @@
 }
 
 [data-theme='light'] .overview-card--primary {
-  background: radial-gradient(circle at top left, rgba(0, 191, 166, 0.15), transparent 60%),
+  background: radial-gradient(circle at top left, var(--accent-soft), transparent 60%),
               var(--bg-card);
 }
 
@@ -1443,17 +1444,10 @@
   margin-top: 1rem;
   padding: 1rem 1.25rem;
   border-radius: 12px;
-  background: radial-gradient(circle at top left, rgba(0, 255, 198, 0.08), transparent 55%),
+  background: radial-gradient(circle at top left, var(--accent-soft), transparent 55%),
               radial-gradient(circle at bottom right, rgba(88, 100, 255, 0.08), transparent 55%),
-              rgba(5, 13, 32, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.4);
-}
-
-[data-theme='light'] .twofactor-setup-panel {
-  background: radial-gradient(circle at top left, rgba(0, 191, 166, 0.08), transparent 55%),
-              radial-gradient(circle at bottom right, rgba(88, 100, 255, 0.06), transparent 55%),
-              rgba(255, 255, 255, 0.95);
-  border-color: rgba(8, 16, 40, 0.08);
+              var(--bg-card);
+  border: 1px solid var(--border-card);
 }
 
 .twofactor-setup-header {
@@ -1467,7 +1461,7 @@
   display: inline-flex;
   padding: 2px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--chip-bg);
 }
 
 .twofactor-toggle-btn {
@@ -1482,8 +1476,8 @@
 }
 
 .twofactor-toggle-btn--active {
-  background: linear-gradient(90deg, #00ffc6, #5864ff);
-  color: #050b17;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  color: var(--button-text-on-accent);
   font-weight: 600;
 }
 
@@ -1502,11 +1496,7 @@
 .twofactor-qr-box {
   padding: 0.75rem;
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.35);
-}
-
-[data-theme='light'] .twofactor-qr-box {
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--bg-card);
 }
 
 .twofactor-secret-box {
@@ -1592,8 +1582,8 @@
 }
 
 .ogc-button-secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--chip-bg);
+  border-color: var(--border-subtle);
 }
 
 .ogc-button-secondary:disabled {
@@ -1604,7 +1594,7 @@
 .ogc-input {
   padding: 10px 12px;
   border-radius: 0.5rem;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border: 1px solid var(--border-card);
   background-color: rgba(15, 23, 42, 0.8);
   color: var(--text-main);
   font-size: 0.875rem;
@@ -1614,16 +1604,16 @@
 
 .ogc-input:focus {
   outline: none;
-  border-color: var(--accent-primary, #00FFC6);
-  box-shadow: 0 0 0 3px rgba(0, 255, 198, 0.1);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 /* PHASE S4: Account Deletion Modal Styles */
 .ogc-button-danger {
   border-radius: 999px;
-  border: 1px solid rgba(255, 76, 96, 0.7);
-  background: linear-gradient(135deg, #ff3b5c, #ff7648);
-  color: #ffffff;
+  border: 1px solid var(--accent-danger);
+  background: var(--accent-danger);
+  color: var(--button-text-on-accent);
   padding: 0.4rem 1.1rem;
   font-size: 0.85rem;
   font-weight: 600;
@@ -1645,7 +1635,7 @@
 .ogc-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(2, 4, 15, 0.78);
+  background: var(--chip-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1660,7 +1650,7 @@
   border-radius: 16px;
   border: 1px solid var(--border-card);
   padding: 1.25rem 1.4rem;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 18px 60px var(--chip-bg);
   margin: 1rem;
 }
 
@@ -1709,9 +1699,9 @@
   margin-top: 0.4rem;
   padding: 0.6rem 0.75rem;
   border-radius: 8px;
-  background: rgba(255, 59, 92, 0.15);
-  border: 1px solid rgba(255, 59, 92, 0.3);
-  color: #ff6b7d;
+  background: rgba(255, 60, 92, 0.1);
+  border: 1px solid var(--accent-danger);
+  color: var(--accent-danger);
   font-size: 0.8rem;
 }
 
@@ -1736,7 +1726,7 @@
   padding: 0.25rem 0.4rem;
   border-radius: 8px;
   margin-bottom: 0.15rem;
-  background: rgba(5, 12, 35, 0.75);
+  background: var(--bg-card);
 }
 
 .twofactor-recovery-actions {

@@ -2,60 +2,113 @@
  * Email Service for OGC NewFinity
  * Handles sending activation emails and other transactional emails
  * 
- * Production SMTP configuration required in .env:
- * SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, SMTP_FROM
+ * Supports two modes:
+ * - "smtp": All SMTP variables are configured → emails are sent via SMTP
+ * - "console": SMTP not configured → emails are logged to console (graceful fallback)
+ * 
+ * SMTP configuration variables (optional):
+ * EMAIL_FROM, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SECURE
  */
 
 import nodemailer from 'nodemailer';
 
-// Normalize configuration reads
-const {
-  SMTP_HOST,
-  SMTP_PORT,
-  SMTP_SECURE,
-  SMTP_USER,
-  SMTP_PASS,
-  SMTP_FROM,
-  FRONTEND_URL,
-} = process.env;
-
-// Safe default for FRONTEND_URL
-const frontendBaseUrl = FRONTEND_URL || 'http://localhost:5173';
-
+let EMAIL_MODE = "console"; // "smtp" or "console"
+let EMAIL_FROM = null;
 let transporter = null;
 
 /**
- * Initialize email service
- * Verifies SMTP configuration and sets up transport
- * Throws error if SMTP is not properly configured
+ * Get activation base URL for building activation links
+ * Tries ACTIVATION_BASE_URL, then FRONTEND_URL, then localhost fallback
+ * @returns {string} Base URL for activation links
  */
-export async function initEmailService() {
-  const hasSmtpConfig =
-    SMTP_HOST && SMTP_PORT && SMTP_SECURE && SMTP_USER && SMTP_PASS && SMTP_FROM;
+export function getActivationBaseUrl() {
+  return (
+    process.env.ACTIVATION_BASE_URL ||
+    process.env.FRONTEND_URL ||
+    process.env.FRONTEND_APP_URL ||
+    process.env.APP_BASE_URL ||
+    'http://localhost:5173'
+  );
+}
 
-  if (!hasSmtpConfig) {
-    throw new Error(
-      'SMTP configuration is required. Please set SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, and SMTP_FROM in your .env file.'
-    );
+/**
+ * Initialize email service
+ * Determines mode based on SMTP configuration availability
+ * @returns {Object} { mode: "smtp" | "console", from: string }
+ */
+export function initEmailService() {
+  const {
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_USER,
+    SMTP_PASS,
+    SMTP_SECURE,
+    EMAIL_FROM: ENV_EMAIL_FROM
+  } = process.env;
+
+  EMAIL_FROM = ENV_EMAIL_FROM || "no-reply@ogc-newfinity.local";
+
+  const smtpReady =
+    SMTP_HOST &&
+    SMTP_PORT &&
+    SMTP_USER &&
+    SMTP_PASS;
+
+  if (!smtpReady) {
+    EMAIL_MODE = "console";
+    console.warn("[EmailService] SMTP not fully configured → using console mode.");
+    return { mode: EMAIL_MODE, from: EMAIL_FROM };
   }
 
+  // Configure SMTP transporter
   transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: Number(SMTP_PORT),
-    secure: SMTP_SECURE === 'true',
+    secure: SMTP_SECURE === "true",
     auth: {
       user: SMTP_USER,
       pass: SMTP_PASS,
     },
   });
 
-  try {
-    await transporter.verify();
-    console.log('[EmailService] SMTP connection verified – emails will be sent via SMTP.');
-  } catch (err) {
-    console.error('[EmailService] SMTP verification FAILED:', err.message);
-    throw new Error(`SMTP verification failed: ${err.message}`);
+  EMAIL_MODE = "smtp";
+  console.log("[EmailService] SMTP mode enabled.");
+  return { mode: EMAIL_MODE, from: EMAIL_FROM };
+}
+
+/**
+ * Send email (handles both SMTP and console modes)
+ * @param {Object} options - Email options
+ * @param {string} options.to - Recipient email address
+ * @param {string} options.subject - Email subject
+ * @param {string} options.text - Plain text content
+ * @param {string} options.html - HTML content
+ * @returns {Promise<Object>} Result object with success and messageId (if sent)
+ */
+export async function sendEmail({ to, subject, text, html }) {
+  if (EMAIL_MODE === "console") {
+    console.log("\n--- EMAIL (CONSOLE MODE) ---");
+    console.log("TO:", to);
+    console.log("SUBJECT:", subject);
+    console.log("TEXT:", text);
+    console.log("HTML:", html);
+    console.log("--- END EMAIL ---\n");
+    return { success: true, mode: "console" };
   }
+
+  if (!transporter) {
+    throw new Error("SMTP transporter not initialized.");
+  }
+
+  const info = await transporter.sendMail({
+    from: EMAIL_FROM,
+    to,
+    subject,
+    text,
+    html,
+  });
+
+  return { success: true, messageId: info.messageId, mode: "smtp" };
 }
 
 /**
@@ -65,8 +118,9 @@ export async function initEmailService() {
  * @param {string} fullName - User's full name (optional)
  */
 export async function sendActivationEmail({ to, token, fullName = null }) {
-  // Build activation URL using frontendBaseUrl with proper encoding
-  const activationUrl = `${frontendBaseUrl.replace(/\/$/, '')}/auth/activate?token=${encodeURIComponent(token)}`;
+  // Build activation URL using getActivationBaseUrl with proper encoding
+  const baseUrl = getActivationBaseUrl();
+  const activationUrl = `${baseUrl.replace(/\/+$/, '')}/auth/activate?token=${encodeURIComponent(token)}`;
 
   const subject = 'Activate your OGC NewFinity Account';
   
@@ -125,20 +179,12 @@ export async function sendActivationEmail({ to, token, fullName = null }) {
     © ${new Date().getFullYear()} OGC NewFinity. All rights reserved.
   `;
 
-  if (!transporter) {
-    throw new Error('Email service not initialized. SMTP transporter is not available.');
-  }
-
   try {
-    const info = await transporter.sendMail({
-      from: SMTP_FROM,
-      to,
-      subject,
-      text,
-      html,
-    });
-    console.log(`[EmailService] Activation email sent to ${to} (Message ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const result = await sendEmail({ to, subject, text, html });
+    if (result.mode === "smtp") {
+      console.log(`[EmailService] Activation email sent to ${to} (Message ID: ${result.messageId})`);
+    }
+    return result;
   } catch (err) {
     console.error('[EmailService] Failed to send activation email', err);
     throw new Error(`Failed to send activation email: ${err.message}`);
@@ -218,20 +264,12 @@ If you did not request this, you can safely ignore this email.
   </html>
   `;
 
-  if (!transporter) {
-    throw new Error('Email service not initialized. SMTP transporter is not available.');
-  }
-
   try {
-    const info = await transporter.sendMail({
-      from: SMTP_FROM,
-      to,
-      subject,
-      text,
-      html,
-    });
-    console.log(`[EmailService] Password reset email sent to ${to} (Message ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    const result = await sendEmail({ to, subject, text, html });
+    if (result.mode === "smtp") {
+      console.log(`[EmailService] Password reset email sent to ${to} (Message ID: ${result.messageId})`);
+    }
+    return result;
   } catch (err) {
     console.error('[EmailService] Failed to send password reset email', err);
     throw new Error(`Failed to send password reset email: ${err.message}`);
@@ -320,10 +358,6 @@ export async function sendPasswordChangedAlertEmail({ to, changedAt, ipAddress, 
   </html>
   `;
 
-  if (!transporter) {
-    throw new Error('Email service not initialized. SMTP transporter is not available.');
-  }
-
   if (process.env.NODE_ENV !== "production") {
     console.log("[EmailService] sendPasswordChangedAlertEmail →", {
       to,
@@ -333,23 +367,16 @@ export async function sendPasswordChangedAlertEmail({ to, changedAt, ipAddress, 
   }
 
   try {
-    const info = await transporter.sendMail({
-      from: SMTP_FROM,
-      to,
-      subject,
-      text,
-      html,
-    });
-
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[EmailService] Password changed alert email sent", {
-        messageId: info?.messageId,
-        response: info?.response,
-      });
+    const result = await sendEmail({ to, subject, text, html });
+    if (result.mode === "smtp") {
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[EmailService] Password changed alert email sent", {
+          messageId: result?.messageId,
+        });
+      }
+      console.log(`[EmailService] Password changed alert email sent to ${to} (Message ID: ${result.messageId})`);
     }
-
-    console.log(`[EmailService] Password changed alert email sent to ${to} (Message ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    return result;
   } catch (err) {
     console.error('[EmailService] Failed to send password changed alert email', err);
     throw new Error(`Failed to send password changed alert email: ${err.message}`);
@@ -438,10 +465,6 @@ export async function sendNewLoginAlertEmail({ to, loggedInAt, ipAddress, userAg
   </html>
   `;
 
-  if (!transporter) {
-    throw new Error('Email service not initialized. SMTP transporter is not available.');
-  }
-
   if (process.env.NODE_ENV !== "production") {
     console.log("[EmailService] sendNewLoginAlertEmail →", {
       to,
@@ -451,23 +474,16 @@ export async function sendNewLoginAlertEmail({ to, loggedInAt, ipAddress, userAg
   }
 
   try {
-    const info = await transporter.sendMail({
-      from: SMTP_FROM,
-      to,
-      subject,
-      text,
-      html,
-    });
-
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[EmailService] New login alert email sent", {
-        messageId: info?.messageId,
-        response: info?.response,
-      });
+    const result = await sendEmail({ to, subject, text, html });
+    if (result.mode === "smtp") {
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[EmailService] New login alert email sent", {
+          messageId: result?.messageId,
+        });
+      }
+      console.log(`[EmailService] New login alert email sent to ${to} (Message ID: ${result.messageId})`);
     }
-
-    console.log(`[EmailService] New login alert email sent to ${to} (Message ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    return result;
   } catch (err) {
     console.error('[EmailService] Failed to send new login alert email', err);
     throw new Error(`Failed to send new login alert email: ${err.message}`);
@@ -553,10 +569,6 @@ export async function sendTwoFactorStatusChangedEmail({ to, enabled, at, ipAddre
   </html>
   `;
 
-  if (!transporter) {
-    throw new Error('Email service not initialized. SMTP transporter is not available.');
-  }
-
   if (process.env.NODE_ENV !== "production") {
     console.log("[EmailService] sendTwoFactorStatusChangedEmail →", {
       to,
@@ -567,23 +579,16 @@ export async function sendTwoFactorStatusChangedEmail({ to, enabled, at, ipAddre
   }
 
   try {
-    const info = await transporter.sendMail({
-      from: SMTP_FROM,
-      to,
-      subject,
-      text,
-      html,
-    });
-
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[EmailService] 2FA status change email sent", {
-        messageId: info?.messageId,
-        response: info?.response,
-      });
+    const result = await sendEmail({ to, subject, text, html });
+    if (result.mode === "smtp") {
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[EmailService] 2FA status change email sent", {
+          messageId: result?.messageId,
+        });
+      }
+      console.log(`[EmailService] 2FA status change email sent to ${to} (Message ID: ${result.messageId})`);
     }
-
-    console.log(`[EmailService] 2FA status change email sent to ${to} (Message ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
+    return result;
   } catch (err) {
     console.error('[EmailService] Failed to send 2FA status change email', err);
     throw new Error(`Failed to send 2FA status change email: ${err.message}`);

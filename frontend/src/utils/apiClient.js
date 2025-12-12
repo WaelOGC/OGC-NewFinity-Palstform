@@ -47,6 +47,7 @@ const ALLOWED_ROUTES = {
   'POST /api/v1/auth/refresh': true,
   'POST /api/v1/auth/logout': true,
   'GET /api/v1/auth/me': true,
+  'GET /api/v1/auth/session': true,
   'GET /api/v1/auth/activate': true,
   'POST /api/v1/auth/resend-activation': true,
   'POST /api/v1/auth/forgot-password': true,
@@ -86,6 +87,7 @@ const ALLOWED_ROUTES = {
   'GET /api/v1/admin/users/:userId': true,
   'PUT /api/v1/admin/users/:userId/role': true,
   'PUT /api/v1/admin/users/:userId/status': true,
+  'PATCH /api/v1/admin/users/:userId/toggle-status': true,
   'PUT /api/v1/admin/users/:userId/feature-flags': true,
   'GET /api/v1/admin/users/:userId/activity': true,
   'GET /api/v1/admin/users/:userId/devices': true,
@@ -606,6 +608,31 @@ export async function regenerateRecoveryCodes() {
  */
 
 /**
+ * Fetch paginated list of users for admin view
+ * @param {Object} params - Query parameters
+ * @param {number} params.page - Page number (default: 1)
+ * @param {number} params.pageSize - Items per page (default: 20)
+ * @param {string} params.search - Search query (optional)
+ * @param {string} params.role - Role filter (optional)
+ * @returns {Promise<Object>} Object with items array and pagination metadata
+ */
+export async function fetchAdminUsers({ page = 1, pageSize = 20, search = '', role = '' } = {}) {
+  const params = new URLSearchParams();
+  
+  params.set('page', page.toString());
+  params.set('pageSize', pageSize.toString());
+  
+  if (search) params.set('search', search);
+  if (role) params.set('role', role);
+  
+  const data = await apiRequest(`/admin/users?${params.toString()}`, {
+    method: 'GET',
+  });
+  // data = { items: [...], page, pageSize, total }
+  return data;
+}
+
+/**
  * Get detailed user information for admin view
  * @param {number|string} userId - User ID
  * @returns {Promise<Object>} User object with profile, role, status, etc.
@@ -616,6 +643,33 @@ export async function getAdminUser(userId) {
   });
   // data = { user, recentActivity, devices }
   return data.user;
+}
+
+/**
+ * Fetch basic user detail for read-only drawer (simple lookup)
+ * @param {number|string} userId - User ID
+ * @returns {Promise<Object>} Response object with data property containing user object
+ *   User object includes: id, email, fullName, role, accountStatus, createdAt, lastLoginAt, connectedProviders, username
+ */
+export async function fetchAdminUserDetail(userId) {
+  const user = await apiRequest(`/admin/users/${userId}?simple=true`, {
+    method: 'GET',
+  });
+  // apiRequest unwraps { status: 'OK', code: 'ADMIN_USER_DETAIL', data: {...user} } to just the user object
+  return { data: user };
+}
+
+/**
+ * Toggle user account status (ACTIVE ↔ DISABLED)
+ * @param {number|string} userId - User ID
+ * @returns {Promise<Object>} Response object with accountStatus property
+ */
+export async function toggleAdminUserStatus(userId) {
+  const data = await apiRequest(`/admin/users/${userId}/toggle-status`, {
+    method: 'PATCH',
+  });
+  // apiRequest unwraps { status: 'OK', code: 'ADMIN_USER_STATUS_UPDATED', data: { accountStatus } } to just the data object
+  return { data };
 }
 
 /**

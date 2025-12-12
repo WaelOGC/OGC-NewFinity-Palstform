@@ -167,7 +167,12 @@ function Security() {
         setTwoFactorError(null);
         const data = await getTwoFactorStatus();
         if (!cancelled) {
-          setTwoFactorStatus(data);
+          // Backend now returns { enabled, method, enabledAt }
+          setTwoFactorStatus({
+            enabled: data.enabled || false,
+            createdAt: data.enabledAt || null,
+            confirmedAt: data.enabledAt || null,
+          });
         }
       } catch (err) {
         if (!cancelled) {
@@ -341,6 +346,12 @@ function Security() {
         setTwoFactorError('Enter the 6-digit code from your authenticator app.');
         return;
       }
+      
+      if (!/^\d{6}$/.test(twoFactorOtpToken.trim())) {
+        setTwoFactorError('Please enter a valid 6-digit code.');
+        return;
+      }
+      
       setTwoFactorBusy(true);
       setTwoFactorError(null);
       await confirmTwoFactorSetup(twoFactorOtpToken.trim());
@@ -356,17 +367,31 @@ function Security() {
       // Refresh status from server to get updated enabled state
       try {
         const freshStatus = await getTwoFactorStatus();
-        setTwoFactorStatus(freshStatus);
+        setTwoFactorStatus({
+          enabled: freshStatus.enabled || true,
+          createdAt: freshStatus.enabledAt || new Date().toISOString(),
+          confirmedAt: freshStatus.enabledAt || new Date().toISOString(),
+        });
       } catch (statusErr) {
         console.warn('Failed to refresh 2FA status after confirm:', statusErr);
         // Fallback to optimistic update
-        setTwoFactorStatus((prev) => ({ ...prev, enabled: true }));
+        setTwoFactorStatus((prev) => ({ ...prev, enabled: true, confirmedAt: new Date().toISOString() }));
       }
       
       // Refresh activities
       fetchActivities();
     } catch (err) {
-      setTwoFactorError(err.message || 'Failed to confirm 2FA.');
+      // Handle specific error codes from backend
+      const errorCode = err.code || err.backendCode;
+      let errorMessage = err.message || err.backendMessage || 'Failed to confirm 2FA.';
+      
+      if (errorCode === 'TWO_FACTOR_CODE_INVALID' || errorCode === 'TOTP_INVALID') {
+        errorMessage = 'The verification code is invalid or has expired. Please try again.';
+      } else if (errorCode === 'TWO_FACTOR_NOT_INITIALIZED' || errorCode === 'TOTP_NOT_INITIALIZED') {
+        errorMessage = '2FA setup not started. Please begin setup first.';
+      }
+      
+      setTwoFactorError(errorMessage);
     } finally {
       setTwoFactorBusy(false);
     }
@@ -381,6 +406,10 @@ function Security() {
   };
 
   async function handleDisable2FA() {
+    if (!confirm('Are you sure you want to disable two-factor authentication? This will reduce your account security.')) {
+      return;
+    }
+    
     try {
       setTwoFactorBusy(true);
       setTwoFactorError(null);
@@ -398,7 +427,11 @@ function Security() {
       // Refresh status from server to ensure consistency
       try {
         const freshStatus = await getTwoFactorStatus();
-        setTwoFactorStatus(freshStatus);
+        setTwoFactorStatus({
+          enabled: freshStatus.enabled || false,
+          createdAt: freshStatus.enabledAt || null,
+          confirmedAt: freshStatus.enabledAt || null,
+        });
       } catch (statusErr) {
         console.warn('Failed to refresh 2FA status after disable:', statusErr);
       }
@@ -406,7 +439,15 @@ function Security() {
       // Refresh activities
       fetchActivities();
     } catch (err) {
-      setTwoFactorError(err.message || 'Failed to disable 2FA.');
+      // Handle specific error codes from backend
+      const errorCode = err.code || err.backendCode;
+      let errorMessage = err.message || err.backendMessage || 'Failed to disable 2FA.';
+      
+      if (errorCode === 'TWO_FACTOR_NOT_ENABLED') {
+        errorMessage = 'Two-factor authentication is not enabled for this account.';
+      }
+      
+      setTwoFactorError(errorMessage);
     } finally {
       setTwoFactorBusy(false);
     }
@@ -883,9 +924,9 @@ function Security() {
             <p className="security-muted">
               Status:{' '}
               {twoFactorStatus.enabled ? (
-                <span style={{ color: '#00FFC6' }}>Enabled</span>
+                <span style={{ color: 'var(--accent-primary)' }}>Enabled</span>
               ) : (
-                <span style={{ color: '#ffbc25' }}>Disabled</span>
+                <span style={{ color: 'var(--accent-warning)' }}>Disabled</span>
               )}
             </p>
 
@@ -1022,6 +1063,88 @@ function Security() {
               </button>
             </div>
           </div>
+        )}
+      </div>
+
+      {/* Connected Accounts Section */}
+      <div className="ogc-dashboard-card" style={{ marginTop: '24px' }}>
+        <h2 className="ogc-dashboard-card-title">Connected Accounts</h2>
+        <p className="ogc-dashboard-card-text">
+          Link your social accounts to sign in faster. You can connect multiple providers to your account.
+        </p>
+
+        {user?.connectedProviders ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+            {['google', 'github', 'twitter', 'linkedin', 'discord'].map((provider) => {
+              const isConnected = user.connectedProviders.includes(provider);
+              const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
+              
+              return (
+                <div
+                  key={provider}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontWeight: '500' }}>{providerName}</span>
+                    {isConnected && (
+                      <span style={{ fontSize: '0.85em', color: 'var(--accent-primary)', opacity: 0.9 }}>
+                        ✓ Connected
+                      </span>
+                    )}
+                  </div>
+                  {isConnected ? (
+                    <button
+                      type="button"
+                      className="ogc-button-secondary"
+                      style={{ fontSize: '0.9em', padding: '6px 12px' }}
+                      onClick={async () => {
+                        if (!confirm(`Are you sure you want to disconnect your ${providerName} account?`)) {
+                          return;
+                        }
+                        try {
+                          await api.post(`/auth/oauth/disconnect/${provider}`);
+                          // Refresh user data to update connectedProviders
+                          const meData = await api.get('/auth/me');
+                          if (meData && meData.user) {
+                            // Update will happen via AuthContext useEffect
+                            window.location.reload(); // Simple refresh for now
+                          }
+                        } catch (err) {
+                          alert(err?.message || `Failed to disconnect ${providerName} account.`);
+                        }
+                      }}
+                    >
+                      Disconnect
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="ogc-button-primary"
+                      style={{ fontSize: '0.9em', padding: '6px 12px' }}
+                      onClick={() => {
+                        // Redirect to connect endpoint
+                        window.location.href = `/api/v1/auth/oauth/connect/${provider}`;
+                      }}
+                    >
+                      Connect
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="security-muted" style={{ marginTop: '0.5rem' }}>
+            Loading connected accounts...
+          </p>
         )}
       </div>
 

@@ -8,7 +8,10 @@
     "dev": "nodemon src/index.js",
     "prod": "NODE_ENV=production node src/index.js",
     "test:wallet": "node test-wallet-api.js",
-    "lint": "echo \"(add eslint later)\""
+    "test:smtp": "node ./scripts/test-smtp.js",
+    "lint": "echo \"(add eslint later)\"",
+    "db:check:user-schema": "node ./scripts/check-user-schema.js",
+    "db:migrate:unified": "node ./scripts/run-unified-user-migration.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -70,6 +70,42 @@ NODE_ENV=development
 - **RATE_LIMIT_WINDOW_MS**: Rate limit window in milliseconds (default: `60000`)
 - **RATE_LIMIT_MAX**: Maximum requests per window (default: `120`)
 
+### Email / SMTP Setup (Optional)
+
+To enable real email sending (activation emails, password resets, security alerts), set these variables:
+
+```env
+EMAIL_FROM="no-reply@ogc-newfinity.com"
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=your_smtp_username
+SMTP_PASS=your_smtp_password
+SMTP_SECURE=false
+```
+
+**SMTP Configuration Notes:**
+- **EMAIL_FROM**: The "from" address for all outgoing emails (default: `no-reply@ogc-newfinity.local`)
+- **SMTP_HOST**: Your SMTP server hostname (e.g., `smtp.gmail.com`, `smtp.sendgrid.net`)
+- **SMTP_PORT**: SMTP port number (587 for TLS, 465 for SSL)
+- **SMTP_USER**: SMTP authentication username
+- **SMTP_PASS**: SMTP authentication password
+- **SMTP_SECURE**: Set to `true` for port 465 (SSL) or `false` for port 587 (TLS)
+
+**Graceful Fallback:**
+- If any SMTP variables are missing, the email service automatically falls back to **console mode**
+- In console mode, emails are logged to the console instead of being sent
+- No errors occur when SMTP is not configured - the service continues to work in console mode
+
+**Testing SMTP:**
+```bash
+npm run test:smtp
+```
+
+This will:
+- Show the current email mode (SMTP or console)
+- Attempt to send a test email
+- Display results in console or your inbox (depending on mode)
+
 ## Generating JWT Secrets
 
 **PowerShell:**

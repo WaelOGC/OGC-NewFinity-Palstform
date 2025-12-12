@@ -5,13 +5,14 @@ import pool from '../db.js';
 import { createActivationToken, getTermsVersion } from '../services/activationService.js';
 import { sendActivationEmail, sendPasswordResetEmail, sendPasswordChangedAlertEmail } from '../services/emailService.js';
 import { createAuthSessionForUser } from '../utils/authSession.js';
-import { getTwoFactorStatus, verifyTwoFactorCode } from '../services/userService.js';
+import { getTwoFactorStatus, verifyTwoFactorCode, recordLoginActivity, registerDevice } from '../services/userService.js';
 import { getTwoFactorStatusForUser, verifyUserTotpCode } from '../services/twoFactorService.js';
 import { getRecoveryCodesStatusForUser, consumeRecoveryCode } from '../services/twoFactorRecoveryService.js';
 import { createTwoFactorTicket, verifyTwoFactorTicket } from '../utils/twoFactorTicket.js';
 import { logUserActivity } from '../services/activityService.js';
 import { sendOk, sendError } from '../utils/apiResponse.js';
-import { createPasswordResetToken, findValidPasswordResetToken, markPasswordResetTokenUsed } from '../services/passwordResetService.js';
+import { validatePasswordStrength } from '../utils/passwordPolicy.js';
+import { createPasswordResetToken, findValidPasswordResetToken, markPasswordResetTokenUsed, findValidPasswordResetTokenByToken, updateUserPassword } from '../services/passwordResetService.js';
 import { revokeAllUserSessions } from '../services/sessionService.js';
 
 // Note: JWT configuration and session creation logic moved to utils/authSession.js
@@ -62,13 +63,17 @@ export async function register({ email, password, fullName, termsAccepted }, res
     const termsVersion = getTermsVersion();
     const now = new Date();
 
-    // Create user with pending_verification status
+    // Determine default role: first user becomes FOUNDER, others become STANDARD_USER
+    const [[{ totalUsers }]] = await pool.query('SELECT COUNT(*) AS totalUsers FROM User');
+    const initialRole = totalUsers === 0 ? 'FOUNDER' : 'STANDARD_USER';
+
+    // Create user with pending_verification status and default role
     let result;
     try {
       [result] = await pool.query(
-        `INSERT INTO User (email, password, fullName, status, termsAccepted, termsAcceptedAt, termsVersion, termsSource) 
-         VALUES (?, ?, ?, 'pending_verification', ?, ?, ?, 'email_password')`,
-        [email, passwordHash, fullName || null, true, now, termsVersion]
+        `INSERT INTO User (email, password, fullName, role, status, termsAccepted, termsAcceptedAt, termsVersion, termsSource) 
+         VALUES (?, ?, ?, ?, 'pending_verification', ?, ?, ?, 'email_password')`,
+        [email, passwordHash, fullName || null, initialRole, true, now, termsVersion]
       );
     } catch (dbError) {
       console.error('[REGISTER] Database error creating user:', {
@@ -352,17 +357,21 @@ function hashResetToken(token) {
 /**
  * Forgot password handler
  * Generates a reset token and sends password reset email
+ * Uses PasswordResetToken table for secure token storage
  */
 export async function forgotPassword({ email }) {
   try {
     console.log(`[FORGOT_PASSWORD] Request received for: ${email}`);
     
+    // Normalize email
+    const normalizedEmail = email.trim().toLowerCase();
+    
     // Find user by email (case-insensitive)
     let rows;
     try {
       [rows] = await pool.query(
-        'SELECT id, email, fullName FROM User WHERE LOWER(email) = LOWER(?)',
-        [email]
+        'SELECT id, email, fullName, password FROM User WHERE LOWER(email) = LOWER(?)',
+        [normalizedEmail]
       );
     } catch (dbError) {
       console.error('[FORGOT_PASSWORD] Database error:', {
@@ -379,58 +388,59 @@ export async function forgotPassword({ email }) {
     }
 
     // Always return success message (security: don't reveal if email exists)
-    // If user exists, generate token and send email
+    // If user exists and has a password (not OAuth-only), generate token and send email
     if (rows.length > 0) {
       const user = rows[0];
       
-      // Generate reset token
-      const plainToken = generateResetToken();
-      const hashedToken = hashResetToken(plainToken);
-      
-      // Set expiry to 1 hour from now
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 1);
-      
-      // Store hashed token and expiry in database
-      try {
-        await pool.query(
-          'UPDATE User SET resetPasswordToken = ?, resetPasswordExpires = ? WHERE id = ?',
-          [hashedToken, expiresAt, user.id]
-        );
-        console.log(`[FORGOT_PASSWORD] Reset token generated for user ID: ${user.id}`);
-      } catch (dbError) {
-        console.error('[FORGOT_PASSWORD] Database error storing token:', {
-          code: dbError.code,
-          message: dbError.message,
-        });
-        throw dbError;
+      // Check if user has a password (not OAuth-only account)
+      if (!user.password) {
+        // OAuth-only account - don't send reset email, but still return generic success
+        console.log(`[FORGOT_PASSWORD] OAuth-only account (no password) for: ${user.email}`);
+        return {
+          status: 'OK',
+          code: 'RESET_EMAIL_SENT',
+          message: "If an account exists for that email, a reset link has been sent.",
+        };
       }
       
-      // Build reset URL
-      const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-      const resetUrl = `${frontendBaseUrl.replace(/\/$/, '')}/auth/reset-password?token=${encodeURIComponent(plainToken)}`;
-      
-      // Send password reset email
+      // Create reset token using PasswordResetToken table
       try {
-        await sendPasswordResetEmail({
-          to: user.email,
-          resetLink: resetUrl,
-          expiresAt: expiresAt
+        const { tokenPlain, expiresAt } = await createPasswordResetToken(user.id);
+        console.log(`[FORGOT_PASSWORD] Reset token generated for user ID: ${user.id}`);
+        
+        // Build reset URL
+        const frontendBaseUrl = process.env.FRONTEND_URL || process.env.FRONTEND_APP_URL || 'http://localhost:5173';
+        const resetUrl = `${frontendBaseUrl.replace(/\/$/, '')}/auth/reset-password?token=${encodeURIComponent(tokenPlain)}`;
+        
+        // Send password reset email
+        try {
+          await sendPasswordResetEmail({
+            to: user.email,
+            resetLink: resetUrl,
+            expiresAt: expiresAt
+          });
+          console.log(`✅ Password reset email sent to ${user.email}`);
+        } catch (emailError) {
+          // Log email error but don't fail the request
+          console.error(`⚠️  Failed to send password reset email:`, emailError);
+          // In production, you might want to queue this for retry
+        }
+      } catch (tokenError) {
+        console.error('[FORGOT_PASSWORD] Error creating reset token:', {
+          code: tokenError.code,
+          message: tokenError.message,
         });
-        console.log(`✅ Password reset email sent to ${user.email}`);
-      } catch (emailError) {
-        // Log email error but don't fail the request
-        console.error(`⚠️  Failed to send password reset email:`, emailError);
-        // In production, you might want to queue this for retry
+        // Don't reveal error to user - still return generic success
       }
     } else {
-      console.log(`[FORGOT_PASSWORD] Email not found (returning generic message): ${email}`);
+      console.log(`[FORGOT_PASSWORD] Email not found (returning generic message): ${normalizedEmail}`);
     }
     
-    // Always return the same generic message
+    // Always return the same generic message (security best practice)
     return {
-      success: true,
-      message: "If this email is registered, we sent a password reset link.",
+      status: 'OK',
+      code: 'RESET_EMAIL_SENT',
+      message: "If an account exists for that email, a reset link has been sent.",
     };
   } catch (error) {
     console.error('[FORGOT_PASSWORD] Error:', {
@@ -546,89 +556,61 @@ export async function validateResetToken({ token }) {
 /**
  * Reset password handler
  * Validates token and updates user password
+ * Uses PasswordResetToken table for secure token validation
  */
-export async function resetPassword({ token, password, confirmPassword }) {
+export async function resetPassword({ token, password }) {
   try {
     console.log(`[RESET_PASSWORD] Request received`);
     
-    // Validate password and confirmPassword match
-    if (!token || !password || !confirmPassword) {
-      const error = new Error('Token, password, and confirm password are required.');
+    // Validate required fields
+    if (!token) {
+      const error = new Error('Reset token is required.');
       error.statusCode = 400;
-      error.code = 'VALIDATION_ERROR';
+      error.code = 'RESET_TOKEN_MISSING';
       throw error;
     }
     
-    if (password !== confirmPassword) {
-      const error = new Error('Passwords do not match.');
+    if (!password) {
+      const error = new Error('Password is required.');
       error.statusCode = 400;
-      error.code = 'PASSWORD_MISMATCH';
+      error.code = 'PASSWORD_INVALID';
       throw error;
     }
     
-    // Validate password length (same as registration: min 8 chars)
-    if (password.length < 8) {
-      const error = new Error('Password does not meet security requirements.');
+    // Validate password strength using password policy
+    const passwordValidation = validatePasswordStrength(password);
+    if (!passwordValidation.ok) {
+      const error = new Error(passwordValidation.errors.join(' '));
       error.statusCode = 400;
-      error.code = 'PASSWORD_WEAK';
+      error.code = 'PASSWORD_INVALID';
       throw error;
     }
     
-    // Hash the provided token to look it up
-    const hashedToken = hashResetToken(token);
+    // Find valid reset token
+    const resetToken = await findValidPasswordResetTokenByToken(token);
     
-    // Lookup user by resetPasswordToken
-    let rows;
-    try {
-      [rows] = await pool.query(
-        'SELECT id, email, resetPasswordToken, resetPasswordExpires FROM User WHERE resetPasswordToken = ?',
-        [hashedToken]
-      );
-    } catch (dbError) {
-      console.error('[RESET_PASSWORD] Database error:', {
-        code: dbError.code,
-        message: dbError.message,
-      });
-      if (dbError.code === 'ER_ACCESS_DENIED_ERROR' || dbError.code === 'ECONNREFUSED' || dbError.code === 'ENOTFOUND') {
-        const error = new Error('Database connection failed. Please check your database configuration.');
-        error.statusCode = 503;
-        error.code = dbError.code;
-        throw error;
-      }
-      throw dbError;
-    }
-    
-    // Check if token exists
-    if (rows.length === 0) {
+    if (!resetToken) {
       const error = new Error('This reset link is invalid or has expired.');
       error.statusCode = 400;
       error.code = 'RESET_TOKEN_INVALID_OR_EXPIRED';
       throw error;
     }
     
-    const user = rows[0];
-    
-    // Check if token has expired
-    const now = new Date();
-    const expiresAt = new Date(user.resetPasswordExpires);
-    
-    if (expiresAt < now) {
-      const error = new Error('This reset link is invalid or has expired.');
-      error.statusCode = 400;
-      error.code = 'RESET_TOKEN_INVALID_OR_EXPIRED';
+    // Check if user exists
+    if (!resetToken.userId) {
+      const error = new Error('User not found.');
+      error.statusCode = 404;
+      error.code = 'USER_NOT_FOUND';
       throw error;
     }
     
     // Hash the new password
     const passwordHash = await bcrypt.hash(password, 10);
     
-    // Update user's password and clear reset fields
+    // Update user's password
     try {
-      await pool.query(
-        'UPDATE User SET password = ?, resetPasswordToken = NULL, resetPasswordExpires = NULL WHERE id = ?',
-        [passwordHash, user.id]
-      );
-      console.log(`✅ Password reset successful for user ID: ${user.id}`);
+      await updateUserPassword(resetToken.userId, passwordHash);
+      console.log(`✅ Password reset successful for user ID: ${resetToken.userId}`);
     } catch (dbError) {
       console.error('[RESET_PASSWORD] Database error updating password:', {
         code: dbError.code,
@@ -637,14 +619,54 @@ export async function resetPassword({ token, password, confirmPassword }) {
       throw dbError;
     }
     
-    // Note: We don't invalidate existing sessions/refresh tokens here
-    // since JWT tokens are stateless. If you want to invalidate sessions,
-    // you would need to implement a token blacklist or track token versions.
+    // Mark token as used (single-use token)
+    try {
+      await markPasswordResetTokenUsed(resetToken.id);
+      console.log(`✅ Reset token marked as used: ${resetToken.id}`);
+    } catch (tokenError) {
+      console.error('[RESET_PASSWORD] Error marking token as used:', tokenError);
+      // Don't fail the request if token marking fails - password is already updated
+    }
+    
+    // Revoke all sessions for that user (force re-login everywhere)
+    try {
+      await revokeAllUserSessions(resetToken.userId);
+    } catch (sessionError) {
+      console.error('[RESET_PASSWORD] Error revoking sessions:', sessionError);
+      // Don't fail the request if session revocation fails
+    }
+    
+    // Log security activity
+    try {
+      await logUserActivity({
+        userId: resetToken.userId,
+        actorId: resetToken.userId, // Self-action
+        type: 'PASSWORD_CHANGED',
+        metadata: {
+          via: 'RESET_TOKEN',
+          resetTokenId: resetToken.id,
+        },
+      });
+    } catch (logError) {
+      console.error('[RESET_PASSWORD] Error logging activity:', logError);
+      // Don't fail the request if logging fails
+    }
+    
+    // Send password changed alert email (optional, don't fail if it fails)
+    try {
+      await sendPasswordChangedAlertEmail({
+        to: resetToken.email,
+        changedAt: new Date(),
+      });
+    } catch (emailError) {
+      console.warn('[RESET_PASSWORD] Failed to send password changed alert:', emailError);
+      // Don't fail the request if email fails
+    }
     
     return {
-      success: true,
-      message: 'Your password has been reset successfully. You can now log in with your new password.',
+      status: 'OK',
       code: 'PASSWORD_RESET_SUCCESS',
+      message: 'Your password has been reset successfully.',
     };
   } catch (error) {
     console.error('[RESET_PASSWORD] Error:', {
@@ -1281,6 +1303,7 @@ export async function postLoginTwoFactor(req, res, next) {
     }
 
     // Return success response matching the normal login format
+    // Use consistent JSON format: { status: 'OK', code: 'LOGIN_2FA_SUCCESS', message: '...', data: {...} }
     return sendOk(res, {
       access: sessionResult.access,
       refresh: sessionResult.refresh,
@@ -1291,34 +1314,291 @@ export async function postLoginTwoFactor(req, res, next) {
         role: user.role || 'STANDARD_USER',
         status: user.status
       }
-    });
+    }, 200, 'LOGIN_2FA_SUCCESS', 'Two-factor verification successful.');
   } catch (err) {
     return next(err);
   }
 }
 
 /**
- * Social login callback handler
- * Called after successful OAuth authentication
- * Creates auth session and redirects to frontend
+ * Shared OAuth callback handler
+ * Handles both login and connect flows
+ * Supports JSON responses for API-first approach
+ * 
+ * Connect flow: If state parameter contains a JWT with userId, link provider to that user
+ * Login flow: Creates a normal auth session (cookies) so the user stays logged in
  */
-export async function socialLoginCallback(req, res, next) {
+export async function handleOAuthCallback(req, res, next, providerName) {
+  const FRONTEND_URL = process.env.FRONTEND_URL || process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+  const SOCIAL_FAILURE_REDIRECT = `${FRONTEND_URL}/auth/social/callback?status=error`;
+  
   try {
-    const user = req.user; // set by passport verify callback
+    // Check if this is a connect flow (state parameter contains userId)
+    let existingUserId = null;
+    let isConnectFlow = false;
+    const stateParam = req.query.state;
     
-    if (!user) {
-      return res.redirect('/auth/login?provider=github&error=authentication_failed');
+    if (stateParam) {
+      try {
+        const jwt = await import('jsonwebtoken');
+        const secret = process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET;
+        const decoded = jwt.verify(stateParam, secret);
+        
+        if (decoded.action === 'connect' && decoded.userId) {
+          existingUserId = decoded.userId;
+          isConnectFlow = true;
+        }
+      } catch (stateError) {
+        // Invalid state token - treat as normal login flow
+        console.warn('[OAuth] Invalid state token, treating as login flow:', stateError.message);
+      }
     }
     
-    // Pass req parameter to ensure session is created with IP and user agent
+    // Get user from passport verify callback (passport already called syncOAuthProfile)
+    let user = req.user;
+    
+    if (!user) {
+      // Check if this is an API request (JSON preferred)
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return sendError(res, {
+          code: 'OAUTH_AUTHENTICATION_FAILED',
+          message: 'OAuth authentication failed. No user data received from provider.',
+          statusCode: 401,
+        });
+      }
+      return res.redirect(`${SOCIAL_FAILURE_REDIRECT}&provider=${providerName}&error=authentication_failed`);
+    }
+    
+    // If this is a connect flow, re-sync with existingUserId to properly link the provider
+    if (isConnectFlow && existingUserId && user.id !== existingUserId) {
+      try {
+        const { syncOAuthProfile } = await import('../services/userService.js');
+        
+        // Get provider column map
+        const providerColumnMap = {
+          google: 'googleId',
+          github: 'githubId',
+          twitter: 'twitterId',
+          linkedin: 'linkedinId',
+          discord: 'discordId',
+        };
+        const providerColumn = providerColumnMap[providerName.toLowerCase()];
+        
+        if (providerColumn) {
+          // Get providerUserId from the user that was created/linked by passport
+          const [oauthUserRows] = await pool.query(
+            `SELECT ${providerColumn}, email, fullName, avatarUrl, emailVerified FROM User WHERE id = ?`,
+            [user.id]
+          );
+          
+          if (oauthUserRows.length > 0 && oauthUserRows[0][providerColumn]) {
+            const providerUserId = oauthUserRows[0][providerColumn];
+            const oauthUser = oauthUserRows[0];
+            
+            // Re-sync with existingUserId to properly link the provider
+            // We extract profile data from the user object and re-sync
+            const syncResult = await syncOAuthProfile({
+              provider: providerName,
+              providerUserId: providerUserId,
+              email: oauthUser.email || null,
+              emailVerified: oauthUser.emailVerified === 1 || false,
+              displayName: oauthUser.fullName || null,
+              avatarUrl: oauthUser.avatarUrl || null,
+              existingUserId: existingUserId,
+            });
+            
+            user = syncResult.user;
+          }
+        }
+      } catch (linkError) {
+        console.error('[OAuth] Failed to link provider in connect flow:', linkError);
+        // If it's a conflict error, return that
+        if (linkError.code === 'OAUTH_ACCOUNT_ALREADY_LINKED' || linkError.code === 'OAUTH_EMAIL_CONFLICT') {
+          if (req.headers.accept && req.headers.accept.includes('application/json')) {
+            return sendError(res, {
+              code: linkError.code,
+              message: linkError.message,
+              statusCode: linkError.statusCode || 409,
+            });
+          }
+          return res.redirect(`${SOCIAL_FAILURE_REDIRECT}&provider=${providerName}&error=conflict&message=${encodeURIComponent(linkError.message)}`);
+        }
+        // For other errors, continue with the OAuth user - better than failing completely
+      }
+    }
+    
+    // Check account status (same checks as normal login)
+    if (user.status === 'DELETED') {
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return sendError(res, {
+          code: 'ACCOUNT_DELETED',
+          message: 'This account has been deleted and can no longer be used to sign in.',
+          statusCode: 403,
+        });
+      }
+      return res.redirect(`${SOCIAL_FAILURE_REDIRECT}&provider=${providerName}&error=account_deleted`);
+    }
+    
+    if (user.status === 'disabled') {
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return sendError(res, {
+          code: 'ACCOUNT_DISABLED',
+          message: 'Account is disabled.',
+          statusCode: 403,
+        });
+      }
+      return res.redirect(`${SOCIAL_FAILURE_REDIRECT}&provider=${providerName}&error=account_disabled`);
+    }
+    
+    if (user.status === 'pending_verification') {
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return sendError(res, {
+          code: 'ACCOUNT_NOT_VERIFIED',
+          message: 'Account not activated.',
+          statusCode: 403,
+        });
+      }
+      return res.redirect(`${SOCIAL_FAILURE_REDIRECT}&provider=${providerName}&error=account_not_verified`);
+    }
+    
+    // If this is a connect flow (existingUserId set and user matches), don't create a new session
+    // Just link the provider and return success
+    if (isConnectFlow && existingUserId && user.id === existingUserId) {
+      // Provider successfully linked to existing account
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return sendOk(res, {
+          userId: user.id,
+          provider: providerName,
+          linked: true,
+        }, 200, 'OAUTH_PROVIDER_LINKED', `${providerName} account linked successfully.`);
+      }
+      // Browser redirect - go back to security page
+      return res.redirect(`${FRONTEND_URL}/dashboard/security?oauth=connected&provider=${providerName}`);
+    }
+    
+    // LOGIN FLOW: Create normal auth session (same as email/password login)
+    // This sets cookies so the user stays logged in
     await createAuthSessionForUser(res, user, req);
     
-    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const provider = req.user?.authProvider || 'github';
-    return res.redirect(`${FRONTEND_URL}/auth/social/callback?status=success&provider=${provider}`);
+    // Record login activity and register device
+    const ipAddress = req.ip || req.headers['x-forwarded-for']?.split(',')[0].trim() || req.connection?.remoteAddress || req.socket?.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    try {
+      await recordLoginActivity(user.id, {
+        ipAddress,
+        userAgent,
+        metadata: { loginMethod: `${providerName}_oauth` }
+      });
+      await registerDevice({
+        userId: user.id,
+        userAgent,
+        ipAddress
+      });
+    } catch (activityError) {
+      console.error('Failed to record social login activity:', activityError);
+      // Don't fail login if activity recording fails
+    }
+    
+    // Check if this is an API request (JSON preferred)
+    if (req.headers.accept && req.headers.accept.includes('application/json') && !req.headers.accept.includes('text/html')) {
+      return sendOk(res, {
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+        },
+      }, 200, 'OAUTH_LOGIN_SUCCESS', 'Login via OAuth successful.');
+    }
+    
+    // Browser redirect flow: cookies are already set, so just send user to dashboard
+    return res.redirect(`${FRONTEND_URL}/dashboard`);
   } catch (err) {
-    console.error('[SOCIAL_LOGIN_CALLBACK] Error:', err);
-    return res.redirect('/auth/login?provider=github&error=callback_error');
+    console.error(`[${providerName.toUpperCase()}_CALLBACK] Error:`, {
+      message: err.message,
+      code: err.code,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
+    
+    // Handle specific OAuth errors
+    if (err.code === 'OAUTH_EMAIL_REQUIRED') {
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return sendError(res, {
+          code: 'OAUTH_EMAIL_REQUIRED',
+          message: err.message,
+          statusCode: 400,
+        });
+      }
+      return res.redirect(`${SOCIAL_FAILURE_REDIRECT}&provider=${providerName}&error=email_required&message=${encodeURIComponent(err.message)}`);
+    }
+    
+    if (err.code === 'OAUTH_EMAIL_CONFLICT' || err.code === 'OAUTH_ACCOUNT_ALREADY_LINKED') {
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return sendError(res, {
+          code: err.code,
+          message: err.message,
+          statusCode: 409,
+        });
+      }
+      return res.redirect(`${SOCIAL_FAILURE_REDIRECT}&provider=${providerName}&error=conflict&message=${encodeURIComponent(err.message)}`);
+    }
+    
+    // Generic error handling
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+      return sendError(res, {
+        code: 'OAUTH_CALLBACK_ERROR',
+        message: err.message || 'OAuth callback failed.',
+        statusCode: 500,
+      });
+    }
+    
+    const errorMsg = encodeURIComponent(err.message || 'Authentication failed');
+    return res.redirect(`${SOCIAL_FAILURE_REDIRECT}&provider=${providerName}&error=${errorMsg}`);
+  }
+}
+
+// Legacy function name for backward compatibility
+export async function socialLoginCallback(req, res, next) {
+  return handleOAuthCallback(req, res, next, req.user?.authProvider || 'github');
+}
+
+/**
+ * Lightweight session health check endpoint
+ * Checks if user has a valid JWT token (no database calls)
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ */
+export async function checkSession(req, res) {
+  try {
+    const {
+      JWT_ACCESS_SECRET,
+      JWT_COOKIE_ACCESS_NAME = 'ogc_access',
+    } = process.env;
+
+    // Try to get token from cookie first
+    const tokenFromCookie = req.cookies && req.cookies[JWT_COOKIE_ACCESS_NAME];
+
+    // Fallback to Authorization header
+    const authHeader = req.headers.authorization || '';
+    const tokenFromHeader = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+    const token = tokenFromCookie || tokenFromHeader;
+
+    if (!token) {
+      return res.status(200).json({ authenticated: false });
+    }
+
+    // Verify JWT (lightweight check - no database calls)
+    try {
+      jwt.verify(token, JWT_ACCESS_SECRET);
+      return res.status(200).json({ authenticated: true });
+    } catch (jwtError) {
+      // Token invalid or expired
+      return res.status(200).json({ authenticated: false });
+    }
+  } catch (err) {
+    // On any error, assume not authenticated
+    return res.status(200).json({ authenticated: false });
   }
 }
 

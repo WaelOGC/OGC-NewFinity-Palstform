@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-primary);
 }
 
 .ogc-admin-topbar {
@@ -10,8 +10,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background: white;
-  border-bottom: 1px solid #e0e0e0;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border-subtle);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -22,25 +22,25 @@
 }
 
 .ogc-admin-back-btn {
-  background: none;
-  border: 1px solid #ddd;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
   padding: 0.5rem 1rem;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-secondary);
   transition: all 0.2s;
 }
 
 .ogc-admin-back-btn:hover {
-  background: #f5f5f5;
-  border-color: #999;
+  background: var(--bg-card-soft);
+  border-color: var(--accent);
 }
 
 .ogc-admin-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .ogc-admin-topbar-right {
@@ -50,7 +50,7 @@
 }
 
 .ogc-admin-user-name {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
@@ -62,8 +62,8 @@
 
 .ogc-admin-sidebar {
   width: 240px;
-  background: white;
-  border-right: 1px solid #e0e0e0;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border-subtle);
   overflow-y: auto;
 }
 
@@ -71,5 +71,5 @@
   flex: 1;
   overflow-y: auto;
   padding: 2rem;
-  background: #f5f5f5;
+  background: var(--bg-primary);
 }

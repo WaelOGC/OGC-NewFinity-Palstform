@@ -91,6 +91,15 @@ function ResetPasswordPage() {
     setStatus(null);
 
     // Client-side validation
+    if (!password || password.length < 8) {
+      setStatus({
+        type: 'error',
+        message: 'Password must be at least 8 characters long.',
+      });
+      setSubmitting(false);
+      return;
+    }
+
     if (password !== confirmPassword) {
       setStatus({
         type: 'error',
@@ -100,18 +109,8 @@ function ResetPasswordPage() {
       return;
     }
 
-    if (password.length < 8) {
-      setStatus({
-        type: 'error',
-        message: 'Password must be at least 8 characters long.',
-      });
-      setSubmitting(false);
-      return;
-    }
-
     try {
-      const data = await api.post('/auth/password/reset/complete', {
-        email: email || '', // Allow empty email if recovered from validation
+      const data = await api.post('/auth/reset-password', {
         token,
         password,
       });
@@ -200,14 +199,14 @@ function ResetPasswordPage() {
               </svg>
             </div>
             <h1 className="auth-page-title">Password Reset Successful</h1>
-            <p className="reset-password-message">{status.message}</p>
+            <p className="reset-password-message">Your password has been reset.</p>
             <button
               type="button"
               onClick={() => navigate('/auth')}
               className="auth-form-submit-btn"
               style={{ marginTop: '24px' }}
             >
-              Back to sign in
+              Go to sign in
             </button>
           </div>
         </div>
@@ -289,9 +288,9 @@ function ResetPasswordPage() {
     <div className="auth-page-container">
       <div className="auth-page-card">
         <div className="auth-page-header">
-          <h1 className="auth-page-title">Reset your password</h1>
+          <h1 className="auth-page-title">Set a new password</h1>
           <p className="auth-page-subtitle">
-            Enter your new password below.
+            Enter a new password for your account.
           </p>
         </div>
 
@@ -346,6 +345,7 @@ function ResetPasswordPage() {
                 )}
               </button>
             </div>
+            <p className="auth-form-hint">At least 8 characters, including one uppercase letter, one lowercase letter, one number, and one symbol.</p>
           </div>
 
           <div className="auth-form-field">
@@ -356,7 +356,7 @@ function ResetPasswordPage() {
               <input
                 id="reset-confirm-password"
                 type={showConfirmPassword ? 'text' : 'password'}
-                className="auth-form-input"
+                className={`auth-form-input ${confirmPassword && password !== confirmPassword ? 'auth-form-input--error' : ''}`}
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -384,6 +384,9 @@ function ResetPasswordPage() {
                 )}
               </button>
             </div>
+            {confirmPassword && password !== confirmPassword && (
+              <p className="auth-form-error-text">Passwords do not match.</p>
+            )}
           </div>
 
           {status?.type === 'error' && (

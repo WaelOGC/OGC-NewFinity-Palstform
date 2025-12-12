@@ -10,90 +10,80 @@ import TwitterStrategy from 'passport-twitter';
 // Using named import to avoid "not a constructor" error
 import { Strategy as LinkedInStrategy } from 'passport-linkedin-oauth2';
 import { Strategy as DiscordStrategy } from 'passport-discord';
-import pool from '../db.js';
+import { syncOAuthProfile } from '../services/userService.js';
 
 // Base callback URL configuration
 const baseCallbackUrl = process.env.BACKEND_URL || process.env.OAUTH_CALLBACK_BASE_URL || 'http://localhost:4000';
 
 /**
- * Find or create a user from social OAuth provider
- * 
- * @param {Object} params - User data from OAuth provider
- * @param {string} params.provider - Provider name (google, github, twitter, linkedin, discord)
- * @param {string} params.providerId - Provider-specific user ID
- * @param {string|null} params.email - User email (may be null for some providers)
- * @param {string|null} params.name - User display name
- * @param {string|null} params.avatarUrl - User avatar URL
- * @returns {Promise<Object>} - User object from database
+ * Helper to extract OAuth profile data from provider profile
+ * Normalizes data from different providers into a common format
  */
-async function findOrCreateSocialUser({ provider, providerId, email, name, avatarUrl }) {
-  // Map provider names to database column names
-  const providerColumnMap = {
-    google: 'googleId',
-    github: 'githubId',
-    twitter: 'twitterId',
-    linkedin: 'linkedinId',
-    discord: 'discordId',
-  };
-
-  const providerColumn = providerColumnMap[provider];
-  if (!providerColumn) {
-    throw new Error(`Unknown provider: ${provider}`);
-  }
-
-  // First, try to find user by provider ID
-  let [rows] = await pool.query(
-    `SELECT * FROM User WHERE ${providerColumn} = ?`,
-    [providerId]
-  );
-
-  if (rows.length > 0) {
-    // User exists with this provider ID
-    return rows[0];
-  }
-
-  // If email is provided, check if user with that email exists
-  if (email) {
-    [rows] = await pool.query(
-      'SELECT * FROM User WHERE email = ?',
-      [email]
-    );
-
-    if (rows.length > 0) {
-      // User exists with this email - link the provider account
-      const existingUser = rows[0];
+function extractOAuthProfileData(provider, profile) {
+  const normalizedProvider = provider.toLowerCase();
+  
+  let email = null;
+  let emailVerified = false;
+  let username = null;
+  let displayName = null;
+  let avatarUrl = null;
+  
+  switch (normalizedProvider) {
+    case 'google':
+      email = profile.emails?.[0]?.value || null;
+      emailVerified = profile.emails?.[0]?.verified === true || false;
+      displayName = profile.displayName || profile.name?.givenName || null;
+      avatarUrl = profile.photos?.[0]?.value || null;
+      break;
       
-      // Update user with provider ID and authProvider if not set
-      // Phase 5: Ensure role is set if it's NULL (for users created before Phase 5 migration)
-      await pool.query(
-        `UPDATE User SET ${providerColumn} = ?, authProvider = COALESCE(authProvider, ?), avatarUrl = COALESCE(avatarUrl, ?), role = COALESCE(role, 'STANDARD_USER') WHERE id = ?`,
-        [providerId, provider, avatarUrl || existingUser.avatarUrl, existingUser.id]
-      );
-
-      // Fetch updated user
-      [rows] = await pool.query('SELECT * FROM User WHERE id = ?', [existingUser.id]);
-      return rows[0];
-    }
+    case 'github':
+      email = profile.emails?.[0]?.value || null;
+      emailVerified = profile.emails?.[0]?.verified === true || false;
+      username = profile.username || profile.login || null;
+      displayName = profile.displayName || profile.name || username || null;
+      avatarUrl = profile.photos?.[0]?.value || profile._json?.avatar_url || null;
+      break;
+      
+    case 'twitter':
+      email = profile.emails?.[0]?.value || null;
+      emailVerified = profile.emails?.[0]?.verified === true || false;
+      username = profile.username || null;
+      displayName = profile.displayName || profile.username || null;
+      avatarUrl = profile.photos?.[0]?.value || profile._json?.profile_image_url_https || null;
+      break;
+      
+    case 'linkedin':
+      email = profile.emails?.[0]?.value || null;
+      emailVerified = profile.emails?.[0]?.verified === true || false;
+      displayName = profile.displayName || null;
+      avatarUrl = profile.photos?.[0]?.value || null;
+      break;
+      
+    case 'discord':
+      email = profile.email || null;
+      emailVerified = profile.verified === true || false;
+      username = profile.username || null;
+      displayName = profile.global_name || profile.username || null;
+      avatarUrl = profile.avatar 
+        ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
+        : null;
+      break;
+      
+    default:
+      // Fallback for unknown providers
+      email = profile.email || profile.emails?.[0]?.value || null;
+      displayName = profile.displayName || profile.name || profile.username || null;
+      avatarUrl = profile.avatar_url || profile.photos?.[0]?.value || null;
   }
-
-  // No existing user found - create new user
-  // For social-only users, password is NULL and status is 'active' (email is verified by provider)
-  const now = new Date();
-  const termsVersion = process.env.TERMS_VERSION || '1.0';
   
-  // Generate a placeholder email if not provided (some providers don't provide email)
-  const userEmail = email || `${provider}_${providerId}@social.local`;
-  
-  // Phase 5: Explicitly set role to STANDARD_USER for new social users
-  const [result] = await pool.query(
-    `INSERT INTO User (email, password, fullName, status, authProvider, ${providerColumn}, avatarUrl, termsAccepted, termsAcceptedAt, termsVersion, termsSource, role) 
-     VALUES (?, NULL, ?, 'active', ?, ?, ?, 1, ?, ?, ?, 'STANDARD_USER')`,
-    [userEmail, name || null, provider, providerId, avatarUrl || null, now, termsVersion, provider]
-  );
-
-  // Fetch the newly created user
-  [rows] = await pool.query('SELECT * FROM User WHERE id = ?', [result.insertId]);
-  return rows[0];
+  return {
+    email,
+    emailVerified,
+    username,
+    displayName,
+    avatarUrl,
+    profileJson: profile._json || profile,
+  };
 }
 
 // Configure Google OAuth Strategy
@@ -109,16 +99,20 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
         },
         async (accessToken, refreshToken, profile, done) => {
           try {
-            const email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;
-            const name = profile.displayName || profile.name?.givenName || null;
-            const avatarUrl = profile.photos && profile.photos[0] ? profile.photos[0].value : null;
+            const { email, emailVerified, username, displayName, avatarUrl, profileJson } = 
+              extractOAuthProfileData('google', profile);
             
-            const user = await findOrCreateSocialUser({
+            // Note: existingUserId is not available in passport verify callback
+            // Connect flow will be handled in the callback route handler
+            const { user } = await syncOAuthProfile({
               provider: 'google',
-              providerId: profile.id,
+              providerUserId: profile.id,
               email,
-              name,
+              emailVerified,
+              username,
+              displayName,
               avatarUrl,
+              profileJson,
             });
 
             return done(null, user);
@@ -158,20 +152,18 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
         },
         async (accessToken, refreshToken, profile, done) => {
           try {
-            const user = await findOrCreateSocialUser({
+            const { email, emailVerified, username, displayName, avatarUrl, profileJson } = 
+              extractOAuthProfileData('github', profile);
+            
+            const { user } = await syncOAuthProfile({
               provider: 'github',
-              providerId: profile.id,
-              email:
-                (profile.emails &&
-                  profile.emails[0] &&
-                  profile.emails[0].value) ||
-                null,
-              name: profile.displayName || profile.username || 'GitHub User',
-              avatarUrl:
-                (profile.photos &&
-                  profile.photos[0] &&
-                  profile.photos[0].value) ||
-                null,
+              providerUserId: profile.id,
+              email,
+              emailVerified,
+              username,
+              displayName,
+              avatarUrl,
+              profileJson,
             });
 
             return done(null, user);
@@ -205,16 +197,18 @@ if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
         },
         async (token, tokenSecret, profile, done) => {
           try {
-            const email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;
-            const name = profile.displayName || profile.username || null;
-            const avatarUrl = profile.photos && profile.photos[0] ? profile.photos[0].value : null;
+            const { email, emailVerified, username, displayName, avatarUrl, profileJson } = 
+              extractOAuthProfileData('twitter', profile);
             
-            const user = await findOrCreateSocialUser({
+            const { user } = await syncOAuthProfile({
               provider: 'twitter',
-              providerId: profile.id,
+              providerUserId: profile.id,
               email,
-              name,
+              emailVerified,
+              username,
+              displayName,
               avatarUrl,
+              profileJson,
             });
 
             return done(null, user);
@@ -247,22 +241,18 @@ if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
         },
         async (accessToken, refreshToken, profile, done) => {
           try {
-            const email =
-              profile.emails && profile.emails[0]
-                ? profile.emails[0].value
-                : null;
-
-            const avatarUrl =
-              profile.photos && profile.photos[0]
-                ? profile.photos[0].value
-                : null;
-
-            const user = await findOrCreateSocialUser({
+            const { email, emailVerified, username, displayName, avatarUrl, profileJson } = 
+              extractOAuthProfileData('linkedin', profile);
+            
+            const { user } = await syncOAuthProfile({
               provider: 'linkedin',
-              providerId: profile.id,
+              providerUserId: profile.id,
               email,
-              name: profile.displayName,
+              emailVerified,
+              username,
+              displayName,
               avatarUrl,
+              profileJson,
             });
 
             return done(null, user);
@@ -303,18 +293,18 @@ try {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
-          const email = profile.email || null;
-          const name = profile.username || profile.global_name || null;
-          const avatarUrl = profile.avatar 
-            ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
-            : null;
+          const { email, emailVerified, username, displayName, avatarUrl, profileJson } = 
+            extractOAuthProfileData('discord', profile);
           
-          const user = await findOrCreateSocialUser({
+          const { user } = await syncOAuthProfile({
             provider: 'discord',
-            providerId: profile.id,
+            providerUserId: profile.id,
             email,
-            name,
+            emailVerified,
+            username,
+            displayName,
             avatarUrl,
+            profileJson,
           });
 
           return done(null, user);

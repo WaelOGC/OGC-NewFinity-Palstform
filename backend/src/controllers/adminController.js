@@ -41,24 +41,32 @@ import pool from '../db.js';
 export async function listAdminUsers(req, res) {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const pageSize = parseInt(req.query.pageSize) || parseInt(req.query.limit) || 20;
     const search = req.query.search || '';
     const role = req.query.role || '';
     const status = req.query.status || '';
 
     const result = await searchUsers({
       page,
-      limit,
+      limit: pageSize,
       search,
       role: role || undefined,
       status: status || undefined,
     });
 
-    return sendOk(res, result);
+    // Transform to requested format: { items, page, pageSize, total }
+    const responseData = {
+      items: result.items || [],
+      page: result.pagination?.page || page,
+      pageSize: result.pagination?.limit || pageSize,
+      total: result.pagination?.total || 0,
+    };
+
+    return sendOk(res, responseData, 200, 'ADMIN_USERS_LIST');
   } catch (error) {
     console.error('listAdminUsers error:', error);
     return sendError(res, {
-      code: 'DATABASE_ERROR',
+      code: 'ADMIN_USERS_LIST_FAILED',
       message: 'Failed to fetch users',
       statusCode: 500
     });
@@ -68,6 +76,8 @@ export async function listAdminUsers(req, res) {
 /**
  * GET /api/v1/admin/users/:userId
  * Get detailed user information for admin view
+ * Returns full detail with activities and devices for AdminUserDetailPanel
+ * Also supports simple user lookup for UserDetailDrawer (returns user in data field)
  */
 export async function getAdminUserDetail(req, res) {
   try {
@@ -84,12 +94,35 @@ export async function getAdminUserDetail(req, res) {
     const user = await getUserWithAccessData(userId);
     if (!user) {
       return sendError(res, {
-        code: 'USER_NOT_FOUND',
+        code: 'ADMIN_USER_NOT_FOUND',
         message: 'User not found',
         statusCode: 404
       });
     }
 
+    // Check if this is a simple lookup request (for drawer) via query param
+    const simpleLookup = req.query.simple === 'true';
+
+    if (simpleLookup) {
+      // Simple lookup: return just user data with ADMIN_USER_DETAIL code
+      // Remove sensitive fields
+      const { password, recoveryCodes, twoFactorSecret, ...safeUser } = user;
+      
+      // Return user directly in data field
+      return sendOk(res, {
+        id: safeUser.id,
+        email: safeUser.email,
+        fullName: safeUser.fullName,
+        role: safeUser.role,
+        accountStatus: safeUser.accountStatus,
+        createdAt: safeUser.createdAt,
+        lastLoginAt: safeUser.lastLoginAt,
+        connectedProviders: safeUser.connectedProviders || [],
+        username: safeUser.username,
+      }, 200, 'ADMIN_USER_DETAIL');
+    }
+
+    // Full detail: return user with activities and devices (for AdminUserDetailPanel)
     // Get recent activity (last 20)
     const activities = await getUserActivityLog(userId, { limit: 20 });
 
@@ -312,6 +345,97 @@ export async function updateAdminUserStatus(req, res) {
     return sendError(res, {
       code: 'DATABASE_ERROR',
       message: 'Failed to update user status',
+      statusCode: 500
+    });
+  }
+}
+
+/**
+ * PATCH /api/v1/admin/users/:userId/toggle-status
+ * Toggle user account status between ACTIVE and DISABLED
+ * Does NOT allow toggling FOUNDER users
+ */
+export async function toggleAdminUserStatus(req, res) {
+  try {
+    const userId = parseInt(req.params.userId);
+    const adminId = req.user?.id;
+
+    if (!userId || isNaN(userId)) {
+      return sendError(res, {
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid user ID',
+        statusCode: 400
+      });
+    }
+
+    // Get current user
+    const currentUser = await getUserProfile(userId);
+    if (!currentUser) {
+      return sendError(res, {
+        code: 'ADMIN_USER_NOT_FOUND',
+        message: 'User not found',
+        statusCode: 404
+      });
+    }
+
+    // Do NOT allow toggling FOUNDER users
+    if (currentUser.role === 'FOUNDER') {
+      return sendError(res, {
+        code: 'VALIDATION_ERROR',
+        message: 'Cannot toggle status for FOUNDER users',
+        statusCode: 400
+      });
+    }
+
+    const oldStatus = currentUser.accountStatus || 'ACTIVE';
+    
+    // Toggle status: ACTIVE → DISABLED, DISABLED → ACTIVE
+    // Only toggle if status is ACTIVE or DISABLED
+    let newStatus;
+    if (oldStatus === 'ACTIVE') {
+      newStatus = 'DISABLED';
+    } else if (oldStatus === 'DISABLED') {
+      newStatus = 'ACTIVE';
+    } else {
+      // If status is something else (SUSPENDED, BANNED, etc.), don't allow toggle
+      return sendError(res, {
+        code: 'VALIDATION_ERROR',
+        message: `Cannot toggle status. Current status is ${oldStatus}. Toggle is only available for ACTIVE and DISABLED statuses.`,
+        statusCode: 400
+      });
+    }
+
+    // Update status
+    const updatedUser = await updateUserStatus(userId, newStatus);
+
+    // Log activity
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    try {
+      await logUserActivity({
+        userId,
+        actorId: adminId, // Admin is the actor
+        type: 'STATUS_CHANGED',
+        ipAddress,
+        userAgent,
+        metadata: {
+          oldStatus,
+          newStatus,
+          action: 'TOGGLE',
+        },
+      });
+    } catch (activityError) {
+      console.error('Failed to record status toggle activity:', activityError);
+    }
+
+    return sendOk(res, {
+      accountStatus: updatedUser.accountStatus,
+    }, 200, 'ADMIN_USER_STATUS_UPDATED');
+  } catch (error) {
+    console.error('toggleAdminUserStatus error:', error);
+    return sendError(res, {
+      code: 'DATABASE_ERROR',
+      message: 'Failed to toggle user status',
       statusCode: 500
     });
   }

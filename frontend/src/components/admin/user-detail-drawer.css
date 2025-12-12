@@ -1,0 +1,214 @@
+/* User Detail Drawer - Read-only user information panel */
+
+.user-detail-drawer-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.user-detail-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  max-width: 90vw;
+  background: var(--bg-elevated);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-out;
+  overflow: hidden;
+}
+
+.user-detail-drawer-open {
+  transform: translateX(0);
+}
+
+.user-detail-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+}
+
+.user-detail-drawer-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.user-detail-drawer-close {
+  background: none;
+  border: none;
+  font-size: 32px;
+  line-height: 1;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.user-detail-drawer-close:hover {
+  background: var(--chip-bg);
+  color: var(--text-primary);
+}
+
+.user-detail-drawer-close:active {
+  transform: scale(0.95);
+}
+
+.user-detail-drawer-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.user-detail-drawer-loading,
+.user-detail-drawer-error,
+.user-detail-drawer-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.user-detail-drawer-error {
+  color: var(--accent-danger);
+}
+
+.user-detail-drawer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.user-detail-drawer-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-detail-drawer-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.user-detail-drawer-value {
+  font-size: 15px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.user-detail-drawer-providers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.user-detail-drawer-provider-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--chip-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.user-detail-drawer-toggle-btn {
+  margin-top: 12px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.user-detail-drawer-toggle-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.user-detail-drawer-toggle-btn-disable {
+  background: var(--accent-warning);
+  color: var(--text-on-accent, #ffffff);
+}
+
+.user-detail-drawer-toggle-btn-disable:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.user-detail-drawer-toggle-btn-enable {
+  background: var(--accent-success);
+  color: var(--text-on-accent, #ffffff);
+}
+
+.user-detail-drawer-toggle-btn-enable:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.user-detail-drawer-toggle-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Scrollbar styling for drawer content */
+.user-detail-drawer-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.user-detail-drawer-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.user-detail-drawer-content::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 4px;
+}
+
+.user-detail-drawer-content::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .user-detail-drawer {
+    width: 100%;
+    max-width: 100%;
+  }
+}

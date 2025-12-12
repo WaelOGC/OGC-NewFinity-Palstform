@@ -1,4 +1,4 @@
-/* Reset Password Page - Reuses auth page styles with additional states */
+/* Reset Password Page - Theme-Aware */
 
 .reset-password-success,
 .reset-password-error-state,
@@ -26,46 +26,25 @@
 .reset-password-icon .spinner {
   width: 48px;
   height: 48px;
-  color: rgba(0, 255, 198, 0.9);
-}
-
-[data-theme="light"] .reset-password-icon .spinner {
-  color: rgba(60, 120, 220, 0.9);
+  color: var(--accent-primary);
 }
 
 .reset-password-icon--success {
-  color: rgba(0, 255, 198, 0.9);
-  background: rgba(0, 255, 198, 0.15);
-}
-
-[data-theme="light"] .reset-password-icon--success {
-  color: rgba(0, 200, 170, 0.9);
-  background: rgba(0, 200, 170, 0.15);
+  color: var(--accent-primary);
+  background: var(--accent-soft);
 }
 
 .reset-password-icon--error {
-  color: rgba(255, 60, 172, 0.9);
-  background: rgba(255, 60, 172, 0.15);
-}
-
-[data-theme="light"] .reset-password-icon--error {
-  color: rgba(220, 50, 150, 0.9);
-  background: rgba(220, 50, 150, 0.15);
+  color: var(--accent-danger);
+  background: rgba(255, 60, 92, 0.1);
 }
 
 .reset-password-message {
   font-size: 15px;
   line-height: 1.6;
   margin: 0 0 24px 0;
+  color: var(--text-secondary);
   transition: color 0.4s ease;
-}
-
-[data-theme="dark"] .reset-password-message {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-[data-theme="light"] .reset-password-message {
-  color: rgba(17, 24, 39, 0.85);
 }
 
 /* Password toggle button */
@@ -81,24 +60,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--text-muted);
   transition: color 0.2s ease;
-  color: rgba(255, 255, 255, 0.6);
 }
 
-[data-theme="dark"] .password-toggle-btn {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-[data-theme="dark"] .password-toggle-btn:hover {
-  color: rgba(0, 255, 198, 0.9);
-}
-
-[data-theme="light"] .password-toggle-btn {
-  color: rgba(17, 24, 39, 0.6);
-}
-
-[data-theme="light"] .password-toggle-btn:hover {
-  color: rgba(60, 120, 220, 0.9);
+.password-toggle-btn:hover {
+  color: var(--accent-primary);
 }
 
 .password-toggle-btn:focus {
@@ -106,13 +73,36 @@
 }
 
 .password-toggle-btn:focus-visible {
-  outline: 2px solid rgba(0, 255, 198, 0.5);
+  outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-[data-theme="light"] .password-toggle-btn:focus-visible {
-  outline-color: rgba(60, 120, 220, 0.5);
+/* Password requirements hint */
+.auth-form-hint {
+  font-size: 12px;
+  margin-top: 8px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  transition: color 0.4s ease;
+}
+
+/* Inline error text */
+.auth-form-error-text {
+  font-size: 12px;
+  margin-top: 8px;
+  color: var(--accent-danger);
+  transition: color 0.4s ease;
+}
+
+/* Error state for input */
+.auth-form-input--error {
+  border-color: var(--accent-danger) !important;
+}
+
+.auth-form-input--error:focus {
+  border-color: var(--accent-danger) !important;
+  box-shadow: 0 0 0 3px rgba(255, 60, 92, 0.1) !important;
 }
 
 /* Responsive */
@@ -131,5 +121,8 @@
   .reset-password-message {
     font-size: 14px;
   }
-}
 
+  .auth-form-hint {
+    font-size: 11px;
+  }
+}

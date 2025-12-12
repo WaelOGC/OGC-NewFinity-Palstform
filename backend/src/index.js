@@ -13,6 +13,7 @@ import routes from './routes/index.js';
 import { initEmailService } from './services/emailService.js';
 import { ensureDefaultAdmin } from './utils/ensureDefaultAdmin.js';
 import { ensurePhase5Migration } from './utils/ensurePhase5Migration.js';
+import pool from './db.js';
 
 // Import Passport providers configuration (registers all OAuth strategies)
 import './config/passportProviders.js';
@@ -88,19 +89,51 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-app.get('/api/health', (req, res) => {
-  const health = {
-    status: 'ok',
-    checks: {
-      backend: 'up'
-      // Leave TODO comments for DB or other services if they are not wired yet
-      // e.g. db: 'unknown'
-    },
-    version: '1.0.0',
-    timestamp: new Date().toISOString()
+app.get('/api/health', async (req, res) => {
+  const startedAt = Date.now();
+
+  // Default statuses
+  let overallStatus = 'ok';
+  const checks = {
+    backend: 'up',
+    db: 'unknown',
+    // You can add more services later, e.g.:
+    // email: 'unknown',
+    // cache: 'unknown',
   };
 
-  res.json(health);
+  // --- Database health check (MySQL) ---
+  try {
+    // Lightweight query to confirm the DB connection is alive
+    const [rows] = await pool.query('SELECT 1 AS ok');
+    if (rows && rows.length > 0) {
+      checks.db = 'up';
+    } else {
+      checks.db = 'degraded';
+      overallStatus = 'degraded';
+    }
+  } catch (err) {
+    checks.db = 'down';
+    overallStatus = 'degraded';
+    console.error('[HealthCheck] Database health check failed:', err.message);
+  }
+
+  // In the future, you can add more checks here, for example:
+  // - Email / SMTP status from the email service
+  // - Cache / external services
+  // - Queue / job runner health
+
+  const health = {
+    status: overallStatus,
+    checks,
+    version: '1.0.0',
+    responseTimeMs: Date.now() - startedAt,
+    timestamp: new Date().toISOString(),
+  };
+
+  // If anything critical is degraded, you may want to return 503 instead of 200.
+  // For now, use 200 in all cases to avoid breaking existing monitoring.
+  res.status(200).json(health);
 });
 
 // Error handler (last)
@@ -112,7 +145,8 @@ const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '127.0
 // Initialize email service and start server
 (async () => {
   try {
-    await initEmailService();
+    const emailInit = initEmailService();
+    console.log(`[EmailService] Initialized in ${emailInit.mode} mode (from: ${emailInit.from})`);
     
     // Dev-only: Ensure Phase 5 migration is applied (runs only in non-production)
     await ensurePhase5Migration();
@@ -124,8 +158,7 @@ const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '127.0
       console.log(`OGC NewFinity backend listening on ${HOST}:${PORT}`);
     });
   } catch (error) {
-    console.error('Failed to initialize email service:', error.message);
-    console.error('Server startup aborted. Please configure SMTP settings in .env file.');
+    console.error('Failed to start server:', error.message);
     process.exit(1);
   }
 })();

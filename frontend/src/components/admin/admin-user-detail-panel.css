@@ -13,13 +13,14 @@
 }
 
 .admin-detail-panel {
-  background: white;
+  background: var(--bg-elevated);
   border-radius: 8px;
   max-width: 900px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
 }
 
 .admin-detail-header {
@@ -27,17 +28,17 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--border-subtle);
   position: sticky;
   top: 0;
-  background: white;
+  background: var(--bg-elevated);
   z-index: 10;
 }
 
 .admin-detail-header h2 {
   margin: 0;
   font-size: 1.5rem;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .admin-detail-close {
@@ -45,7 +46,7 @@
   border: none;
   font-size: 2rem;
   cursor: pointer;
-  color: #666;
+  color: var(--text-secondary);
   width: 2rem;
   height: 2rem;
   display: flex;
@@ -56,7 +57,7 @@
 }
 
 .admin-detail-close:hover {
-  background: #f5f5f5;
+  background: var(--bg-card-soft);
 }
 
 .admin-detail-content {
@@ -70,21 +71,21 @@
 }
 
 .admin-detail-error {
-  background: #ffebee;
-  color: #d32f2f;
-  border: 1px solid #ffcdd2;
+  background: var(--accent-danger-soft);
+  color: var(--accent-danger);
+  border: 1px solid var(--accent-danger);
 }
 
 .admin-detail-success {
-  background: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #c8e6c9;
+  background: var(--accent-success-soft);
+  color: var(--accent-success);
+  border: 1px solid var(--accent-success);
 }
 
 .admin-detail-section {
   margin-bottom: 2rem;
   padding-bottom: 2rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .admin-detail-section:last-child {
@@ -94,7 +95,7 @@
 .admin-detail-section h3 {
   margin: 0 0 1rem 0;
   font-size: 1.2rem;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .admin-detail-info-grid {
@@ -111,14 +112,14 @@
 
 .admin-detail-info-grid label {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--text-muted);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .admin-detail-info-grid > div > div {
-  color: #333;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
@@ -130,7 +131,7 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .admin-detail-form-row {
@@ -142,26 +143,33 @@
 .admin-detail-select {
   flex: 1;
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   font-size: 0.95rem;
-  background: white;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: border-color 0.2s;
+}
+
+.admin-detail-select:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .admin-detail-save-btn {
   padding: 0.75rem 1.5rem;
-  background: #2196f3;
-  color: white;
+  background: var(--accent-secondary);
+  color: var(--button-text-on-accent);
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
-  transition: background 0.2s;
+  transition: background 0.2s, opacity 0.2s;
 }
 
 .admin-detail-save-btn:hover:not(:disabled) {
-  background: #1976d2;
+  opacity: 0.9;
 }
 
 .admin-detail-save-btn:disabled {
@@ -186,6 +194,7 @@
   gap: 0.5rem;
   cursor: pointer;
   font-size: 0.95rem;
+  color: var(--text-primary);
 }
 
 .admin-detail-flag-item input[type="checkbox"] {
@@ -195,7 +204,7 @@
 }
 
 .admin-detail-empty {
-  color: #999;
+  color: var(--text-muted);
   font-style: italic;
   margin: 0;
 }
@@ -210,40 +219,113 @@
 .admin-detail-activity-item,
 .admin-detail-device-item {
   padding: 1rem;
-  background: #f9f9f9;
+  background: var(--bg-card-soft);
   border-radius: 4px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-subtle);
 }
 
 .admin-detail-activity-type {
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   font-size: 0.9rem;
   margin-bottom: 0.25rem;
 }
 
 .admin-detail-activity-desc {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   margin-bottom: 0.25rem;
 }
 
 .admin-detail-activity-time {
-  color: #999;
+  color: var(--text-muted);
   font-size: 0.8rem;
 }
 
 .admin-detail-device-name {
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   font-size: 0.9rem;
   margin-bottom: 0.25rem;
 }
 
 .admin-detail-device-info {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+.admin-detail-sessions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.admin-detail-revoke-all-btn {
+  padding: 6px 12px;
+  background-color: var(--accent-danger-soft);
+  border: 1px solid var(--accent-danger);
+  border-radius: 4px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.85em;
+  transition: opacity 0.2s;
+}
+
+.admin-detail-revoke-all-btn:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.admin-detail-revoke-all-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-detail-session-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-detail-session-item-content {
+  flex: 1;
+}
+
+.admin-detail-current-session-badge {
+  font-size: 0.75em;
+  margin-left: 8px;
+  padding: 2px 6px;
+  background-color: var(--accent-success-soft);
+  border-radius: 4px;
+  color: var(--accent-success);
+}
+
+.admin-detail-revoke-btn {
+  padding: 4px 8px;
+  background-color: var(--accent-danger-soft);
+  border: 1px solid var(--accent-danger);
+  border-radius: 4px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.8em;
+  margin-left: 12px;
+  transition: opacity 0.2s;
+}
+
+.admin-detail-revoke-btn:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.admin-detail-revoke-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error-code {
+  margin-left: 8px;
+  opacity: 0.7;
+  font-size: 0.9em;
 }

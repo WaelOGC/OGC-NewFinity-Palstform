@@ -8,7 +8,7 @@
   font-weight: 600;
   margin-bottom: 12px;
   opacity: 0.7;
-  color: var(--ogc-fg);
+  color: var(--text-muted);
 }
 
 .ogc-dsb-list {
@@ -24,7 +24,7 @@
   display: block;
   padding: 8px 10px;
   border-radius: 999px;
-  color: var(--ogc-fg);
+  color: var(--text-primary);
   text-decoration: none;
   opacity: 0.8;
   border: 1px solid transparent;
@@ -33,15 +33,15 @@
 
 .ogc-dsb-link:hover {
   opacity: 1;
-  border-color: rgba(0, 255, 198, 0.5);
-  box-shadow: 0 0 12px rgba(0, 255, 198, 0.35);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 12px var(--accent-soft);
   transform: translateY(-1px);
 }
 
 .ogc-dsb-link-active {
   opacity: 1;
-  border-color: rgba(0, 255, 198, 0.9);
-  box-shadow: 0 0 16px rgba(0, 255, 198, 0.5);
-  background: rgba(0, 255, 198, 0.1);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 16px var(--accent-soft);
+  background: var(--accent-soft);
 }
 

@@ -1,4 +1,4 @@
-/* Forgot Password Page - Reuses auth page styles with additional success state */
+/* Forgot Password Page - Theme-Aware */
 
 .forgot-password-success {
   text-align: center;
@@ -22,28 +22,24 @@
 }
 
 .forgot-password-icon--success {
-  color: rgba(0, 255, 198, 0.9);
-  background: rgba(0, 255, 198, 0.15);
+  color: var(--accent-primary);
+  background: var(--accent-soft);
 }
 
-[data-theme="light"] .forgot-password-icon--success {
-  color: rgba(0, 200, 170, 0.9);
-  background: rgba(0, 200, 170, 0.15);
+.forgot-password-success-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: var(--text-primary);
+  transition: color 0.4s ease;
 }
 
 .forgot-password-message {
   font-size: 15px;
   line-height: 1.6;
   margin: 0 0 24px 0;
+  color: var(--text-secondary);
   transition: color 0.4s ease;
-}
-
-[data-theme="dark"] .forgot-password-message {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-[data-theme="light"] .forgot-password-message {
-  color: rgba(17, 24, 39, 0.85);
 }
 
 /* Responsive */
@@ -59,8 +55,11 @@
     height: 28px;
   }
 
+  .forgot-password-success-title {
+    font-size: 18px;
+  }
+
   .forgot-password-message {
     font-size: 14px;
   }
 }
-
