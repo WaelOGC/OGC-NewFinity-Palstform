@@ -11,7 +11,12 @@
     "test:smtp": "node ./scripts/test-smtp.js",
     "lint": "echo \"(add eslint later)\"",
     "db:check:user-schema": "node ./scripts/check-user-schema.js",
-    "db:migrate:unified": "node ./scripts/run-unified-user-migration.js"
+    "db:user-id-type": "node ./scripts/print-user-id-type.js",
+    "db:migrate": "node ./scripts/run-unified-migration.js",
+    "db:migrate:unified": "node ./scripts/run-unified-migration.js",
+    "db:verify": "node ./scripts/verify-schema.js",
+    "db:purge-test-users": "node ./scripts/purge-test-users.js",
+    "db:purge-users": "node ./scripts/purge-test-users.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

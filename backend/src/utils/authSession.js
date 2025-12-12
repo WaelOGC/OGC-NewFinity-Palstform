@@ -4,16 +4,8 @@ import crypto from 'crypto';
 import { createSessionForUser, isNewDeviceOrIpForUser } from '../services/sessionService.js';
 import { sendNewLoginAlertEmail } from '../services/emailService.js';
 import { logUserActivity } from '../services/activityService.js';
-
-// Standardized JWT configuration
-const {
-  JWT_ACCESS_SECRET,
-  JWT_REFRESH_SECRET,
-  JWT_ACCESS_EXPIRES_IN = '15m',
-  JWT_REFRESH_EXPIRES_IN = '7d',
-  JWT_COOKIE_ACCESS_NAME = 'ogc_access',
-  JWT_COOKIE_REFRESH_NAME = 'ogc_refresh',
-} = process.env;
+import env from '../config/env.js';
+import { normalizeAccountStatus, ACCOUNT_STATUS, canUserLogin } from './accountStatus.js';
 
 // Helper to convert time string to milliseconds
 function parseExpiresIn(expiresIn) {
@@ -22,6 +14,69 @@ function parseExpiresIn(expiresIn) {
   const [, value, unit] = match;
   const multipliers = { s: 1000, m: 60 * 1000, h: 60 * 60 * 1000, d: 24 * 60 * 60 * 1000 };
   return parseInt(value) * (multipliers[unit] || 1000);
+}
+
+/**
+ * Get standardized cookie options based on environment
+ * Centralized configuration to ensure consistency across all cookie-setting code
+ * 
+ * Rules:
+ * - Development: httpOnly=true, secure=false, sameSite='lax', domain=undefined
+ * - Production: httpOnly=true, secure=true, sameSite='none' (cross-site) or 'lax' (same-site), domain from env
+ * - If secure=true, sameSite cannot be 'lax' or 'strict' for cross-site; must be 'none'
+ * - If sameSite='none', secure must be true (browser requirement)
+ * - Never set domain like 'localhost' (invalid / breaks cookies)
+ * 
+ * @param {number} maxAge - Cookie max age in milliseconds
+ * @returns {Object} Cookie options object
+ */
+export function getCookieOptions(maxAge) {
+  const isProduction = env.NODE_ENV === 'production';
+  
+  // Base options
+  const options = {
+    httpOnly: true,
+    path: '/',
+    maxAge: maxAge,
+  };
+  
+  // Development defaults
+  if (!isProduction) {
+    options.secure = false;
+    options.sameSite = 'lax';
+    // DO NOT set domain in dev (localhost is invalid)
+    options.domain = undefined;
+  } else {
+    // Production defaults
+    options.secure = true;
+    
+    // Determine sameSite based on whether frontend is on different domain
+    // If COOKIE_SAMESITE is explicitly set, use it; otherwise default to 'none' for cross-site
+    const sameSite = env.COOKIE_SAMESITE || 'none';
+    
+    // Enforce browser requirement: if sameSite='none', secure must be true
+    if (sameSite === 'none' && !options.secure) {
+      console.warn('[CookieConfig] sameSite="none" requires secure=true. Forcing secure=true.');
+      options.secure = true;
+    }
+    
+    // Enforce: if secure=true and cross-site, sameSite cannot be 'lax' or 'strict'
+    if (options.secure && sameSite !== 'none' && env.COOKIE_DOMAIN) {
+      console.warn('[CookieConfig] Cross-site cookies (domain set) with secure=true require sameSite="none". Using "none".');
+      options.sameSite = 'none';
+    } else {
+      options.sameSite = sameSite;
+    }
+    
+    // Only set domain if explicitly configured (and not localhost)
+    if (env.COOKIE_DOMAIN && env.COOKIE_DOMAIN !== 'localhost' && !env.COOKIE_DOMAIN.includes('localhost')) {
+      options.domain = env.COOKIE_DOMAIN;
+    } else {
+      options.domain = undefined;
+    }
+  }
+  
+  return options;
 }
 
 /**
@@ -34,30 +89,32 @@ function parseExpiresIn(expiresIn) {
  * @returns {Object} - Object with access and refresh tokens
  */
 export async function createAuthSessionForUser(res, user, req = null) {
-  // Validate JWT secrets before signing
-  if (!JWT_ACCESS_SECRET || !JWT_REFRESH_SECRET) {
+  // Validate JWT secrets before signing (should already be validated at startup, but double-check)
+  if (!env.JWT_ACCESS_SECRET || !env.JWT_REFRESH_SECRET) {
     const error = new Error('JWT secrets not configured');
     error.statusCode = 500;
     throw error;
   }
 
-  // Check account status (same validation as regular login)
-  if (user.status === 'disabled') {
+  // Check account status (same validation as regular login) using normalized values
+  const accountStatus = normalizeAccountStatus(user.accountStatus || user.status);
+  
+  if (accountStatus === ACCOUNT_STATUS.DISABLED) {
     const error = new Error('Account is disabled');
     error.statusCode = 403;
     error.code = 'ACCOUNT_DISABLED';
     throw error;
   }
 
-  if (user.status === 'pending_verification') {
+  if (accountStatus === ACCOUNT_STATUS.PENDING) {
     const error = new Error('Account not activated');
     error.statusCode = 403;
     error.code = 'ACCOUNT_NOT_VERIFIED';
     throw error;
   }
 
-  // Only allow login if status is 'active'
-  if (user.status !== 'active') {
+  // Only allow login if status is ACTIVE
+  if (!canUserLogin(accountStatus)) {
     const error = new Error('Account status invalid');
     error.statusCode = 403;
     error.code = 'ACCOUNT_STATUS_INVALID';
@@ -92,14 +149,8 @@ export async function createAuthSessionForUser(res, user, req = null) {
       payload.sessionId = sessionId;
       
       // Set ogc_session cookie with the session token
-      const isProd = process.env.NODE_ENV === 'production';
       if (res) {
-        res.cookie('ogc_session', sessionToken, {
-          httpOnly: true,
-          secure: isProd,
-          sameSite: isProd ? 'strict' : 'lax',
-          maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
-        });
+        res.cookie('ogc_session', sessionToken, getCookieOptions(1000 * 60 * 60 * 24 * 30)); // 30 days
       }
 
       // Phase 8.4: Check if this is a new device or IP and send alert if needed
@@ -140,29 +191,18 @@ export async function createAuthSessionForUser(res, user, req = null) {
   }
 
   // Generate tokens (with sessionId in payload if available)
-  const accessToken = jwt.sign(payload, JWT_ACCESS_SECRET, {
-    expiresIn: JWT_ACCESS_EXPIRES_IN,
+  const accessToken = jwt.sign(payload, env.JWT_ACCESS_SECRET, {
+    expiresIn: env.JWT_ACCESS_EXPIRES_IN,
   });
 
-  const refreshToken = jwt.sign({ userId: user.id }, JWT_REFRESH_SECRET, {
-    expiresIn: JWT_REFRESH_EXPIRES_IN,
+  const refreshToken = jwt.sign({ userId: user.id }, env.JWT_REFRESH_SECRET, {
+    expiresIn: env.JWT_REFRESH_EXPIRES_IN,
   });
 
   // Set cookies if res is provided
   if (res) {
-    const isProd = process.env.NODE_ENV === 'production';
-    res.cookie(JWT_COOKIE_ACCESS_NAME, accessToken, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? 'strict' : 'lax',
-      maxAge: parseExpiresIn(JWT_ACCESS_EXPIRES_IN),
-    });
-    res.cookie(JWT_COOKIE_REFRESH_NAME, refreshToken, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? 'strict' : 'lax',
-      maxAge: parseExpiresIn(JWT_REFRESH_EXPIRES_IN),
-    });
+    res.cookie(env.JWT_COOKIE_ACCESS_NAME, accessToken, getCookieOptions(parseExpiresIn(env.JWT_ACCESS_EXPIRES_IN)));
+    res.cookie(env.JWT_COOKIE_REFRESH_NAME, refreshToken, getCookieOptions(parseExpiresIn(env.JWT_REFRESH_EXPIRES_IN)));
   }
 
   return { access: accessToken, refresh: refreshToken };

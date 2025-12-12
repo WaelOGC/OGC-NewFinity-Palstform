@@ -1,5 +1,5 @@
-// Load environment variables FIRST before any other imports
-import 'dotenv/config';
+// Load and validate environment variables FIRST before any other imports
+import env from './config/env.js';
 
 import express from 'express';
 import cors from 'cors';
@@ -23,22 +23,31 @@ const app = express();
 // Core middleware
 app.use(helmet());
 
-// CORS configuration - explicitly allow frontend origin in development
+// CORS configuration - explicitly allow frontend origin with credentials
+// CRITICAL: credentials: true is required for cookies to work
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN 
-    ? process.env.CORS_ORIGIN.split(',')
-    : process.env.NODE_ENV === 'production'
+  origin: env.CORS_ORIGIN 
+    ? (Array.isArray(env.CORS_ORIGIN) ? env.CORS_ORIGIN : [env.CORS_ORIGIN])
+    : env.NODE_ENV === 'production'
       ? false // In production, CORS_ORIGIN must be set
-      : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'], // Dev defaults
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+      : [
+          env.FRONTEND_BASE_URL, 
+          'http://localhost:3000', 
+          'http://127.0.0.1:5173',
+          'http://localhost:5173',
+          'http://127.0.0.1:3000'
+        ], // Dev defaults
+  credentials: true, // REQUIRED for cookies to be sent/received
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Set-Cookie'], // Allow frontend to see Set-Cookie headers
+  optionsSuccessStatus: 200, // Some legacy browsers choke on 204
 };
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(passport.initialize()); // Initialize Passport (we don't use passport.session())
 app.use(rateLimiter);
 
@@ -139,8 +148,8 @@ app.get('/api/health', async (req, res) => {
 // Error handler (last)
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 4000;
-const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '127.0.0.1' : 'localhost');
+const PORT = env.PORT;
+const HOST = env.HOST;
 
 // Initialize email service and start server
 (async () => {
@@ -155,7 +164,21 @@ const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '127.0
     await ensureDefaultAdmin();
     
     app.listen(PORT, HOST, () => {
-      console.log(`OGC NewFinity backend listening on ${HOST}:${PORT}`);
+      const baseUrl = `http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`;
+      
+      // Comprehensive startup logs - impossible to ignore
+      console.log('\n' + '='.repeat(60));
+      console.log('[Backend] ✅ Server Started Successfully');
+      console.log('='.repeat(60));
+      console.log(`[Backend] Listening on http://${HOST}:${PORT}`);
+      console.log(`[Backend] Environment: ${env.NODE_ENV}`);
+      console.log(`[Backend] Base URL: ${baseUrl}`);
+      console.log(`[Backend] Frontend URL: ${env.FRONTEND_BASE_URL}`);
+      console.log(`[Backend] Cookie Secure: ${env.COOKIE_SECURE}`);
+      console.log(`[Backend] Cookie SameSite: ${env.COOKIE_SAMESITE}`);
+      console.log(`[Backend] Health: ${baseUrl}/api/v1/health`);
+      console.log(`[Backend] Status: ${baseUrl}/status`);
+      console.log('='.repeat(60) + '\n');
     });
   } catch (error) {
     console.error('Failed to start server:', error.message);

@@ -1,10 +1,12 @@
 import { Router } from 'express';
 const router = Router();
 
+// Health endpoint matching required format: { status: "OK", service: "backend", time: ISO string }
 router.get('/health', (req, res) => {
   res.status(200).json({
-    status: 'ok',
-    message: 'OGC Backend API is healthy',
+    status: 'OK',
+    service: 'backend',
+    time: new Date().toISOString(),
   });
 });
 

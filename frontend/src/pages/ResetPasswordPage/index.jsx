@@ -17,12 +17,11 @@ function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Validate token on mount
+  // Validate token on mount (canonical format: token from query string)
   useEffect(() => {
     const tokenParam = searchParams.get('token');
-    const emailParam = searchParams.get('email') || '';
     
-    // Token is required, but email can be missing (for backward compatibility with old links)
+    // Token is required (canonical format)
     if (!tokenParam) {
       setStatus({
         type: 'error',
@@ -34,23 +33,21 @@ function ResetPasswordPage() {
     }
 
     setToken(tokenParam);
-    setEmail(emailParam); // Set initial email (may be empty)
     setIsValidating(true);
     setStatus(null);
 
-    // Validate token with backend
+    // Validate token with backend (optional - we can also validate on submit)
     async function validateToken() {
       try {
-        // Try validation with email from URL (or empty string if missing)
-        const data = await api.post('/auth/password/reset/validate', {
-          email: emailParam || '',
+        // Validate token using canonical endpoint
+        const data = await api.post('/auth/reset-password/validate', {
           token: tokenParam,
         });
 
         // Check response format - handle both data.data and direct data
         const responseData = data.data || data;
         
-        if (data.status === 'OK' && responseData?.valid) {
+        if (data.status === 'OK' && responseData?.success) {
           setIsTokenValid(true);
           setStatus(null);
           
@@ -84,6 +81,8 @@ function ResetPasswordPage() {
 
     validateToken();
   }, [searchParams]);
+  
+  // Note: Email is optional - we can get it from token validation or leave it empty
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -295,19 +294,21 @@ function ResetPasswordPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
-          <div className="auth-form-field">
-            <label htmlFor="reset-email" className="auth-form-label">
-              Email
-            </label>
-            <input
-              id="reset-email"
-              type="email"
-              className="auth-form-input"
-              value={email}
-              disabled
-              style={{ opacity: 0.7, cursor: 'not-allowed' }}
-            />
-          </div>
+          {email && (
+            <div className="auth-form-field">
+              <label htmlFor="reset-email" className="auth-form-label">
+                Email
+              </label>
+              <input
+                id="reset-email"
+                type="email"
+                className="auth-form-input"
+                value={email}
+                disabled
+                style={{ opacity: 0.7, cursor: 'not-allowed' }}
+              />
+            </div>
+          )}
 
           <div className="auth-form-field">
             <label htmlFor="reset-password" className="auth-form-label">

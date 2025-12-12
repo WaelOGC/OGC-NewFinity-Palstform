@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import pool from '../db.js';
+import env from '../config/env.js';
 import { createActivationToken, getTermsVersion } from '../services/activationService.js';
 import { sendActivationEmail, sendPasswordResetEmail, sendPasswordChangedAlertEmail } from '../services/emailService.js';
 import { createAuthSessionForUser } from '../utils/authSession.js';
@@ -14,6 +15,7 @@ import { sendOk, sendError } from '../utils/apiResponse.js';
 import { validatePasswordStrength } from '../utils/passwordPolicy.js';
 import { createPasswordResetToken, findValidPasswordResetToken, markPasswordResetTokenUsed, findValidPasswordResetTokenByToken, updateUserPassword } from '../services/passwordResetService.js';
 import { revokeAllUserSessions } from '../services/sessionService.js';
+import { normalizeAccountStatus, ACCOUNT_STATUS, canUserLogin } from '../utils/accountStatus.js';
 
 // Note: JWT configuration and session creation logic moved to utils/authSession.js
 // This keeps the code DRY and allows both email/password and social login to share the same session logic
@@ -67,13 +69,13 @@ export async function register({ email, password, fullName, termsAccepted }, res
     const [[{ totalUsers }]] = await pool.query('SELECT COUNT(*) AS totalUsers FROM User');
     const initialRole = totalUsers === 0 ? 'FOUNDER' : 'STANDARD_USER';
 
-    // Create user with pending_verification status and default role
+    // Create user with PENDING status and default role
     let result;
     try {
       [result] = await pool.query(
-        `INSERT INTO User (email, password, fullName, role, status, termsAccepted, termsAcceptedAt, termsVersion, termsSource) 
-         VALUES (?, ?, ?, ?, 'pending_verification', ?, ?, ?, 'email_password')`,
-        [email, passwordHash, fullName || null, initialRole, true, now, termsVersion]
+        `INSERT INTO User (email, password, fullName, role, status, accountStatus, termsAccepted, termsAcceptedAt, termsVersion, termsSource) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'email_password')`,
+        [email, passwordHash, fullName || null, initialRole, ACCOUNT_STATUS.PENDING, ACCOUNT_STATUS.PENDING, true, now, termsVersion]
       );
     } catch (dbError) {
       console.error('[REGISTER] Database error creating user:', {
@@ -185,25 +187,27 @@ export async function login({ email, password }, res, req = null) {
       throw error;
     }
 
-    // Check account status
-    if (user.status === 'DELETED') {
-      const error = new Error('This account has been deleted and can no longer be used to sign in.');
-      error.statusCode = 403;
-      error.code = 'ACCOUNT_DELETED';
-      throw error;
-    }
-
-    if (user.status === 'disabled') {
+    // Check account status using normalized values
+    const accountStatus = normalizeAccountStatus(user.accountStatus || user.status);
+    
+    if (accountStatus === ACCOUNT_STATUS.DISABLED) {
       const error = new Error('Account is disabled');
       error.statusCode = 403;
       error.code = 'ACCOUNT_DISABLED';
       throw error;
     }
 
-    if (user.status === 'pending_verification') {
+    if (accountStatus === ACCOUNT_STATUS.PENDING) {
       const error = new Error('Account not activated');
       error.statusCode = 403;
       error.code = 'ACCOUNT_NOT_VERIFIED';
+      throw error;
+    }
+
+    if (!canUserLogin(accountStatus)) {
+      const error = new Error('Account status invalid');
+      error.statusCode = 403;
+      error.code = 'ACCOUNT_STATUS_INVALID';
       throw error;
     }
 
@@ -281,30 +285,32 @@ export async function login({ email, password }, res, req = null) {
 export async function refresh(req, res) {
   try {
     // Get refresh token from cookie first, then from body
-    const refreshToken = req.cookies?.[JWT_COOKIE_REFRESH_NAME] || req.body?.refreshToken;
+    const refreshToken = req.cookies?.[env.JWT_COOKIE_REFRESH_NAME] || req.body?.refreshToken;
     
     if (!refreshToken) {
       throw new Error('Refresh token required');
     }
 
-    const payload = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+    const payload = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET);
     
     // Generate new access token
     const accessToken = jwt.sign(
       { userId: payload.userId, role: payload.role },
-      JWT_ACCESS_SECRET,
-      { expiresIn: JWT_ACCESS_EXPIRES_IN }
+      env.JWT_ACCESS_SECRET,
+      { expiresIn: env.JWT_ACCESS_EXPIRES_IN }
     );
 
     // Set new access token cookie if res is provided
     if (res) {
-      const isProd = process.env.NODE_ENV === 'production';
-      res.cookie(JWT_COOKIE_ACCESS_NAME, accessToken, {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: isProd ? 'strict' : 'lax',
-        maxAge: parseExpiresIn(JWT_ACCESS_EXPIRES_IN),
-      });
+      const { getCookieOptions } = await import('../utils/authSession.js');
+      function parseExpiresIn(expiresIn) {
+        const match = expiresIn.match(/^(\d+)([smhd])$/);
+        if (!match) return 15 * 60 * 1000;
+        const [, value, unit] = match;
+        const multipliers = { s: 1000, m: 60 * 1000, h: 60 * 60 * 1000, d: 24 * 60 * 60 * 1000 };
+        return parseInt(value) * (multipliers[unit] || 1000);
+      }
+      res.cookie(env.JWT_COOKIE_ACCESS_NAME, accessToken, getCookieOptions(parseExpiresIn(env.JWT_ACCESS_EXPIRES_IN)));
     }
 
     return { access: accessToken };
@@ -325,16 +331,14 @@ export async function logout(req, res) {
     }
   }
   
-  // Clear cookies
+  // Clear cookies with same options used to set them
   if (res) {
-    const {
-      JWT_COOKIE_ACCESS_NAME = 'ogc_access',
-      JWT_COOKIE_REFRESH_NAME = 'ogc_refresh',
-    } = process.env;
+    const { getCookieOptions } = await import('../utils/authSession.js');
+    const cookieOptions = getCookieOptions(0); // 0 = expired immediately
     
-    res.clearCookie(JWT_COOKIE_ACCESS_NAME);
-    res.clearCookie(JWT_COOKIE_REFRESH_NAME);
-    res.clearCookie('ogc_session'); // PHASE S2: Clear session cookie
+    res.clearCookie(env.JWT_COOKIE_ACCESS_NAME, cookieOptions);
+    res.clearCookie(env.JWT_COOKIE_REFRESH_NAME, cookieOptions);
+    res.clearCookie('ogc_session', cookieOptions); // PHASE S2: Clear session cookie
   }
   
   return { success: true, userId: req.user?.id };
@@ -408,9 +412,8 @@ export async function forgotPassword({ email }) {
         const { tokenPlain, expiresAt } = await createPasswordResetToken(user.id);
         console.log(`[FORGOT_PASSWORD] Reset token generated for user ID: ${user.id}`);
         
-        // Build reset URL
-        const frontendBaseUrl = process.env.FRONTEND_URL || process.env.FRONTEND_APP_URL || 'http://localhost:5173';
-        const resetUrl = `${frontendBaseUrl.replace(/\/$/, '')}/auth/reset-password?token=${encodeURIComponent(tokenPlain)}`;
+        // Build reset URL (canonical format: /reset-password?token=<TOKEN>)
+        const resetUrl = `${env.FRONTEND_BASE_URL.replace(/\/+$/, '')}/reset-password?token=${encodeURIComponent(tokenPlain)}`;
         
         // Send password reset email
         try {
@@ -467,6 +470,7 @@ export async function forgotPassword({ email }) {
 /**
  * Validate reset token handler
  * Checks if a reset token is valid and not expired
+ * Uses PasswordResetToken table for secure token validation
  */
 export async function validateResetToken({ token }) {
   try {
@@ -480,45 +484,10 @@ export async function validateResetToken({ token }) {
       throw error;
     }
     
-    // Hash the provided token to look it up
-    const hashedToken = hashResetToken(token);
+    // Find valid reset token using PasswordResetToken table
+    const resetToken = await findValidPasswordResetTokenByToken(token);
     
-    // Lookup user by resetPasswordToken
-    let rows;
-    try {
-      [rows] = await pool.query(
-        'SELECT id, resetPasswordToken, resetPasswordExpires FROM User WHERE resetPasswordToken = ?',
-        [hashedToken]
-      );
-    } catch (dbError) {
-      console.error('[VALIDATE_RESET_TOKEN] Database error:', {
-        code: dbError.code,
-        message: dbError.message,
-      });
-      if (dbError.code === 'ER_ACCESS_DENIED_ERROR' || dbError.code === 'ECONNREFUSED' || dbError.code === 'ENOTFOUND') {
-        const error = new Error('Database connection failed. Please check your database configuration.');
-        error.statusCode = 503;
-        error.code = dbError.code;
-        throw error;
-      }
-      throw dbError;
-    }
-    
-    // Check if token exists
-    if (rows.length === 0) {
-      const error = new Error('This reset link is invalid or has expired.');
-      error.statusCode = 400;
-      error.code = 'RESET_TOKEN_INVALID_OR_EXPIRED';
-      throw error;
-    }
-    
-    const user = rows[0];
-    
-    // Check if token has expired
-    const now = new Date();
-    const expiresAt = new Date(user.resetPasswordExpires);
-    
-    if (expiresAt < now) {
+    if (!resetToken) {
       const error = new Error('This reset link is invalid or has expired.');
       error.statusCode = 400;
       error.code = 'RESET_TOKEN_INVALID_OR_EXPIRED';
@@ -530,6 +499,7 @@ export async function validateResetToken({ token }) {
       success: true,
       message: 'Reset token is valid.',
       code: 'RESET_TOKEN_VALID',
+      email: resetToken.email, // Include email for frontend convenience
     };
   } catch (error) {
     console.error('[VALIDATE_RESET_TOKEN] Error:', {
@@ -721,9 +691,10 @@ export async function requestPasswordReset(req, res, next) {
 
     // To avoid leaking whether an account exists, always return OK.
     // Only create token if user exists and is active-ish.
-    if (!user || user.status === "banned") {
+    const userStatus = user ? normalizeAccountStatus(user.status) : null;
+    if (!user || userStatus === ACCOUNT_STATUS.DISABLED) {
       // Log internally for debugging but don't reveal to client
-      if (process.env.NODE_ENV !== "production") {
+      if (env.NODE_ENV !== "production") {
         console.log("[PasswordReset] Request for non-existing or banned email", {
           email: normalizedEmail,
         });
@@ -739,9 +710,8 @@ export async function requestPasswordReset(req, res, next) {
     // Create reset token
     const { tokenPlain, expiresAt } = await createPasswordResetToken(user.id);
 
-    // Build reset link – FRONTEND_URL should already exist (or create BACKEND_APP_BASE_URL)
-    const baseUrl = process.env.FRONTEND_APP_URL || process.env.APP_BASE_URL || process.env.FRONTEND_URL || "http://localhost:5173";
-    const resetLink = `${baseUrl.replace(/\/$/, "")}/auth/reset-password?token=${encodeURIComponent(
+    // Build reset link
+    const resetLink = `${env.FRONTEND_BASE_URL.replace(/\/$/, "")}/auth/reset-password?token=${encodeURIComponent(
       tokenPlain
     )}&email=${encodeURIComponent(user.email)}`;
 
@@ -1002,7 +972,7 @@ export async function verifyTwoFactorLogin(req, res) {
     // Verify and decode challenge token
     let decoded;
     try {
-      decoded = jwt.verify(challengeToken, process.env.JWT_ACCESS_SECRET);
+      decoded = jwt.verify(challengeToken, env.JWT_ACCESS_SECRET);
     } catch (jwtError) {
       const error = new Error('Invalid or expired challenge token');
       error.statusCode = 401;
@@ -1060,25 +1030,27 @@ export async function verifyTwoFactorLogin(req, res) {
 
     const user = userRows[0];
 
-    // Check account status
-    if (user.status === 'DELETED') {
-      const error = new Error('This account has been deleted and can no longer be used to sign in.');
-      error.statusCode = 403;
-      error.code = 'ACCOUNT_DELETED';
-      throw error;
-    }
-
-    if (user.status === 'disabled') {
+    // Check account status using normalized values
+    const accountStatus = normalizeAccountStatus(user.accountStatus || user.status);
+    
+    if (accountStatus === ACCOUNT_STATUS.DISABLED) {
       const error = new Error('Account is disabled');
       error.statusCode = 403;
       error.code = 'ACCOUNT_DISABLED';
       throw error;
     }
 
-    if (user.status === 'pending_verification') {
+    if (accountStatus === ACCOUNT_STATUS.PENDING) {
       const error = new Error('Account not activated');
       error.statusCode = 403;
       error.code = 'ACCOUNT_NOT_VERIFIED';
+      throw error;
+    }
+
+    if (!canUserLogin(accountStatus)) {
+      const error = new Error('Account status invalid');
+      error.statusCode = 403;
+      error.code = 'ACCOUNT_STATUS_INVALID';
       throw error;
     }
 
@@ -1177,16 +1149,10 @@ export async function postLoginTwoFactor(req, res, next) {
 
     const user = userRows[0];
 
-    // Check account status
-    if (user.status === 'DELETED') {
-      return sendError(res, {
-        code: 'ACCOUNT_DELETED',
-        message: 'This account has been deleted and can no longer be used to sign in.',
-        statusCode: 403,
-      });
-    }
-
-    if (user.status === 'disabled') {
+    // Check account status using normalized values
+    const accountStatus = normalizeAccountStatus(user.accountStatus || user.status);
+    
+    if (accountStatus === ACCOUNT_STATUS.DISABLED) {
       return sendError(res, {
         code: 'ACCOUNT_DISABLED',
         message: 'Account is disabled.',
@@ -1194,10 +1160,18 @@ export async function postLoginTwoFactor(req, res, next) {
       });
     }
 
-    if (user.status === 'pending_verification') {
+    if (accountStatus === ACCOUNT_STATUS.PENDING) {
       return sendError(res, {
         code: 'ACCOUNT_NOT_VERIFIED',
         message: 'Account not activated.',
+        statusCode: 403,
+      });
+    }
+
+    if (!canUserLogin(accountStatus)) {
+      return sendError(res, {
+        code: 'ACCOUNT_STATUS_INVALID',
+        message: 'Account status invalid.',
         statusCode: 403,
       });
     }
@@ -1329,8 +1303,7 @@ export async function postLoginTwoFactor(req, res, next) {
  * Login flow: Creates a normal auth session (cookies) so the user stays logged in
  */
 export async function handleOAuthCallback(req, res, next, providerName) {
-  const FRONTEND_URL = process.env.FRONTEND_URL || process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
-  const SOCIAL_FAILURE_REDIRECT = `${FRONTEND_URL}/auth/social/callback?status=error`;
+  const SOCIAL_FAILURE_REDIRECT = `${env.FRONTEND_BASE_URL}/auth/social/callback?status=error`;
   
   try {
     // Check if this is a connect flow (state parameter contains userId)
@@ -1341,8 +1314,7 @@ export async function handleOAuthCallback(req, res, next, providerName) {
     if (stateParam) {
       try {
         const jwt = await import('jsonwebtoken');
-        const secret = process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET;
-        const decoded = jwt.verify(stateParam, secret);
+        const decoded = jwt.verify(stateParam, env.JWT_ACCESS_SECRET);
         
         if (decoded.action === 'connect' && decoded.userId) {
           existingUserId = decoded.userId;
@@ -1427,19 +1399,10 @@ export async function handleOAuthCallback(req, res, next, providerName) {
       }
     }
     
-    // Check account status (same checks as normal login)
-    if (user.status === 'DELETED') {
-      if (req.headers.accept && req.headers.accept.includes('application/json')) {
-        return sendError(res, {
-          code: 'ACCOUNT_DELETED',
-          message: 'This account has been deleted and can no longer be used to sign in.',
-          statusCode: 403,
-        });
-      }
-      return res.redirect(`${SOCIAL_FAILURE_REDIRECT}&provider=${providerName}&error=account_deleted`);
-    }
+    // Check account status (same checks as normal login) using normalized values
+    const accountStatus = normalizeAccountStatus(user.accountStatus || user.status);
     
-    if (user.status === 'disabled') {
+    if (accountStatus === ACCOUNT_STATUS.DISABLED) {
       if (req.headers.accept && req.headers.accept.includes('application/json')) {
         return sendError(res, {
           code: 'ACCOUNT_DISABLED',
@@ -1450,7 +1413,7 @@ export async function handleOAuthCallback(req, res, next, providerName) {
       return res.redirect(`${SOCIAL_FAILURE_REDIRECT}&provider=${providerName}&error=account_disabled`);
     }
     
-    if (user.status === 'pending_verification') {
+    if (accountStatus === ACCOUNT_STATUS.PENDING) {
       if (req.headers.accept && req.headers.accept.includes('application/json')) {
         return sendError(res, {
           code: 'ACCOUNT_NOT_VERIFIED',
@@ -1459,6 +1422,17 @@ export async function handleOAuthCallback(req, res, next, providerName) {
         });
       }
       return res.redirect(`${SOCIAL_FAILURE_REDIRECT}&provider=${providerName}&error=account_not_verified`);
+    }
+
+    if (!canUserLogin(accountStatus)) {
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return sendError(res, {
+          code: 'ACCOUNT_STATUS_INVALID',
+          message: 'Account status invalid.',
+          statusCode: 403,
+        });
+      }
+      return res.redirect(`${SOCIAL_FAILURE_REDIRECT}&provider=${providerName}&error=account_status_invalid`);
     }
     
     // If this is a connect flow (existingUserId set and user matches), don't create a new session
@@ -1473,7 +1447,7 @@ export async function handleOAuthCallback(req, res, next, providerName) {
         }, 200, 'OAUTH_PROVIDER_LINKED', `${providerName} account linked successfully.`);
       }
       // Browser redirect - go back to security page
-      return res.redirect(`${FRONTEND_URL}/dashboard/security?oauth=connected&provider=${providerName}`);
+      return res.redirect(`${env.FRONTEND_BASE_URL}/dashboard/security?oauth=connected&provider=${providerName}`);
     }
     
     // LOGIN FLOW: Create normal auth session (same as email/password login)
@@ -1512,12 +1486,12 @@ export async function handleOAuthCallback(req, res, next, providerName) {
     }
     
     // Browser redirect flow: cookies are already set, so just send user to dashboard
-    return res.redirect(`${FRONTEND_URL}/dashboard`);
+    return res.redirect(`${env.FRONTEND_BASE_URL}/dashboard`);
   } catch (err) {
     console.error(`[${providerName.toUpperCase()}_CALLBACK] Error:`, {
       message: err.message,
       code: err.code,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      stack: env.NODE_ENV === 'development' ? err.stack : undefined
     });
     
     // Handle specific OAuth errors
@@ -1570,13 +1544,8 @@ export async function socialLoginCallback(req, res, next) {
  */
 export async function checkSession(req, res) {
   try {
-    const {
-      JWT_ACCESS_SECRET,
-      JWT_COOKIE_ACCESS_NAME = 'ogc_access',
-    } = process.env;
-
     // Try to get token from cookie first
-    const tokenFromCookie = req.cookies && req.cookies[JWT_COOKIE_ACCESS_NAME];
+    const tokenFromCookie = req.cookies && req.cookies[env.JWT_COOKIE_ACCESS_NAME];
 
     // Fallback to Authorization header
     const authHeader = req.headers.authorization || '';
@@ -1590,7 +1559,7 @@ export async function checkSession(req, res) {
 
     // Verify JWT (lightweight check - no database calls)
     try {
-      jwt.verify(token, JWT_ACCESS_SECRET);
+      jwt.verify(token, env.JWT_ACCESS_SECRET);
       return res.status(200).json({ authenticated: true });
     } catch (jwtError) {
       // Token invalid or expired

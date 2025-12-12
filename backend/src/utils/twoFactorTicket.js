@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import env from '../config/env.js';
 
 const TWO_FACTOR_TICKET_TTL_SECONDS = 10 * 60; // 10 minutes
 
@@ -8,8 +9,7 @@ const TWO_FACTOR_TICKET_TTL_SECONDS = 10 * 60; // 10 minutes
  * @returns {string} JWT ticket token
  */
 export function createTwoFactorTicket(userId) {
-  const secret = process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET;
-  if (!secret) {
+  if (!env.JWT_ACCESS_SECRET) {
     const err = new Error('JWT secret not configured');
     err.code = 'JWT_SECRET_MISSING';
     throw err;
@@ -20,7 +20,7 @@ export function createTwoFactorTicket(userId) {
       kind: '2FA_TICKET',
       userId,
     },
-    secret,
+    env.JWT_ACCESS_SECRET,
     { expiresIn: TWO_FACTOR_TICKET_TTL_SECONDS }
   );
 }
@@ -32,8 +32,7 @@ export function createTwoFactorTicket(userId) {
  * @throws {Error} If ticket is invalid or expired
  */
 export function verifyTwoFactorTicket(token) {
-  const secret = process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET;
-  if (!secret) {
+  if (!env.JWT_ACCESS_SECRET) {
     const err = new Error('JWT secret not configured');
     err.code = 'JWT_SECRET_MISSING';
     throw err;
@@ -41,7 +40,7 @@ export function verifyTwoFactorTicket(token) {
 
   let decoded;
   try {
-    decoded = jwt.verify(token, secret);
+    decoded = jwt.verify(token, env.JWT_ACCESS_SECRET);
   } catch (jwtError) {
     const err = new Error('Invalid or expired 2FA ticket');
     err.code = 'INVALID_2FA_TICKET';

@@ -9,7 +9,9 @@ function SystemStatusBadge() {
   useEffect(() => {
     async function fetchStatus() {
       try {
-        const res = await fetch(`${API_BASE_URL}/system/db-check`);
+        const res = await fetch(`${API_BASE_URL}/system/db-check`, {
+          credentials: 'include', // Include cookies for authenticated requests
+        });
         if (!res.ok) {
           throw new Error("Non-OK response");
         }

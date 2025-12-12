@@ -1,16 +1,12 @@
 import jwt from 'jsonwebtoken';
 import { findValidSessionByToken, touchSession } from '../services/sessionService.js';
-
-// Standardized JWT configuration
-const {
-  JWT_ACCESS_SECRET,
-  JWT_COOKIE_ACCESS_NAME = 'ogc_access',
-} = process.env;
+import env from '../config/env.js';
+import { getCookieOptions } from '../utils/authSession.js';
 
 export async function requireAuth(req, res, next) {
   try {
     // Try to get token from cookie first
-    const cookieName = JWT_COOKIE_ACCESS_NAME;
+    const cookieName = env.JWT_COOKIE_ACCESS_NAME;
     const tokenFromCookie = req.cookies && req.cookies[cookieName];
 
     // Fallback to Authorization header
@@ -28,7 +24,7 @@ export async function requireAuth(req, res, next) {
     }
 
     // Verify JWT
-    const decoded = jwt.verify(token, JWT_ACCESS_SECRET);
+    const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET);
     
     // Support both 'userId' and 'sub' for backward compatibility
     const userId = decoded.userId || decoded.sub;
@@ -39,8 +35,11 @@ export async function requireAuth(req, res, next) {
 
     if (!session) {
       // Session revoked or expired – log out user
-      res.clearCookie('ogc_session');
-      res.clearCookie(cookieName);
+      // Clear cookies with same options used to set them
+      const cookieOptions = getCookieOptions(0); // 0 = expired immediately
+      
+      res.clearCookie('ogc_session', cookieOptions);
+      res.clearCookie(cookieName, cookieOptions);
       return res.status(401).json({
         status: 'ERROR',
         message: 'Session expired or revoked. Please log in again.',
@@ -70,16 +69,18 @@ export async function requireAuth(req, res, next) {
     // Update lastSeen (async, don't block request)
     touchSession(session.id).catch(err => {
       // Log but don't fail request if session update fails
-      if (process.env.NODE_ENV !== 'production') {
+      if (env.NODE_ENV !== 'production') {
         console.warn('[AuthSession] Failed to update session lastSeenAt (non-fatal):', err.message);
       }
     });
 
     return next();
   } catch (err) {
-    // Clear cookies on any auth error
-    res.clearCookie('ogc_session');
-    res.clearCookie(JWT_COOKIE_ACCESS_NAME);
+    // Clear cookies on any auth error with same options used to set them
+    const cookieOptions = getCookieOptions(0); // 0 = expired immediately
+    
+    res.clearCookie('ogc_session', cookieOptions);
+    res.clearCookie(env.JWT_COOKIE_ACCESS_NAME, cookieOptions);
     
     if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
       return res.status(401).json({ 

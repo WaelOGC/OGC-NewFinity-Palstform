@@ -182,13 +182,18 @@ async function deleteAccount(req, res, next) {
     // 3) Perform deletion (anonymize logs + hard-delete core)
     await deleteUserAccount(userId);
 
-    // 4) Clear auth cookies / sessions
+    // 4) Clear auth cookies / sessions with same options used to set them
     try {
-      res.clearCookie('ogc_session');
-      // If you have another cookie for JWT, clear it as well:
-      // res.clearCookie('ogc_auth');
+      const { getCookieOptions } = await import('../utils/authSession.js');
+      const cookieOptions = getCookieOptions(0); // 0 = expired immediately
+      const env = (await import('../config/env.js')).default;
+      
+      res.clearCookie('ogc_session', cookieOptions);
+      res.clearCookie(env.JWT_COOKIE_ACCESS_NAME, cookieOptions);
+      res.clearCookie(env.JWT_COOKIE_REFRESH_NAME, cookieOptions);
     } catch (err) {
       // Non-fatal
+      console.warn('[AccountController] Failed to clear cookies:', err.message);
     }
 
     // 5) Respond success

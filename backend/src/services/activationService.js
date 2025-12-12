@@ -5,6 +5,7 @@
 
 import crypto from 'crypto';
 import pool from '../db.js';
+import { normalizeAccountStatus, ACCOUNT_STATUS } from '../utils/accountStatus.js';
 
 const ACTIVATION_TOKEN_EXPIRY_HOURS = 24;
 const TERMS_VERSION = 'v1.0'; // Current terms version
@@ -153,10 +154,10 @@ export async function activateAccount(token) {
       [hashedToken]
     );
 
-    // Activate user account
+    // Activate user account (set to ACTIVE)
     await connection.query(
-      'UPDATE User SET status = ? WHERE id = ?',
-      ['active', verification.userId]
+      'UPDATE User SET status = ?, accountStatus = ? WHERE id = ?',
+      [ACCOUNT_STATUS.ACTIVE, ACCOUNT_STATUS.ACTIVE, verification.userId]
     );
 
     await connection.commit();

@@ -48,7 +48,7 @@ const ALLOWED_ROUTES = {
   'POST /api/v1/auth/logout': true,
   'GET /api/v1/auth/me': true,
   'GET /api/v1/auth/session': true,
-  'GET /api/v1/auth/activate': true,
+  'POST /api/v1/auth/activate': true,
   'POST /api/v1/auth/resend-activation': true,
   'POST /api/v1/auth/forgot-password': true,
   // Phase 8.1: Password reset request

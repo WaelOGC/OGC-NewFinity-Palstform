@@ -26,6 +26,7 @@ import {
   updateUserStatus,
   updateUserFeatureFlags,
 } from '../services/userService.js';
+import { normalizeAccountStatus, ACCOUNT_STATUS } from '../utils/accountStatus.js';
 import {
   getUserSessions,
   revokeSession,
@@ -279,12 +280,13 @@ export async function updateAdminUserStatus(req, res) {
       });
     }
 
-    // Validate status
-    const validStatuses = ['ACTIVE', 'SUSPENDED', 'BANNED'];
-    if (!validStatuses.includes(accountStatus)) {
+    // Normalize and validate status
+    const normalizedStatus = normalizeAccountStatus(accountStatus);
+    const validStatuses = [ACCOUNT_STATUS.ACTIVE, ACCOUNT_STATUS.DISABLED, ACCOUNT_STATUS.PENDING];
+    if (!validStatuses.includes(normalizedStatus)) {
       return sendError(res, {
         code: 'VALIDATION_ERROR',
-        message: 'Invalid account status',
+        message: `Invalid account status. Must be one of: ${validStatuses.join(', ')}`,
         statusCode: 400
       });
     }
@@ -299,20 +301,13 @@ export async function updateAdminUserStatus(req, res) {
       });
     }
 
-    const oldStatus = currentUser.accountStatus || 'ACTIVE';
+    const oldStatus = normalizeAccountStatus(currentUser.accountStatus || ACCOUNT_STATUS.ACTIVE);
 
-    // Update status
-    const updatedUser = await updateUserStatus(userId, accountStatus);
+    // Update status (normalizedStatus is already normalized)
+    const updatedUser = await updateUserStatus(userId, normalizedStatus);
 
-    // Sync role if status is SUSPENDED or BANNED
-    if (accountStatus === 'SUSPENDED' && updatedUser.role !== 'SUSPENDED') {
-      await updateUserRole(userId, 'SUSPENDED');
-    } else if (accountStatus === 'BANNED' && updatedUser.role !== 'BANNED') {
-      await updateUserRole(userId, 'BANNED');
-    } else if (accountStatus === 'ACTIVE' && (updatedUser.role === 'SUSPENDED' || updatedUser.role === 'BANNED')) {
-      // If reactivating, restore to STANDARD_USER (unless they have a different role)
-      // Don't auto-change role on reactivation - let admin decide
-    }
+    // Note: Role syncing removed - status and role are now independent
+    // DISABLED status does not automatically change role
 
     // Log activity
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -326,7 +321,7 @@ export async function updateAdminUserStatus(req, res) {
         userAgent,
         metadata: {
           oldStatus,
-          newStatus: accountStatus,
+          newStatus: normalizedStatus,
         },
       });
     } catch (activityError) {
@@ -387,20 +382,20 @@ export async function toggleAdminUserStatus(req, res) {
       });
     }
 
-    const oldStatus = currentUser.accountStatus || 'ACTIVE';
+    const oldStatus = normalizeAccountStatus(currentUser.accountStatus || ACCOUNT_STATUS.ACTIVE);
     
     // Toggle status: ACTIVE → DISABLED, DISABLED → ACTIVE
     // Only toggle if status is ACTIVE or DISABLED
     let newStatus;
-    if (oldStatus === 'ACTIVE') {
-      newStatus = 'DISABLED';
-    } else if (oldStatus === 'DISABLED') {
-      newStatus = 'ACTIVE';
+    if (oldStatus === ACCOUNT_STATUS.ACTIVE) {
+      newStatus = ACCOUNT_STATUS.DISABLED;
+    } else if (oldStatus === ACCOUNT_STATUS.DISABLED) {
+      newStatus = ACCOUNT_STATUS.ACTIVE;
     } else {
-      // If status is something else (SUSPENDED, BANNED, etc.), don't allow toggle
+      // If status is something else (PENDING, etc.), don't allow toggle
       return sendError(res, {
         code: 'VALIDATION_ERROR',
-        message: `Cannot toggle status. Current status is ${oldStatus}. Toggle is only available for ACTIVE and DISABLED statuses.`,
+        message: `Cannot toggle status. Current status is ${oldStatus}. Toggle is only available for ${ACCOUNT_STATUS.ACTIVE} and ${ACCOUNT_STATUS.DISABLED} statuses.`,
         statusCode: 400
       });
     }

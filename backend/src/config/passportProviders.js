@@ -1,8 +1,5 @@
-// Force-load .env before any other imports
-import dotenv from 'dotenv';
-dotenv.config();
-
 import passport from 'passport';
+import env from './env.js';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import GitHubStrategy from 'passport-github2';
 import TwitterStrategy from 'passport-twitter';
@@ -13,7 +10,7 @@ import { Strategy as DiscordStrategy } from 'passport-discord';
 import { syncOAuthProfile } from '../services/userService.js';
 
 // Base callback URL configuration
-const baseCallbackUrl = process.env.BACKEND_URL || process.env.OAUTH_CALLBACK_BASE_URL || 'http://localhost:4000';
+const baseCallbackUrl = env.BACKEND_URL;
 
 /**
  * Helper to extract OAuth profile data from provider profile
@@ -87,14 +84,14 @@ function extractOAuthProfileData(provider, profile) {
 }
 
 // Configure Google OAuth Strategy
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
   try {
     passport.use(
       'google',
       new GoogleStrategy(
         {
-          clientID: process.env.GOOGLE_CLIENT_ID,
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          clientID: env.GOOGLE_CLIENT_ID,
+          clientSecret: env.GOOGLE_CLIENT_SECRET,
           callbackURL: `${baseCallbackUrl}/api/v1/auth/google/callback`,
         },
         async (accessToken, refreshToken, profile, done) => {
@@ -131,13 +128,12 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 }
 
 // --- GitHub OAuth ---
-if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+if (env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET) {
   try {
     console.log('[GitHub OAuth] init...');
 
-    const clientID = process.env.GITHUB_CLIENT_ID;
-    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-    const baseUrl = process.env.BACKEND_URL || 'http://localhost:4000';
+    const clientID = env.GITHUB_CLIENT_ID;
+    const clientSecret = env.GITHUB_CLIENT_SECRET;
 
     console.log('[GitHub OAuth] env', { clientID, hasSecret: !!clientSecret });
 
@@ -147,7 +143,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
         {
           clientID,
           clientSecret,
-          callbackURL: `${baseUrl}/api/v1/auth/github/callback`,
+          callbackURL: `${baseCallbackUrl}/api/v1/auth/github/callback`,
           scope: ['user:email'],
         },
         async (accessToken, refreshToken, profile, done) => {
@@ -184,14 +180,14 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
 }
 
 // Configure Twitter OAuth Strategy
-if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
+if (env.TWITTER_CLIENT_ID && env.TWITTER_CLIENT_SECRET) {
   try {
     passport.use(
       'twitter',
       new TwitterStrategy(
         {
-          consumerKey: process.env.TWITTER_CLIENT_ID,
-          consumerSecret: process.env.TWITTER_CLIENT_SECRET,
+          consumerKey: env.TWITTER_CLIENT_ID,
+          consumerSecret: env.TWITTER_CLIENT_SECRET,
           callbackURL: `${baseCallbackUrl}/api/v1/auth/twitter/callback`,
           includeEmail: true,
         },
@@ -227,14 +223,14 @@ if (process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET) {
 }
 
 // Configure LinkedIn OAuth Strategy
-if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
+if (env.LINKEDIN_CLIENT_ID && env.LINKEDIN_CLIENT_SECRET) {
   try {
     passport.use(
       'linkedin',
       new LinkedInStrategy(
         {
-          clientID: process.env.LINKEDIN_CLIENT_ID,
-          clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+          clientID: env.LINKEDIN_CLIENT_ID,
+          clientSecret: env.LINKEDIN_CLIENT_SECRET,
           callbackURL: `${baseCallbackUrl}/api/v1/auth/linkedin/callback`,
           scope: ['openid', 'profile', 'email'],
           state: false,
@@ -275,8 +271,8 @@ console.log('[Discord OAuth] init...');
 
 // Diagnostic logging: print exactly what Node sees
 console.log('[Discord OAuth] env', {
-  id: process.env.DISCORD_CLIENT_ID,
-  secret: process.env.DISCORD_CLIENT_SECRET
+  id: env.DISCORD_CLIENT_ID,
+  secret: env.DISCORD_CLIENT_SECRET
 });
 
 // Always register the strategy, even if env vars are missing (for testing)
@@ -286,9 +282,9 @@ try {
     'discord',
     new DiscordStrategy(
       {
-        clientID: process.env.DISCORD_CLIENT_ID || '',
-        clientSecret: process.env.DISCORD_CLIENT_SECRET || '',
-        callbackURL: `${process.env.BACKEND_URL || 'http://localhost:4000'}/api/v1/auth/discord/callback`,
+        clientID: env.DISCORD_CLIENT_ID || '',
+        clientSecret: env.DISCORD_CLIENT_SECRET || '',
+        callbackURL: `${baseCallbackUrl}/api/v1/auth/discord/callback`,
         scope: ['identify', 'email'],
       },
       async (accessToken, refreshToken, profile, done) => {

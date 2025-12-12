@@ -9,7 +9,9 @@ import { createAuthSessionForUser } from '../utils/authSession.js';
 import { recordLoginActivity, registerDevice } from '../services/userService.js';
 import { logUserActivity } from '../services/activityService.js';
 import { sendOk, sendError } from '../utils/apiResponse.js';
+import { normalizeAccountStatus, ACCOUNT_STATUS } from '../utils/accountStatus.js';
 import pool from '../db.js';
+import env from '../config/env.js';
 
 const router = Router();
 
@@ -323,11 +325,12 @@ router.get('/me', requireAuth, async (req, res, next) => {
       });
     }
     
-    // Check if account is deleted (Phase 9.1)
-    if (user.status === 'DELETED' || user.accountStatus === 'DELETED') {
+    // Normalize and check account status
+    const accountStatus = normalizeAccountStatus(user.accountStatus || user.status);
+    if (accountStatus === ACCOUNT_STATUS.DISABLED) {
       return sendError(res, {
-        code: 'ACCOUNT_DELETED',
-        message: 'This account has been deleted.',
+        code: 'ACCOUNT_DISABLED',
+        message: 'This account has been disabled.',
         statusCode: 403
       });
     }
@@ -343,7 +346,7 @@ router.get('/me', requireAuth, async (req, res, next) => {
         effectivePermissions: user.effectivePermissions, // Computed permissions (null for FOUNDER = all permissions)
         featureFlags: user.featureFlags, // Merged feature flags
         connectedProviders: user.connectedProviders || [], // Connected OAuth providers
-        accountStatus: user.accountStatus || user.status,
+        accountStatus: accountStatus,
         lastLoginAt: user.lastLoginAt,
         createdAt: user.createdAt,
       }
@@ -353,16 +356,8 @@ router.get('/me', requireAuth, async (req, res, next) => {
   }
 });
 
-// Activation routes
-// Supports both GET (for direct link clicks) and POST (for frontend API calls with token in body)
-router.get('/activate', async (req, res, next) => {
-  try {
-    await activate(req, res, next);
-  } catch (err) {
-    next(err);
-  }
-});
-
+// Activation route
+// Canonical format: POST /api/v1/auth/activate with JSON body { "token": "<TOKEN>" }
 router.post('/activate', async (req, res, next) => {
   try {
     await activate(req, res, next);
@@ -494,9 +489,8 @@ router.post('/reset-password', async (req, res, next) => {
 // Social OAuth Routes
 // ============================================================================
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
-const SOCIAL_SUCCESS_REDIRECT = `${FRONTEND_URL}/auth/social/callback?status=success`;
-const SOCIAL_FAILURE_REDIRECT = `${FRONTEND_URL}/auth/social/callback?status=error`;
+const SOCIAL_SUCCESS_REDIRECT = `${env.FRONTEND_BASE_URL}/auth/social/callback?status=success`;
+const SOCIAL_FAILURE_REDIRECT = `${env.FRONTEND_BASE_URL}/auth/social/callback?status=error`;
 
 // Google OAuth Routes
 router.get('/google', (req, res, next) => {
@@ -635,7 +629,7 @@ router.get('/oauth/connect/:provider', requireAuth, async (req, res, next) => {
     const jwt = await import('jsonwebtoken');
     const stateToken = jwt.sign(
       { userId: req.user.id, action: 'connect' },
-      process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET,
+      env.JWT_ACCESS_SECRET,
       { expiresIn: '10m' }
     );
     

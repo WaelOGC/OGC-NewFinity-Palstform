@@ -23,7 +23,9 @@ export async function getStatus() {
   const statusPath = API_BASE_URL.startsWith('http') 
     ? `${API_BASE_URL}/api/status` 
     : `${API_BASE_URL}/status`;
-  const res = await fetch(statusPath);
+  const res = await fetch(statusPath, {
+    credentials: 'include', // Include cookies for authenticated requests
+  });
   if (!res.ok) throw new Error('Failed to fetch status');
   return res.json();
 }
@@ -42,7 +44,9 @@ export async function getHealth() {
   const healthPath = API_BASE_URL.startsWith('http') 
     ? `${API_BASE_URL}/api/health` 
     : `${API_BASE_URL}/health`;
-  const res = await fetch(healthPath);
+  const res = await fetch(healthPath, {
+    credentials: 'include', // Include cookies for authenticated requests
+  });
   if (!res.ok) throw new Error('Failed to fetch health');
   return res.json();
 }

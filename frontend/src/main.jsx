@@ -44,9 +44,9 @@ const router = createBrowserRouter([
       // Public routes - accessible to everyone
       { path: '/', element: <LandingPage /> },
       { path: '/auth', element: <AuthPage /> },
-      { path: '/auth/activate', element: <ActivationPage /> },
+      { path: '/activate', element: <ActivationPage /> },
       { path: '/auth/forgot-password', element: <ForgotPasswordPage /> },
-      { path: '/auth/reset-password', element: <ResetPasswordPage /> },
+      { path: '/reset-password', element: <ResetPasswordPage /> },
       { path: '/auth/social/callback', element: <SocialAuthCallback /> },
       { path: '/docs', element: <DocsPage /> },
       { path: '/dev-design', element: <DevDesignPage /> },

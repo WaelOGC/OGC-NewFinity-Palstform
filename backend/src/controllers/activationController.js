@@ -5,17 +5,21 @@
 
 import pool from '../db.js';
 import { findValidActivationToken, markActivationTokenUsed, createActivationToken } from '../services/activationService.js';
-import { sendResendActivationEmail } from '../services/emailService.js';
+import { sendResendActivationEmail, sendAccountActivatedEmail } from '../services/emailService.js';
 import { logUserActivity } from '../services/activityService.js';
+import { normalizeAccountStatus, ACCOUNT_STATUS } from '../utils/accountStatus.js';
 
 /**
  * Activate user account with token
  * Returns JSON response only (no auto-login)
  * Handles idempotency: clicking a valid link twice returns appropriate response
+ * 
+ * Canonical format: POST /api/v1/auth/activate with JSON body { "token": "<TOKEN>" }
  */
 export async function activate(req, res, next) {
   try {
-    const token = req.query.token || req.body.token;
+    // Canonical format: token must come from POST body, not query string
+    const token = req.body.token;
 
     if (!token) {
       return res.status(400).json({
@@ -40,7 +44,7 @@ export async function activate(req, res, next) {
     
     // Get user record
     const [userRows] = await pool.query(
-      'SELECT id, email, fullName, status FROM User WHERE id = ?',
+      'SELECT id, email, fullName, status, accountStatus, emailVerified FROM User WHERE id = ?',
       [userId]
     );
 
@@ -55,22 +59,42 @@ export async function activate(req, res, next) {
     const user = userRows[0];
 
     // Check if user is already active (idempotency)
-    const currentStatus = user.status;
-    const isAlreadyActive = currentStatus && currentStatus.toUpperCase() === 'ACTIVE';
+    // Store the state BEFORE activation to determine if we should send the activation email
+    const currentStatus = normalizeAccountStatus(user.accountStatus || user.status);
+    const isAlreadyActive = currentStatus === ACCOUNT_STATUS.ACTIVE;
+    const wasActiveBefore = isAlreadyActive || user.emailVerified === 1;
 
     if (!isAlreadyActive) {
-      // Update user status to ACTIVE
+      // Update user status to ACTIVE and mark email as verified
       await pool.query(
         `UPDATE User 
-         SET status = 'active',
+         SET status = ?,
+             accountStatus = ?,
+             emailVerified = 1,
              updatedAt = CURRENT_TIMESTAMP
          WHERE id = ?`,
-        [userId]
+        [ACCOUNT_STATUS.ACTIVE, ACCOUNT_STATUS.ACTIVE, userId]
       );
     }
 
     // Mark token as used
     await markActivationTokenUsed(activationRow.id);
+
+    // Send activation confirmation email only if this is the first activation (PENDING → ACTIVE)
+    // Do not send if user was already active (idempotent)
+    if (!wasActiveBefore) {
+      try {
+        await sendAccountActivatedEmail({
+          to: user.email,
+          displayName: user.fullName,
+          activatedAt: new Date(),
+        });
+        console.log(`[Activation] Account activated email sent to ${user.email}`);
+      } catch (emailError) {
+        console.error('[Activation] Failed to send account activated email:', emailError);
+        // Don't fail activation if email sending fails - activation is already complete
+      }
+    }
 
     // Log activity (optional - don't fail if logging fails)
     try {
@@ -90,12 +114,14 @@ export async function activate(req, res, next) {
     }
 
     // Return appropriate response based on whether account was already active
+    // Canonical format: { status: "OK", message: "...", userId: 123 }
     return res.status(200).json({
       status: 'OK',
       code: isAlreadyActive ? 'ACCOUNT_ALREADY_ACTIVE' : 'ACCOUNT_ACTIVATED',
       message: isAlreadyActive
         ? 'This account is already active.'
-        : 'Your account has been activated successfully.',
+        : 'Account activated',
+      userId: userId,
     });
   } catch (err) {
     console.error('[Activation] Error:', err);
@@ -128,7 +154,8 @@ export async function resendActivation(req, res) {
     if (userRows.length > 0) {
       const user = userRows[0];
 
-      if (user.status === 'pending_verification') {
+      const userStatus = normalizeAccountStatus(user.accountStatus || user.status);
+      if (userStatus === ACCOUNT_STATUS.PENDING) {
         // Create new activation token
         const { token: activationToken } = await createActivationToken(user.id);
 

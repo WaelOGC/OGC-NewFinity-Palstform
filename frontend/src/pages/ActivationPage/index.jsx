@@ -21,36 +21,35 @@ function ActivationPage() {
       }
 
       try {
-        const { api } = await import('../../utils/apiClient.js');
-        const data = await api.get(`/auth/activate?token=${encodeURIComponent(token)}`);
+        // Canonical format: POST /api/v1/auth/activate with JSON body { token }
+        // Use fetch directly since apiClient may unwrap the response
+        const API_BASE = import.meta.env.DEV ? '/api/v1' : (import.meta.env.VITE_API_BASE_URL || '/api/v1');
+        const response = await fetch(`${API_BASE}/auth/activate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ token })
+        });
 
-        if (data.status === 'OK') {
-          setStatus('success');
-          setMessage('Your account has been activated successfully!');
+        const data = await response.json();
 
-          // Auto-login if tokens are provided
-          if (data.access) {
-            // Store token
-            window.localStorage.setItem('ogc_token', data.access);
-            
-            // Redirect to dashboard after a short delay
-            setTimeout(() => {
-              navigate('/dashboard', { replace: true });
-            }, 2000);
-          } else {
-            // If no auto-login, show option to go to sign in
-            setTimeout(() => {
-              navigate('/auth', { replace: true });
-            }, 3000);
-          }
-        } else {
+        if (!response.ok || data.status === 'ERROR') {
           setStatus('error');
           setMessage(data.message || 'This activation link is invalid or has expired.');
+          return;
         }
+
+        // Success: status === 'OK'
+        setStatus('success');
+        setMessage(data.message || 'Your account has been activated successfully!');
+
+        // Redirect to login page after a short delay (no auto-login for security)
+        setTimeout(() => {
+          navigate('/auth', { replace: true });
+        }, 3000);
       } catch (error) {
         console.error('Activation error:', error);
         setStatus('error');
-        // Use user-friendly error message from apiClient
         setMessage(error.message || 'An error occurred while activating your account. Please try again later.');
       }
     }
@@ -83,7 +82,7 @@ function ActivationPage() {
             </div>
             <h1 className="activation-page-title">Account Activated!</h1>
             <p className="activation-page-message">{message}</p>
-            <p className="activation-page-submessage">Redirecting you to your dashboard...</p>
+            <p className="activation-page-submessage">Redirecting you to sign in...</p>
           </>
         )}
 

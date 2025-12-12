@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import speakeasy from "speakeasy";
 import { getDefaultPermissionsForRole, roleHasPermission } from "../config/rolePermissions.js";
 import { validatePasswordStrength } from "../utils/passwordPolicy.js";
+import { normalizeAccountStatus, ACCOUNT_STATUS } from "../utils/accountStatus.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -89,6 +90,11 @@ export async function getUserProfile(userId) {
   );
   
   if (!rows[0]) return null;
+  
+  // Normalize account status
+  if (rows[0].accountStatus) {
+    rows[0].accountStatus = normalizeAccountStatus(rows[0].accountStatus);
+  }
   
   // Try to get optional profile fields if they exist
   let optionalFields = { username: null, country: null, bio: null, phone: null, avatarUrl: null };
@@ -577,11 +583,13 @@ export async function syncOAuthProfile({
   
   const [insertResult] = await pool.query(
     `INSERT INTO User (email, password, fullName, role, status, accountStatus, authProvider, ${providerColumn}, avatarUrl, termsAccepted, termsAcceptedAt, termsVersion, termsSource, createdAt, updatedAt, emailVerified)
-     VALUES (?, NULL, ?, ?, 'active', 'ACTIVE', ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)`,
     [
       email.toLowerCase(),
       displayNameOrUsername,
       initialRole,
+      ACCOUNT_STATUS.ACTIVE, // status column
+      ACCOUNT_STATUS.ACTIVE, // accountStatus column
       normalizedProvider,
       providerUserId,
       avatarUrl || null,
@@ -1080,8 +1088,10 @@ export async function searchUsers({ page = 1, limit = 20, search, role, status }
   }
 
   if (status) {
+    // Normalize status before querying
+    const normalizedStatus = normalizeAccountStatus(status);
     conditions.push('COALESCE(accountStatus, status) = ?');
-    params.push(status);
+    params.push(normalizedStatus);
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -1105,6 +1115,13 @@ export async function searchUsers({ page = 1, limit = 20, search, role, status }
     LIMIT ? OFFSET ?`,
     [...params, limit, offset]
   );
+
+  // Normalize account status in results
+  rows.forEach(row => {
+    if (row.accountStatus) {
+      row.accountStatus = normalizeAccountStatus(row.accountStatus);
+    }
+  });
 
   return {
     items: rows,
@@ -1143,6 +1160,9 @@ export async function updateUserRole(userId, role) {
  * @returns {Promise<Object>} Updated user
  */
 export async function updateUserStatus(userId, accountStatus) {
+  // Normalize status to canonical value
+  const normalizedStatus = normalizeAccountStatus(accountStatus);
+  
   // Try to update accountStatus column first, fallback to status column
   const [result] = await pool.query(
     `UPDATE User 
@@ -1150,7 +1170,7 @@ export async function updateUserStatus(userId, accountStatus) {
          status = ?,
          updatedAt = CURRENT_TIMESTAMP 
      WHERE id = ?`,
-    [accountStatus, accountStatus, userId]
+    [normalizedStatus, normalizedStatus, userId]
   );
 
   if (result.affectedRows === 0) {

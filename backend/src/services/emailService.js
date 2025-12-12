@@ -11,6 +11,8 @@
  */
 
 import nodemailer from 'nodemailer';
+import env from '../config/env.js';
+import { validateEmailConfig } from '../config/env.js';
 
 let EMAIL_MODE = "console"; // "smtp" or "console"
 let EMAIL_FROM = null;
@@ -18,17 +20,11 @@ let transporter = null;
 
 /**
  * Get activation base URL for building activation links
- * Tries ACTIVATION_BASE_URL, then FRONTEND_URL, then localhost fallback
+ * Uses FRONTEND_BASE_URL from validated environment config
  * @returns {string} Base URL for activation links
  */
 export function getActivationBaseUrl() {
-  return (
-    process.env.ACTIVATION_BASE_URL ||
-    process.env.FRONTEND_URL ||
-    process.env.FRONTEND_APP_URL ||
-    process.env.APP_BASE_URL ||
-    'http://localhost:5173'
-  );
+  return env.FRONTEND_BASE_URL;
 }
 
 /**
@@ -37,22 +33,13 @@ export function getActivationBaseUrl() {
  * @returns {Object} { mode: "smtp" | "console", from: string }
  */
 export function initEmailService() {
-  const {
-    SMTP_HOST,
-    SMTP_PORT,
-    SMTP_USER,
-    SMTP_PASS,
-    SMTP_SECURE,
-    EMAIL_FROM: ENV_EMAIL_FROM
-  } = process.env;
-
-  EMAIL_FROM = ENV_EMAIL_FROM || "no-reply@ogc-newfinity.local";
+  EMAIL_FROM = env.SMTP_FROM;
 
   const smtpReady =
-    SMTP_HOST &&
-    SMTP_PORT &&
-    SMTP_USER &&
-    SMTP_PASS;
+    env.SMTP_HOST &&
+    env.SMTP_PORT &&
+    env.SMTP_USER &&
+    env.SMTP_PASS;
 
   if (!smtpReady) {
     EMAIL_MODE = "console";
@@ -62,12 +49,12 @@ export function initEmailService() {
 
   // Configure SMTP transporter
   transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    secure: SMTP_SECURE === "true",
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_SECURE,
     auth: {
-      user: SMTP_USER,
-      pass: SMTP_PASS,
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASS,
     },
   });
 
@@ -119,8 +106,9 @@ export async function sendEmail({ to, subject, text, html }) {
  */
 export async function sendActivationEmail({ to, token, fullName = null }) {
   // Build activation URL using getActivationBaseUrl with proper encoding
+  // Canonical format: {FRONTEND_BASE_URL}/activate?token=<TOKEN>
   const baseUrl = getActivationBaseUrl();
-  const activationUrl = `${baseUrl.replace(/\/+$/, '')}/auth/activate?token=${encodeURIComponent(token)}`;
+  const activationUrl = `${baseUrl.replace(/\/+$/, '')}/activate?token=${encodeURIComponent(token)}`;
 
   const subject = 'Activate your OGC NewFinity Account';
   
@@ -209,7 +197,7 @@ export async function sendResendActivationEmail(email, token, fullName = null) {
  * @param {Date|string} options.expiresAt - Token expiration date
  */
 export async function sendPasswordResetEmail({ to, resetLink, expiresAt }) {
-  const subject = "Reset your OGC NewFinity account password";
+  const subject = "Reset Your Password — OGC NewFinity";
 
   const formattedExpiry =
     expiresAt instanceof Date ? expiresAt.toLocaleString() : String(expiresAt);
@@ -358,7 +346,7 @@ export async function sendPasswordChangedAlertEmail({ to, changedAt, ipAddress, 
   </html>
   `;
 
-  if (process.env.NODE_ENV !== "production") {
+  if (env.NODE_ENV !== "production") {
     console.log("[EmailService] sendPasswordChangedAlertEmail →", {
       to,
       changedAt: changedAtDate.toISOString(),
@@ -369,7 +357,7 @@ export async function sendPasswordChangedAlertEmail({ to, changedAt, ipAddress, 
   try {
     const result = await sendEmail({ to, subject, text, html });
     if (result.mode === "smtp") {
-      if (process.env.NODE_ENV !== "production") {
+      if (env.NODE_ENV !== "production") {
         console.log("[EmailService] Password changed alert email sent", {
           messageId: result?.messageId,
         });
@@ -465,7 +453,7 @@ export async function sendNewLoginAlertEmail({ to, loggedInAt, ipAddress, userAg
   </html>
   `;
 
-  if (process.env.NODE_ENV !== "production") {
+  if (env.NODE_ENV !== "production") {
     console.log("[EmailService] sendNewLoginAlertEmail →", {
       to,
       loggedInAt: loggedInAtDate.toISOString(),
@@ -476,7 +464,7 @@ export async function sendNewLoginAlertEmail({ to, loggedInAt, ipAddress, userAg
   try {
     const result = await sendEmail({ to, subject, text, html });
     if (result.mode === "smtp") {
-      if (process.env.NODE_ENV !== "production") {
+      if (env.NODE_ENV !== "production") {
         console.log("[EmailService] New login alert email sent", {
           messageId: result?.messageId,
         });
@@ -487,6 +475,100 @@ export async function sendNewLoginAlertEmail({ to, loggedInAt, ipAddress, userAg
   } catch (err) {
     console.error('[EmailService] Failed to send new login alert email', err);
     throw new Error(`Failed to send new login alert email: ${err.message}`);
+  }
+}
+
+/**
+ * Send account activated confirmation email
+ * Sent only once when a user successfully activates their account (PENDING → ACTIVE transition)
+ * @param {Object} options - Options object
+ * @param {string} options.to - User's email address
+ * @param {string} options.displayName - User's display name (optional)
+ * @param {Date|string} options.activatedAt - When the account was activated
+ */
+export async function sendAccountActivatedEmail({ to, displayName = null, activatedAt }) {
+  const when = activatedAt || new Date();
+  const activatedAtDate = when instanceof Date ? when : new Date(when);
+  const formattedDate = activatedAtDate.toLocaleString();
+
+  const subject = 'Account Activated — OGC NewFinity';
+
+  const loginUrl = `${env.FRONTEND_BASE_URL.replace(/\/+$/, '')}/login`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #00ffc6 0%, #5864ff 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header h1 { color: #020618; margin: 0; font-size: 24px; }
+        .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+        .button { display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #00ffc6 0%, #5864ff 100%); color: #020618; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+        .info-box { background: #e8f5e9; border-left: 4px solid #4caf50; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .security-tip { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Account Activated</h1>
+        </div>
+        <div class="content">
+          <p>Hello${displayName ? ` ${displayName}` : ''},</p>
+          <p>Your OGC NewFinity account has been successfully activated!</p>
+          <div class="info-box">
+            <p><strong>Activation Details:</strong></p>
+            <p><strong>Time:</strong> ${formattedDate}</p>
+          </div>
+          <p>You can now log in to your account and start using OGC NewFinity.</p>
+          <p style="text-align: center;">
+            <a href="${loginUrl}" class="button">Log In to Your Account</a>
+          </p>
+          <p>Or visit: <a href="${loginUrl}" style="color: #5864ff;">${loginUrl}</a></p>
+          <div class="security-tip">
+            <p><strong>Security Tip:</strong> If you didn't activate this account, please contact support immediately.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} OGC NewFinity. All rights reserved.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+    Account Activated — OGC NewFinity
+    
+    Hello${displayName ? ` ${displayName}` : ''},
+    
+    Your OGC NewFinity account has been successfully activated!
+    
+    Activation Details:
+    Time: ${formattedDate}
+    
+    You can now log in to your account and start using OGC NewFinity.
+    
+    Login URL: ${loginUrl}
+    
+    Security Tip: If you didn't activate this account, please contact support immediately.
+    
+    © ${new Date().getFullYear()} OGC NewFinity. All rights reserved.
+  `;
+
+  try {
+    const result = await sendEmail({ to, subject, text, html });
+    if (result.mode === "smtp") {
+      console.log(`[EmailService] Account activated email sent to ${to} (Message ID: ${result.messageId})`);
+    }
+    return result;
+  } catch (err) {
+    console.error('[EmailService] Failed to send account activated email', err);
+    throw new Error(`Failed to send account activated email: ${err.message}`);
   }
 }
 
@@ -569,7 +651,7 @@ export async function sendTwoFactorStatusChangedEmail({ to, enabled, at, ipAddre
   </html>
   `;
 
-  if (process.env.NODE_ENV !== "production") {
+  if (env.NODE_ENV !== "production") {
     console.log("[EmailService] sendTwoFactorStatusChangedEmail →", {
       to,
       enabled,
@@ -581,7 +663,7 @@ export async function sendTwoFactorStatusChangedEmail({ to, enabled, at, ipAddre
   try {
     const result = await sendEmail({ to, subject, text, html });
     if (result.mode === "smtp") {
-      if (process.env.NODE_ENV !== "production") {
+      if (env.NODE_ENV !== "production") {
         console.log("[EmailService] 2FA status change email sent", {
           messageId: result?.messageId,
         });

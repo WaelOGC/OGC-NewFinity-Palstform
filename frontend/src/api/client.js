@@ -26,7 +26,11 @@ export function createClient(getToken) {
       apiPath = `${BASE}${path}`;
     }
     
-    const res = await fetch(apiPath, { ...opts, headers });
+    const res = await fetch(apiPath, { 
+      ...opts, 
+      headers,
+      credentials: 'include', // Always include credentials for cookies
+    });
     if (!res.ok) {
       const error = await safeJson(res);
       throw new Error(error?.error || `HTTP ${res.status}`);
