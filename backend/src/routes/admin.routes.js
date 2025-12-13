@@ -8,9 +8,11 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
+import { adminDegradedMode } from '../middleware/adminDegradedMode.js';
 import {
   listAdminUsers,
   getAdminUserDetail,
+  getAdminNavigation,
   updateAdminUserRole,
   updateAdminUserStatus,
   toggleAdminUserStatus,
@@ -31,6 +33,12 @@ router.use(requireAuth);
 // All admin routes require admin-level access (role containing ADMIN or equivalent)
 // Uses consistent JSON error responses via requireAdmin middleware
 router.use(requireAdmin);
+
+// Degraded mode signaling middleware (adds X-Admin-Mode header)
+router.use(adminDegradedMode);
+
+// GET /api/v1/admin/navigation - Get admin navigation structure
+router.get('/navigation', getAdminNavigation);
 
 // GET /api/v1/admin/users - List users with pagination and filters
 router.get('/users', listAdminUsers);

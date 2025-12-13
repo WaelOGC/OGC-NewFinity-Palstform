@@ -1,13 +1,35 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { fetchAdminUsers } from "../../utils/apiClient.js";
 import UserDetailDrawer from "../../components/admin/UserDetailDrawer.jsx";
 import "../../styles/plasmaAdminUI.css";
 import "./admin-users-page.css";
 
+/**
+ * Normalize user object to ensure consistent field names
+ * Handles variations in backend response (lastLoginAt vs lastLogin, roles vs role, etc.)
+ */
+function normalizeAdminUser(u) {
+  return {
+    id: u.id,
+    email: u.email,
+    displayName: u.displayName || u.fullName || null,
+    roles: u.roles || (u.role ? [u.role] : []),
+    accountStatus: u.accountStatus || u.status || null,
+    lastLoginAt: u.lastLoginAt || u.lastLogin || null,
+    createdAt: u.createdAt,
+    // Preserve other fields
+    ...u,
+  };
+}
+
 function AdminUsersPage() {
+  const navigate = useNavigate();
+  const { userId } = useParams();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [empty, setEmpty] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 25, total: 0 });
   
   // Filters
@@ -21,6 +43,9 @@ function AdminUsersPage() {
   
   // Track which user's email was copied
   const [copiedUserId, setCopiedUserId] = useState(null);
+  
+  // Degraded mode state (if available via context or props)
+  const [degradedMode, setDegradedMode] = useState(false);
 
   // Parallax effect for command bar
   const commandBarRef = useRef(null);
@@ -31,24 +56,44 @@ function AdminUsersPage() {
       setLoading(true);
       setError(null);
       
-      const data = await fetchAdminUsers({ 
-        page, 
-        pageSize: 25,
-        search: searchOverride !== null ? searchOverride : search,
-        role: roleFilterOverride !== null ? roleFilterOverride : roleFilter,
+      // Use fetch directly to check for degraded mode header
+      const searchTerm = searchOverride !== null ? searchOverride : search;
+      const params = new URLSearchParams();
+      params.set('page', page.toString());
+      params.set('limit', '25');
+      if (searchTerm) params.set('q', searchTerm);
+      
+      const response = await fetch(`/api/v1/admin/users?${params.toString()}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
       });
+      
+      // Check degraded mode header
+      const adminMode = response.headers.get('x-admin-mode');
+      if (adminMode === 'degraded') {
+        setDegradedMode(true);
+      }
+      
+      const text = await response.text();
+      const data = JSON.parse(text);
+      
+      // Handle error responses
+      if (!response.ok || data?.status === 'ERROR') {
+        const error = new Error(data?.message || 'Failed to fetch users');
+        error.code = data?.code;
+        error.httpStatus = response.status;
+        throw error;
+      }
+      
+      // Extract data from response
+      const responseData = data?.data || data;
       
       // Backend returns: { users: [], page: 1, limit: 25, total: 0 }
       // Backend users have: { id, email, username, displayName, roles: [], accountStatus, createdAt, ... }
-      if (data && Array.isArray(data.users)) {
-        // Normalize user objects to match frontend expectations
-        // Backend returns roles array, but frontend expects role (singular) for display
-        // Backend returns displayName, but frontend expects fullName
-        const normalizedUsers = data.users.map(user => ({
-          ...user,
-          role: user.role || (Array.isArray(user.roles) && user.roles.length > 0 ? user.roles[0] : null),
-          fullName: user.fullName || user.displayName || null,
-        }));
+      if (responseData && Array.isArray(responseData.users)) {
+        // Normalize user objects to ensure consistent field names
+        const normalizedUsers = responseData.users.map(normalizeAdminUser);
         
         // Apply role filter on frontend if backend doesn't support it
         let filteredUsers = normalizedUsers;
@@ -61,33 +106,48 @@ function AdminUsersPage() {
           });
         }
         
+        // Apply status filter on frontend
+        const activeStatusFilter = statusFilter;
+        if (activeStatusFilter) {
+          filteredUsers = filteredUsers.filter(user => {
+            const userStatus = (user.accountStatus || 'ACTIVE').toUpperCase();
+            return userStatus === activeStatusFilter.toUpperCase();
+          });
+        }
+        
         setUsers(filteredUsers);
+        setEmpty(filteredUsers.length === 0 && responseData.total === 0);
         setPagination({
-          page: data.page || page,
-          pageSize: data.limit || 25, // Backend returns 'limit', not 'pageSize'
-          total: data.total || 0,
-          totalPages: Math.ceil((data.total || 0) / (data.limit || 25)),
+          page: responseData.page || page,
+          pageSize: responseData.limit || 25, // Backend returns 'limit', not 'pageSize'
+          total: responseData.total || 0,
+          totalPages: Math.ceil((responseData.total || 0) / (responseData.limit || 25)),
         });
-      } else if (data && data.users === undefined) {
+        setError(null);
+      } else if (responseData && responseData.users === undefined) {
         // Backend returned data but without users array - might be empty or error
-        console.warn('Admin users response missing users array:', data);
+        console.warn('Admin users response missing users array:', responseData);
         setUsers([]);
+        setEmpty(true);
         setPagination({
-          page: data.page || page,
-          pageSize: data.limit || 25,
-          total: data.total || 0,
-          totalPages: Math.ceil((data.total || 0) / (data.limit || 25)),
+          page: responseData.page || page,
+          pageSize: responseData.limit || 25,
+          total: responseData.total || 0,
+          totalPages: Math.ceil((responseData.total || 0) / (responseData.limit || 25)),
         });
+        setError(null);
       } else {
         setError("Failed to load users: Invalid response format");
+        setEmpty(false);
       }
     } catch (err) {
       console.error("Error fetching users:", err);
+      setEmpty(false);
       // Check for ADMIN_REQUIRED error code
       if (err?.code === 'ADMIN_REQUIRED' || err?.backendCode === 'ADMIN_REQUIRED') {
         setError("Admin access required. You do not have permission to view this page.");
       } else {
-        setError(err?.message || "The server encountered an error. Please try again later.");
+        setError(err?.message || err?.backendMessage || "The server encountered an error. Please try again later.");
       }
     } finally {
       setLoading(false);
@@ -98,6 +158,22 @@ function AdminUsersPage() {
     fetchUsers(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only fetch on mount - filter changes are handled explicitly
+
+  // Handle userId param from route (for /admin/users/:userId)
+  useEffect(() => {
+    if (userId) {
+      const parsedUserId = parseInt(userId);
+      if (!isNaN(parsedUserId)) {
+        setSelectedUserId(parsedUserId);
+        setDrawerOpen(true);
+      }
+    } else {
+      // If no userId in URL, close drawer
+      if (drawerOpen && !selectedUserId) {
+        setDrawerOpen(false);
+      }
+    }
+  }, [userId]);
 
   // Parallax effect handler
   useEffect(() => {
@@ -153,9 +229,25 @@ function AdminUsersPage() {
     setDrawerOpen(true);
   };
 
+  const viewUserDetails = (userId, e) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    if (!userId) {
+      console.error("Invalid user ID:", userId);
+      return;
+    }
+    // Navigate to user details page
+    navigate(`/admin/users/${userId}`);
+  };
+
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
     setSelectedUserId(null);
+    // Navigate back to users list if we're on a detail route
+    if (userId) {
+      navigate('/admin/users');
+    }
   };
 
   const handleUserStatusChange = (userId, newStatus) => {
@@ -171,8 +263,13 @@ function AdminUsersPage() {
   const handleClearFilters = () => {
     setSearch('');
     setRoleFilter('');
+    setStatusFilter('');
     setPagination(prev => ({ ...prev, page: 1 }));
     fetchUsers(1, '', '');
+  };
+
+  const handleRetry = () => {
+    fetchUsers(pagination.page);
   };
 
   const getEmptyStateMessage = () => {
@@ -236,8 +333,19 @@ function AdminUsersPage() {
 
   const formatDate = (dateString) => {
     if (!dateString) return "Never";
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Invalid date";
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+    } catch (err) {
+      return "Invalid date";
+    }
   };
 
   const handleCopyEmail = async (e, email, userId) => {
@@ -286,7 +394,8 @@ function AdminUsersPage() {
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  fetchUsers(1);
+                  setPagination(prev => ({ ...prev, page: 1 }));
+                  fetchUsers(1, search, roleFilter);
                 }
               }}
               className="plasma-field admin-users-search"
@@ -324,7 +433,10 @@ function AdminUsersPage() {
           <div className="plasma-field-wrapper">
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                fetchUsers(1);
+              }}
               className="plasma-field admin-users-filter"
             >
               <option value="">All Statuses</option>
@@ -352,23 +464,92 @@ function AdminUsersPage() {
         </div>
       </div>
 
-      {loading && <div className="admin-users-loading">Loading users...</div>}
-      {error && <div className="admin-users-error">Error: {error}</div>}
+      {/* Degraded mode banner */}
+      {degradedMode && (
+        <div style={{
+          backgroundColor: '#ff9800',
+          color: 'white',
+          padding: '0.75rem 1rem',
+          marginBottom: '1rem',
+          borderRadius: '4px',
+          fontSize: '0.875rem'
+        }}>
+          ⚠️ User management is operating in degraded mode. Some features may be limited.
+        </div>
+      )}
+
+      {loading && (
+        <div className="admin-users-loading" style={{ 
+          padding: '2rem', 
+          textAlign: 'center', 
+          color: 'var(--text-secondary, #666)' 
+        }}>
+          Loading users...
+        </div>
+      )}
+
+      {error && (
+        <div style={{
+          padding: '2rem',
+          textAlign: 'center',
+          backgroundColor: 'var(--bg-error, #fee)',
+          border: '1px solid var(--border-error, #fcc)',
+          borderRadius: '4px',
+          margin: '1rem 0'
+        }}>
+          <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-error, #c00)' }}>Error Loading Users</h3>
+          <p style={{ marginBottom: '1rem', color: 'var(--text-secondary, #666)' }}>{error}</p>
+          <button
+            onClick={handleRetry}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: 'var(--primary, #0066cc)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {!loading && !error && (
         <>
-          {users.length === 0 ? (
-            <div className="admin-users-empty-state">
-              <h3 className="admin-users-empty-state-title">No users found</h3>
-              <p className="admin-users-empty-state-message">
+          {(users.length === 0 || empty) ? (
+            <div className="admin-users-empty-state" style={{
+              padding: '3rem 2rem',
+              textAlign: 'center'
+            }}>
+              <h3 style={{ 
+                fontSize: '1.25rem', 
+                marginBottom: '0.5rem', 
+                color: 'var(--text-primary, #333)' 
+              }}>
+                No users found
+              </h3>
+              <p style={{ 
+                marginBottom: '1.5rem', 
+                color: 'var(--text-secondary, #666)' 
+              }}>
                 {getEmptyStateMessage()}
               </p>
-              <button
-                className="admin-users-empty-state-button"
-                onClick={handleClearFilters}
-              >
-                Clear filters
-              </button>
+              {(search || roleFilter || statusFilter) && (
+                <button
+                  onClick={handleClearFilters}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: 'var(--primary, #0066cc)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -381,6 +562,7 @@ function AdminUsersPage() {
                       <th>Account Status</th>
                       <th>Last Login</th>
                       <th>Created At</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -396,7 +578,7 @@ function AdminUsersPage() {
                         >
                           <td>
                             <div className="admin-users-name">
-                              <strong>{user.fullName || "No name"}</strong>
+                              <strong>{user.fullName || user.displayName || "No name"}</strong>
                               <div className="admin-users-email-wrapper">
                                 <span className="admin-users-email">{user.email || "No email"}</span>
                                 {user.email && (
@@ -427,26 +609,61 @@ function AdminUsersPage() {
                             </div>
                           </td>
                           <td>
-                            {user.role && (
-                              <span className={`role-badge ${getRoleBadgeClass(user.role)}`}>
-                                {getRoleLabel(user.role)}
-                              </span>
-                            )}
+                            {(() => {
+                              const normalized = normalizeAdminUser(user);
+                              if (normalized.roles.length === 0) {
+                                return <span style={{ color: 'var(--text-secondary, #999)', fontSize: '0.875rem' }}>—</span>;
+                              }
+                              const roleToShow = normalized.roles[0];
+                              return (
+                                <span className={`role-badge ${getRoleBadgeClass(roleToShow)}`}>
+                                  {getRoleLabel(roleToShow)}
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td>
-                            <div className="status-badge-wrapper">
-                              <span className={`status-badge ${getStatusBadgeClass(user.accountStatus)}`}>
-                                {user.accountStatus || "ACTIVE"}
-                              </span>
-                              {getStatusTooltipText(user.accountStatus) && (
-                                <div className="status-tooltip">
-                                  {getStatusTooltipText(user.accountStatus)}
+                            {(() => {
+                              const normalized = normalizeAdminUser(user);
+                              const status = normalized.accountStatus;
+                              return (
+                                <div className="status-badge-wrapper">
+                                  <span className={`status-badge ${getStatusBadgeClass(status)}`}>
+                                    {status ? status.toUpperCase() : 'UNKNOWN'}
+                                  </span>
+                                  {getStatusTooltipText(status) && (
+                                    <div className="status-tooltip">
+                                      {getStatusTooltipText(status)}
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
+                              );
+                            })()}
                           </td>
-                          <td>{formatDate(user.lastLoginAt)}</td>
+                          <td>
+                            {(() => {
+                              const normalized = normalizeAdminUser(user);
+                              return formatDate(normalized.lastLoginAt);
+                            })()}
+                          </td>
                           <td>{formatDate(user.createdAt)}</td>
+                          <td>
+                            <button
+                              onClick={(e) => viewUserDetails(user.id, e)}
+                              style={{
+                                padding: '0.25rem 0.5rem',
+                                backgroundColor: 'transparent',
+                                border: '1px solid var(--border-color, #ddd)',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '0.875rem',
+                                color: 'var(--text-primary, #333)'
+                              }}
+                              title="View user details"
+                            >
+                              View
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}

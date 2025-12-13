@@ -337,7 +337,7 @@ The verification is complete when:
 1. **`verify-wallet-system.js`** - Environment and database verification script
 2. **`test-wallet-api.js`** - Node.js API test script
 3. **`test-wallet-api.ps1`** - PowerShell API test script (Windows)
-4. **`WALLET-API-VERIFICATION-REPORT.md`** - Detailed verification checklist
+4. **`docs/backend/wallet-api-verification.md`** - Detailed verification checklist
 5. **`sql/user-schema.sql`** - User table creation script (if needed)
 
 ## Next Steps

@@ -17,12 +17,12 @@ If it is not listed here, it is not part of the Admin system.
 
 ## 4. Admin API & Backend
 - docs/02-api-contracts/28-admin-api-contract.md
-- ADMIN-USERS-API-REPORT.md
-- ADMIN-ROLE-DETECTION-FIX-REPORT.md
+- docs/backend/admin-users-api-spec.md
+- docs/backend/admin-role-detection-fix.md
 
 ## 5. Frontend Admin System
 - docs/03-frontend/37-admin-panel-frontend-architecture.md
-- ADMIN-UI-ACCESS-REPORT.md
+- docs/backend/admin-ui-access.md
 
 ## 6. Analytics & Intelligence
 - docs/admin/ADMIN-ANALYTICS-AND-STATISTICS.md

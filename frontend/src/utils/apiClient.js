@@ -85,6 +85,7 @@ const ALLOWED_ROUTES = {
   'GET /api/v1/user/role': true,
   'GET /api/v1/user/features': true,
   // Phase 6: Admin Console routes
+  'GET /api/v1/admin/navigation': true,
   'GET /api/v1/admin/users': true,
   'GET /api/v1/admin/users/:userId': true,
   'PUT /api/v1/admin/users/:userId/role': true,
@@ -612,6 +613,18 @@ export async function regenerateRecoveryCodes() {
  */
 
 /**
+ * Get admin navigation structure
+ * @returns {Promise<Object>} Navigation structure with groups and meta
+ */
+export async function getAdminNavigation() {
+  const data = await apiRequest('/admin/navigation', {
+    method: 'GET',
+  });
+  // apiRequest unwraps { status: 'OK', code: 'ADMIN_NAV_OK', data: { groups: [...], meta: {...} } } to just the data object
+  return data;
+}
+
+/**
  * Fetch paginated list of users for admin view
  * @param {Object} params - Query parameters
  * @param {number} params.page - Page number (default: 1)
@@ -651,6 +664,28 @@ export async function getAdminUser(userId) {
   });
   // data = { user, recentActivity, devices }
   return data.user;
+}
+
+/**
+ * Get detailed user information for admin view (standardized contract)
+ * Calls GET /api/v1/admin/users/:userId
+ * @param {number|string} userId - User ID
+ * @returns {Promise<Object>} Object with user property: { user: {...} }
+ * @throws {AppError} On 401/403/404/500 with proper error codes
+ */
+export async function getAdminUserDetail(userId) {
+  try {
+    const data = await apiRequest(`/admin/users/${userId}`, {
+      method: 'GET',
+    });
+    // Backend returns: { status: 'OK', code: 'ADMIN_USER_DETAILS_OK', data: { user } }
+    // apiRequest unwraps to: { user }
+    return { user: data.user || data };
+  } catch (error) {
+    // Re-throw AppError with proper codes
+    // Error codes: AUTH_REQUIRED (401), ADMIN_REQUIRED (403), ADMIN_USER_NOT_FOUND (404), DATABASE_ERROR (500)
+    throw error;
+  }
 }
 
 /**

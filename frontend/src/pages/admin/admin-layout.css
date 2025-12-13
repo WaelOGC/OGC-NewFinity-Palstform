@@ -1,0 +1,57 @@
+/* Admin Layout Styles */
+/* Reuse existing styles from components/admin/admin-layout.css if available */
+
+/* If styles don't exist, basic layout structure */
+.ogc-admin-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.ogc-admin-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: var(--bg-secondary, #f5f5f5);
+  border-bottom: 1px solid var(--border-color, #ddd);
+}
+
+.ogc-admin-logo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ogc-admin-back-btn {
+  padding: 0.5rem 1rem;
+  background: none;
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-primary, #333);
+}
+
+.ogc-admin-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ogc-admin-body {
+  display: flex;
+  flex: 1;
+}
+
+.ogc-admin-sidebar {
+  width: 250px;
+  background-color: var(--bg-secondary, #f5f5f5);
+  border-right: 1px solid var(--border-color, #ddd);
+  overflow-y: auto;
+}
+
+.ogc-admin-main {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}

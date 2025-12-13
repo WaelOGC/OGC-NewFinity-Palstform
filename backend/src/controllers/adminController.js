@@ -26,7 +26,7 @@ import {
   updateUserStatus,
   updateUserFeatureFlags,
 } from '../services/userService.js';
-import { getAdminUsers } from '../services/adminUsersService.js';
+import { getAdminUsers, getAdminUserDetail as getAdminUserDetailService } from '../services/adminUsersService.js';
 import { normalizeAccountStatus, ACCOUNT_STATUS } from '../utils/accountStatus.js';
 import {
   getUserSessions,
@@ -37,6 +37,7 @@ import { assignRole, revokeRole, getUserRoles, getPrimaryRole } from '../service
 import { setFeatureFlag, bulkSetFeatureFlags } from '../services/featureFlagService.js';
 import { logAdminAction, listAdminAuditLogs } from '../services/adminAuditLogService.js';
 import { sendOk, sendError, ok, fail } from '../utils/apiResponse.js';
+import { getAdminNavigationForUser } from '../services/adminNavigationService.js';
 import pool from '../db.js';
 
 /**
@@ -67,11 +68,11 @@ export async function listAdminUsers(req, res) {
       data: result,
     }, 200);
   } catch (error) {
-    console.error('listAdminUsers error:', error);
+    console.error('listAdminUsers error:', error, { requestId: req.requestId });
     return fail(res, {
       code: 'ADMIN_USERS_LIST_FAILED',
       message: 'Failed to fetch users',
-      data: {},
+      details: {},
     }, 500);
   }
 }
@@ -79,79 +80,77 @@ export async function listAdminUsers(req, res) {
 /**
  * GET /api/v1/admin/users/:userId
  * Get detailed user information for admin view
- * Returns full detail with activities and devices for AdminUserDetailPanel
- * Also supports simple user lookup for UserDetailDrawer (returns user in data field)
+ * Schema-drift tolerant: returns stable admin user shape
  */
 export async function getAdminUserDetail(req, res) {
   try {
     const userId = parseInt(req.params.userId);
     if (!userId || isNaN(userId)) {
-      return sendError(res, {
+      return fail(res, {
         code: 'VALIDATION_ERROR',
         message: 'Invalid user ID',
-        statusCode: 400
-      });
+        details: {},
+      }, 400);
     }
 
-    // Get full user profile with role/permissions/flags
-    const user = await getUserWithAccessData(userId);
+    // Get admin-safe user detail (schema-drift tolerant)
+    const user = await getAdminUserDetailService(userId);
     if (!user) {
-      return sendError(res, {
+      return fail(res, {
         code: 'ADMIN_USER_NOT_FOUND',
         message: 'User not found',
-        statusCode: 404
-      });
+        details: {},
+      }, 404);
     }
 
-    // Check if this is a simple lookup request (for drawer) via query param
-    const simpleLookup = req.query.simple === 'true';
-
-    if (simpleLookup) {
-      // Simple lookup: return just user data with ADMIN_USER_DETAIL code
-      // Remove sensitive fields
-      const { password, recoveryCodes, twoFactorSecret, ...safeUser } = user;
-      
-      // Return user directly in data field
-      return sendOk(res, {
-        id: safeUser.id,
-        email: safeUser.email,
-        fullName: safeUser.fullName,
-        role: safeUser.role,
-        accountStatus: safeUser.accountStatus,
-        createdAt: safeUser.createdAt,
-        lastLoginAt: safeUser.lastLoginAt,
-        connectedProviders: safeUser.connectedProviders || [],
-        username: safeUser.username,
-      }, 200, 'ADMIN_USER_DETAIL');
-    }
-
-    // Full detail: return user with activities and devices (for AdminUserDetailPanel)
-    // Get recent activity (last 20)
-    const activities = await getUserActivityLog(userId, { limit: 20 });
-
-    // Get devices (last 10)
-    const devices = await getUserDevices(userId);
-    const recentDevices = devices.slice(0, 10);
-
-    // Remove sensitive fields
-    const { password, ...safeUser } = user;
-
-    return sendOk(res, {
-      user: {
-        ...safeUser,
-        permissions: user.effectivePermissions, // Computed permissions
-        featureFlags: user.featureFlags, // Merged feature flags
-      },
-      recentActivity: activities,
-      devices: recentDevices,
-    });
+    // Return success with admin user shape
+    return ok(res, {
+      code: 'ADMIN_USER_DETAILS_OK',
+      message: 'User details retrieved successfully',
+      data: { user },
+    }, 200);
   } catch (error) {
-    console.error('getAdminUserDetail error:', error);
-    return sendError(res, {
+    console.error('getAdminUserDetail error:', error, { requestId: req.requestId });
+    return fail(res, {
       code: 'DATABASE_ERROR',
       message: 'Failed to fetch user details',
-      statusCode: 500
-    });
+      details: {},
+    }, 500);
+  }
+}
+
+/**
+ * GET /api/v1/admin/navigation
+ * Get admin navigation structure filtered by user permissions
+ */
+export async function getAdminNavigation(req, res) {
+  try {
+    // User is already validated by requireAdmin middleware
+    const user = req.currentUser || req.user;
+    
+    if (!user) {
+      return fail(res, {
+        code: 'AUTH_REQUIRED',
+        message: 'You must be logged in.',
+        details: {},
+      }, 401);
+    }
+
+    // Get navigation filtered by user permissions
+    const navigation = getAdminNavigationForUser(user);
+
+    return ok(res, {
+      code: 'ADMIN_NAV_OK',
+      message: 'Navigation retrieved successfully',
+      data: navigation,
+    }, 200);
+  } catch (error) {
+    console.error('getAdminNavigation error:', error, { requestId: req.requestId });
+    return fail(res, {
+      code: 'ADMIN_NAV_FAILED',
+      message: 'Failed to retrieve navigation',
+      details: {},
+    }, 500);
   }
 }
 

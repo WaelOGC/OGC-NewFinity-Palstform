@@ -10,10 +10,12 @@ import cookieParser from 'cookie-parser';
 import passport from 'passport';
 import { rateLimiter } from './middleware/rateLimit.js';
 import { errorHandler } from './middleware/error.js';
+import { requestId } from './middleware/requestId.js';
 import routes from './routes/index.js';
 import { initEmailService } from './services/emailService.js';
 import { ensureDefaultAdmin } from './utils/ensureDefaultAdmin.js';
 import { ensurePhase5Migration } from './utils/ensurePhase5Migration.js';
+import { resolveUserSchema } from './utils/userSchemaResolver.js';
 import pool from './db.js';
 
 // Import Passport providers configuration (registers all OAuth strategies)
@@ -46,6 +48,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(requestId); // Request ID middleware (must be early for observability)
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
@@ -177,6 +180,15 @@ const HOST = env.HOST;
     
     // Dev-only: Ensure default admin user exists (runs only in non-production)
     await ensureDefaultAdmin();
+    
+    // Initialize user schema resolver (safe to fail - will use defaults)
+    try {
+      await resolveUserSchema();
+      console.log('[Backend] User schema resolver initialized');
+    } catch (err) {
+      console.warn('[Backend] Failed to initialize user schema resolver:', err.message);
+      console.warn('[Backend] Continuing with default schema (graceful degradation)');
+    }
     
     app.listen(PORT, HOST, () => {
       const baseUrl = `http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`;

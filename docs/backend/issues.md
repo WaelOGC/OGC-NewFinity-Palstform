@@ -34,7 +34,9 @@ Although the email/password login flow is stable, the social authentication flow
 
 ---
 
-## ✅ FIXED – Auth Lifecycle URL Mismatches (2024-12-XX)
+## Resolved Issues
+
+### Auth Lifecycle URL Mismatches (Resolved 2024-12-XX)
 
 ### Problem:
 Activation and password reset email links did not match frontend routes, causing users to be unable to activate accounts or reset passwords.

@@ -1,13 +1,10 @@
-# Phase W2.6 Implementation Report: Wallet Overview (Snapshot + Balances)
+# Wallet Overview API Implementation
 
 ## Overview
-This phase implements the Wallet Overview API endpoint that provides wallet snapshot and balances data. The endpoint returns mock data that replaces hard-coded values on the `/dashboard/wallet` page, allowing the UI to display wallet information from the backend API.
-
-## Implementation Date
-Phase W2.6
+This document describes the Wallet Overview API endpoint implementation that provides wallet snapshot and balances data. The endpoint returns mock data that replaces hard-coded values on the `/dashboard/wallet` page, allowing the UI to display wallet information from the backend API.
 
 ## Status
-✅ Complete - Wallet Overview API and UI wiring implemented
+Complete - Wallet Overview API and UI wiring implemented
 
 ---
 
@@ -254,7 +251,7 @@ The frontend `apiRequest` function automatically unwraps the `data` field, so co
 - `frontend/src/pages/dashboard/WalletPage.jsx` - Updated to use API data instead of hard-coded values
 
 ### Documentation
-- `backend/PHASE-W2.6-IMPLEMENTATION-REPORT.md` - This file
+- `docs/backend/wallet-overview-api-implementation.md` - This file
 
 ---
 

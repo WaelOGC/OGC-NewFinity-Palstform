@@ -7,6 +7,7 @@
  */
 
 import pool from '../db.js';
+import { getUserSchema } from '../utils/userSchemaResolver.js';
 
 /**
  * Get admin users list with pagination and search
@@ -46,9 +47,13 @@ export async function getAdminUsers({ page = 1, limit = 25, q = '' } = {}) {
         ? `WHERE ${countConditions.join(' AND ')}` 
         : '';
       
+      // Get table name from schema resolver
+      const schema = getUserSchema();
+      const tableName = schema?.table || 'User';
+
       // Get total count using minimal columns
       const [countRows] = await pool.query(
-        `SELECT COUNT(*) as total FROM User ${countWhereClause}`,
+        `SELECT COUNT(*) as total FROM \`${tableName}\` ${countWhereClause}`,
         countParams
       );
       total = countRows[0]?.total || 0;
@@ -56,7 +61,7 @@ export async function getAdminUsers({ page = 1, limit = 25, q = '' } = {}) {
       // Get paginated minimal results
       const [minimalResult] = await pool.query(
         `SELECT id, email, createdAt 
-         FROM User 
+         FROM \`${tableName}\` 
          ${countWhereClause}
          ORDER BY createdAt DESC 
          LIMIT ? OFFSET ?`,
@@ -100,19 +105,47 @@ export async function getAdminUsers({ page = 1, limit = 25, q = '' } = {}) {
         ? `WHERE ${extendedConditions.join(' AND ')}` 
         : '';
       
-      // Try extended query with optional fields
+      // Build SELECT clause using resolved schema columns
+      const schema = getUserSchema();
+      const tableName = schema?.table || 'User';
+      
+      // Build column selections based on resolved schema
+      const selectParts = [
+        'id',
+        'email',
+        'COALESCE(username, NULL) as username',
+        'COALESCE(displayName, fullName, NULL) as displayName',
+        'COALESCE(avatarUrl, NULL) as avatarUrl',
+        'COALESCE(authProvider, provider, NULL) as provider',
+      ];
+      
+      // Add status column if available
+      if (schema?.columns?.status) {
+        selectParts.push(`\`${schema.columns.status}\` as accountStatus`);
+      } else {
+        selectParts.push('NULL as accountStatus');
+      }
+      
+      // Add role column if available
+      if (schema?.columns?.role) {
+        selectParts.push(`\`${schema.columns.role}\` as role`);
+      } else {
+        selectParts.push('NULL as role');
+      }
+      
+      // Add lastLogin column if available
+      if (schema?.columns?.lastLogin) {
+        selectParts.push(`\`${schema.columns.lastLogin}\` as lastLoginAt`);
+      } else {
+        selectParts.push('NULL as lastLoginAt');
+      }
+      
+      selectParts.push('createdAt');
+      
+      // Try extended query with optional fields (including lastLoginAt)
       const [extendedResult] = await pool.query(
-        `SELECT 
-          id,
-          email,
-          COALESCE(username, NULL) as username,
-          COALESCE(displayName, fullName, NULL) as displayName,
-          COALESCE(avatarUrl, NULL) as avatarUrl,
-          COALESCE(authProvider, provider, NULL) as provider,
-          COALESCE(accountStatus, status, NULL) as accountStatus,
-          COALESCE(role, NULL) as role,
-          createdAt
-         FROM User 
+        `SELECT ${selectParts.join(', ')}
+         FROM \`${tableName}\` 
          ${extendedWhereClause}
          ORDER BY createdAt DESC 
          LIMIT ? OFFSET ?`,
@@ -124,8 +157,10 @@ export async function getAdminUsers({ page = 1, limit = 25, q = '' } = {}) {
       
       // If extended query worked, update total count with extended search
       if (searchTerm && extendedConditions.length > 0) {
+        const schema = getUserSchema();
+        const tableName = schema?.table || 'User';
         const [extendedCountRows] = await pool.query(
-          `SELECT COUNT(*) as total FROM User ${extendedWhereClause}`,
+          `SELECT COUNT(*) as total FROM \`${tableName}\` ${extendedWhereClause}`,
           extendedParams
         );
         total = extendedCountRows[0]?.total || 0;
@@ -156,6 +191,7 @@ export async function getAdminUsers({ page = 1, limit = 25, q = '' } = {}) {
         provider: null,
         accountStatus: null,
         roles: [],
+        lastLoginAt: null,
         createdAt: row.createdAt || null,
       };
 
@@ -166,10 +202,13 @@ export async function getAdminUsers({ page = 1, limit = 25, q = '' } = {}) {
         user.avatarUrl = row.avatarUrl || null;
         user.provider = row.provider || null;
         user.accountStatus = row.accountStatus || null;
+        user.lastLoginAt = row.lastLoginAt || null;
         
-        // Populate roles array from role field
+        // Populate roles array from role field (convert single role to array)
         if (row.role) {
-          user.roles = [row.role];
+          user.roles = Array.isArray(row.role) ? row.role : [row.role];
+        } else {
+          user.roles = [];
         }
       }
 
@@ -201,6 +240,130 @@ export async function getAdminUsers({ page = 1, limit = 25, q = '' } = {}) {
     
     // For other database errors, log and re-throw
     console.error(`[ADMIN_USERS] Database error:`, {
+      code: err.code,
+      message: err.message,
+    });
+    throw err;
+  }
+}
+
+/**
+ * Get admin user details by ID (schema-drift tolerant)
+ * Returns admin-safe user shape with stable fields
+ * 
+ * @param {number} userId - User ID
+ * @returns {Promise<Object|null>} Admin user object or null if not found
+ */
+export async function getAdminUserDetail(userId) {
+  try {
+    const normalizedUserId = parseInt(userId);
+    if (!normalizedUserId || isNaN(normalizedUserId)) {
+      return null;
+    }
+
+    // Try to get user with extended fields first
+    let user = null;
+    try {
+      const schema = getUserSchema();
+      const tableName = schema?.table || 'User';
+      
+      // Build SELECT clause using resolved schema columns
+      const selectParts = [
+        'id',
+        'email',
+        'COALESCE(username, NULL) as username',
+        'COALESCE(displayName, fullName, NULL) as displayName',
+        'COALESCE(avatarUrl, NULL) as avatarUrl',
+        'COALESCE(authProvider, provider, NULL) as provider',
+      ];
+      
+      // Add status column if available
+      if (schema?.columns?.status) {
+        selectParts.push(`\`${schema.columns.status}\` as accountStatus`);
+      } else {
+        selectParts.push('NULL as accountStatus');
+      }
+      
+      // Add role column if available
+      if (schema?.columns?.role) {
+        selectParts.push(`\`${schema.columns.role}\` as role`);
+      } else {
+        selectParts.push('NULL as role');
+      }
+      
+      // Add lastLogin column if available
+      if (schema?.columns?.lastLogin) {
+        selectParts.push(`\`${schema.columns.lastLogin}\` as lastLoginAt`);
+      } else {
+        selectParts.push('NULL as lastLoginAt');
+      }
+      
+      selectParts.push('createdAt');
+      
+      const [rows] = await pool.query(
+        `SELECT ${selectParts.join(', ')}
+         FROM \`${tableName}\` 
+         WHERE id = ?`,
+        [normalizedUserId]
+      );
+      
+      if (rows && rows.length > 0) {
+        const row = rows[0];
+        user = {
+          id: row.id || null,
+          email: row.email || null,
+          username: row.username || null,
+          displayName: row.displayName || null,
+          avatarUrl: row.avatarUrl || null,
+          provider: row.provider || null,
+          accountStatus: row.accountStatus || null,
+          lastLoginAt: row.lastLoginAt || null,
+          roles: row.role ? (Array.isArray(row.role) ? row.role : [row.role]) : [],
+          createdAt: row.createdAt || null,
+        };
+      }
+    } catch (err) {
+      // If extended query fails due to schema mismatch, try minimal fields
+      if (err.code === 'ER_BAD_FIELD_ERROR' || err.message?.includes('Unknown column')) {
+        console.log(`[ADMIN_USERS] Schema mismatch: using minimal fields for user detail`);
+        try {
+          const schema = getUserSchema();
+          const tableName = schema?.table || 'User';
+          const [minimalRows] = await pool.query(
+            `SELECT id, email, createdAt FROM \`${tableName}\` WHERE id = ?`,
+            [normalizedUserId]
+          );
+          
+          if (minimalRows && minimalRows.length > 0) {
+            const row = minimalRows[0];
+            user = {
+              id: row.id || null,
+              email: row.email || null,
+              username: null,
+              displayName: null,
+              avatarUrl: null,
+              provider: null,
+              accountStatus: null,
+              lastLoginAt: null,
+              roles: [],
+              createdAt: row.createdAt || null,
+            };
+          }
+        } catch (minimalErr) {
+          // Even minimal query failed - return null
+          console.error(`[ADMIN_USERS] Minimal query failed for user detail:`, minimalErr.message);
+          return null;
+        }
+      } else {
+        // Non-schema error - re-throw
+        throw err;
+      }
+    }
+
+    return user;
+  } catch (err) {
+    console.error(`[ADMIN_USERS] Error fetching user detail:`, {
+      userId,
       code: err.code,
       message: err.message,
     });

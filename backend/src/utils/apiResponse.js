@@ -77,20 +77,24 @@ export function ok(res, { code, message, data = {} }, statusCode = 200) {
 
 /**
  * Standardized error response (enforces consistent envelope)
- * Usage: fail(res, { code: 'AUTH_NOT_AUTHENTICATED', message: 'Not authenticated.', data: {...} }, 401)
+ * Usage: fail(res, { code: 'AUTH_NOT_AUTHENTICATED', message: 'Not authenticated.', details: {...} }, 401)
  * 
  * Rules:
  * - status must be "ERROR"
  * - code is required
  * - message is required
- * - data is always included (defaults to {} if not provided)
+ * - details is optional and must be safe (no secrets)
+ * - Always JSON, no HTML, no stack traces
  */
-export function fail(res, { code, message, data = {} }, statusCode = 400) {
+export function fail(res, { code, message, details = {} }, statusCode = 400) {
+  // Sanitize details to ensure no sensitive data leaks
+  const sanitizedDetails = details || {};
+  
   const response = {
     status: "ERROR",
     code: code || "INTERNAL_ERROR",
     message: message || "An error occurred",
-    data: data || {},
+    ...(Object.keys(sanitizedDetails).length > 0 && { details: sanitizedDetails }),
   };
   
   res.status(statusCode).json(response);

@@ -27,8 +27,10 @@ import Security from './pages/dashboard/Security.jsx';
 import DashboardWalletPage from './pages/dashboard/WalletPage.jsx';
 import ChallengePage from './pages/dashboard/ChallengePage.jsx';
 import AmyAgentShell from './pages/amy/AmyAgentShell.jsx';
-import AdminLayout from './components/admin/AdminLayout.jsx';
+import AdminLayout from './pages/admin/AdminLayout.jsx';
+import AdminHome from './pages/admin/AdminHome.jsx';
 import AdminUsersPage from './pages/admin/AdminUsersPage.jsx';
+import AdminUserDetailPage from './pages/admin/AdminUserDetailPage.jsx';
 import AdminAuditLogsPage from './pages/admin/AdminAuditLogsPage.jsx';
 import InternalRouteGuard from './components/InternalRouteGuard.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -128,8 +130,9 @@ const router = createBrowserRouter([
         path: '/admin/*',
         element: <AdminLayout />,
         children: [
-          { index: true, element: <AdminUsersPage /> },
+          { index: true, element: <AdminHome /> },
           { path: 'users', element: <AdminUsersPage /> },
+          { path: 'users/:userId', element: <AdminUserDetailPage /> },
           { path: 'audit-logs', element: <AdminAuditLogsPage /> },
         ],
       },

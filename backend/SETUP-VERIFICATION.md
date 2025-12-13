@@ -37,9 +37,9 @@ All scripts and paths have been normalized. The wallet API tests can now be run 
 
 ✅ **All verification docs updated:**
 - `backend/VERIFICATION-INSTRUCTIONS.md` - Uses `npm start` and `npm run test:wallet`
-- `backend/VERIFICATION-SUMMARY.md` - Updated commands
-- `backend/WALLET-API-VERIFICATION-REPORT.md` - Updated test execution commands
-- `backend/START-BACKEND.md` - Updated with correct commands
+- `docs/backend/wallet-api-verification-summary.md` - Updated commands
+- `docs/backend/wallet-api-verification.md` - Updated test execution commands
+- `docs/backend/start-backend-test-guide.md` - Updated with correct commands
 - `backend/verify-wallet-system.js` - Fixed console messages
 
 ## How to Use
@@ -127,10 +127,11 @@ This section describes how to set up the database schema for user authentication
 
 ### Migration Steps
 
-The auth system requires two SQL schema files to be run in order:
+The auth system requires SQL schema files to be run. Recommended order:
 
 1. **Base User Table** (`user-schema.sql`) - Creates the initial User table
 2. **Activation & Terms** (`user-activation-schema.sql`) - Adds activation and terms acceptance columns
+3. **Admin Users Enhancements** (`admin-users-last-login-and-roles.sql`) - Adds lastLoginAt, ensures status/role columns exist (optional, safe to run anytime)
 
 ### Step 1: Create Base User Table
 

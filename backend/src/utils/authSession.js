@@ -6,6 +6,7 @@ import { sendNewLoginAlertEmail } from '../services/emailService.js';
 import { logUserActivity } from '../services/activityService.js';
 import env from '../config/env.js';
 import { normalizeAccountStatus, ACCOUNT_STATUS, canUserLogin } from './accountStatus.js';
+import { getUserSchema } from './userSchemaResolver.js';
 
 // Helper to convert time string to milliseconds
 function parseExpiresIn(expiresIn) {
@@ -177,6 +178,39 @@ export async function createAuthSessionForUser(res, user, req = null) {
       } catch (newDeviceCheckError) {
         // Do NOT fail login if new device check fails
         console.warn("[AuthSession] Error while computing new-device logic:", newDeviceCheckError);
+      }
+
+      // Update lastLoginAt timestamp (schema-drift tolerant - won't crash if column missing)
+      try {
+        const schema = getUserSchema();
+        const requestId = req?.requestId || 'n/a';
+        
+        if (!schema || !schema.table || !schema.columns.lastLogin) {
+          // Schema resolver didn't find lastLogin column
+          console.warn(`[AUTH] last login column not found; skipping update requestId=${requestId}`);
+        } else {
+          const tableName = schema.table;
+          const lastLoginColumn = schema.columns.lastLogin;
+          
+          await pool.query(
+            `UPDATE \`${tableName}\` SET \`${lastLoginColumn}\` = NOW() WHERE id = ?`,
+            [user.id]
+          );
+          // Log successful update (safe - no secrets)
+          console.log(`[AUTH] lastLoginAt updated for userId=${user.id} requestId=${requestId}`);
+        }
+      } catch (lastLoginError) {
+        // Don't fail login if lastLoginAt column doesn't exist or update fails
+        // Log a warning if it's a schema error (column missing)
+        const requestId = req?.requestId || 'n/a';
+        let safeReason = 'unknown error';
+        if (lastLoginError.code === 'ER_BAD_FIELD_ERROR' || lastLoginError.message?.includes('Unknown column')) {
+          safeReason = 'column not found';
+        } else {
+          safeReason = lastLoginError.message || 'unknown error';
+        }
+        console.warn(`[AUTH] lastLoginAt update skipped: ${safeReason} requestId=${requestId}`);
+        // Continue with login even if lastLoginAt update fails
       }
 
       // Phase 8.6: Log login success activity (if session was created successfully)

@@ -25,7 +25,7 @@ export async function requireAdmin(req, res, next) {
       return fail(res, {
         code: 'AUTH_REQUIRED',
         message: 'You must be logged in.',
-        data: {},
+        details: {},
       }, 401);
     }
 
@@ -37,9 +37,9 @@ export async function requireAdmin(req, res, next) {
       user = await getUserWithAccessData(req.user.id);
       if (!user) {
         return fail(res, {
-          code: 'USER_NOT_FOUND',
-          message: 'User not found',
-          data: {},
+          code: 'AUTH_REQUIRED',
+          message: 'You must be logged in.',
+          details: {},
         }, 401);
       }
     }
@@ -57,7 +57,7 @@ export async function requireAdmin(req, res, next) {
       return fail(res, {
         code: 'ADMIN_REQUIRED',
         message: 'You do not have permission to access this resource. Admin access required.',
-        data: {},
+        details: {},
       }, 403);
     }
 
@@ -65,11 +65,11 @@ export async function requireAdmin(req, res, next) {
     req.currentUser = user;
     next();
   } catch (error) {
-    console.error('requireAdmin middleware error:', error);
+    console.error('requireAdmin middleware error:', error, { requestId: req.requestId });
     return fail(res, {
       code: 'ADMIN_CHECK_FAILED',
       message: 'Internal server error while checking admin access',
-      data: {},
+      details: {},
     }, 500);
   }
 }
