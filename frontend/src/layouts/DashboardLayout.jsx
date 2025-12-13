@@ -70,7 +70,9 @@ function DashboardLayout() {
     return badges[role] || null;
   };
 
-  const roleBadge = user?.role ? getRoleBadge(user.role) : null;
+  // Get role badge - check both user.role (singular) and user.roles (array)
+  const userRole = user?.role || (Array.isArray(user?.roles) && user.roles.length > 0 ? user.roles[0] : null);
+  const roleBadge = userRole ? getRoleBadge(userRole) : null;
   
   // Phase 6: Check if user has admin access (role OR permission)
   const isAdmin = hasAnyRole(ADMIN_ROLES) || hasAnyPermission(['VIEW_ADMIN_DASHBOARD', 'MANAGE_USERS']);
@@ -182,6 +184,18 @@ function DashboardLayout() {
                   >
                     Go to main dashboard
                   </button>
+                  {isAdmin && (
+                    <button 
+                      type="button" 
+                      className="header-account-menu-item"
+                      onClick={() => {
+                        setIsAccountMenuOpen(false);
+                        navigate('/admin');
+                      }}
+                    >
+                      Admin Panel
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="header-account-menu-item header-account-menu-item--danger"

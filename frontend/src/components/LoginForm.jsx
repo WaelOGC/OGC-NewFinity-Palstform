@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
-import { requestPasswordResetEmail } from "../utils/apiClient.js";
+import { requestPasswordReset } from "../utils/apiClient.js";
 import "./AuthForm.css";
 import "./TwoFactorChallenge.css";
 
@@ -31,8 +31,7 @@ function LoginForm() {
   const [resetEmail, setResetEmail] = useState("");
   const [showResetPanel, setShowResetPanel] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  const [resetError, setResetError] = useState(null);
-  const [resetSuccess, setResetSuccess] = useState("");
+  const [resetMsg, setResetMsg] = useState("");
 
   // Prefill reset email from sign-in email when it changes
   useEffect(() => {
@@ -208,32 +207,30 @@ function LoginForm() {
   }
 
   // Phase 8.3: Password reset request handler
+  // Uses the same canonical function as /forgot-password page
   async function handlePasswordResetRequest(e) {
-    e.preventDefault();
-    setResetError(null);
-    setResetSuccess("");
+    if (e?.preventDefault) e.preventDefault();
 
-    const emailToUse = resetEmail?.trim();
-
+    const emailToUse = (resetEmail || email || '').trim();
     if (!emailToUse) {
-      setResetError("Please enter your email address.");
+      setResetMsg('Email is required.');
       return;
     }
 
+    setResetLoading(true);
+    setResetMsg('');
+
+    console.log('[AUTH_RESET] sending forgot-password for:', emailToUse);
+
     try {
-      setResetLoading(true);
-      const data = await requestPasswordResetEmail(emailToUse);
-      setResetSuccess(
-        data?.message ||
-          "If an account with that email exists, a reset link has been sent."
-      );
+      await requestPasswordReset(emailToUse);
+      console.log('[AUTH_RESET] request sent OK');
     } catch (err) {
-      setResetError(
-        err?.message ||
-          "We couldn't send a reset email right now. Please try again later."
-      );
+      console.warn('[AUTH_RESET] request failed (suppressed):', err);
+      // Suppress error for user-enumeration safety
     } finally {
       setResetLoading(false);
+      setResetMsg('If the email exists, a reset link was sent.');
     }
   }
 
@@ -397,8 +394,7 @@ function LoginForm() {
             type="button"
             onClick={() => {
               setShowResetPanel(true);
-              setResetError(null);
-              setResetSuccess("");
+              setResetMsg("");
               if (!resetEmail && email) {
                 setResetEmail(email);
               }
@@ -467,73 +463,51 @@ function LoginForm() {
         <div className="auth-secondary-panel">
           <h3 className="auth-secondary-panel-title">Reset your password</h3>
 
-          {resetError && (
-            <div className="auth-form-status auth-form-status--error" role="alert">
-              {resetError}
-            </div>
-          )}
-          {resetSuccess && (
-            <div className="auth-form-status auth-form-status--success" role="alert">
-              {resetSuccess}
+          {resetMsg && (
+            <div className={`auth-form-status auth-form-status--${resetMsg.includes('required') ? 'error' : 'success'}`} role="alert">
+              {resetMsg}
             </div>
           )}
 
-          {!resetSuccess && (
-            <form onSubmit={handlePasswordResetRequest}>
-              <div className="auth-form-field">
-                <label htmlFor="reset-email" className="auth-form-label">
-                  Email address
-                </label>
-                <input
-                  id="reset-email"
-                  type="email"
-                  className="auth-form-input"
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  disabled={resetLoading}
-                  required
-                />
-              </div>
+          <form onSubmit={handlePasswordResetRequest}>
+            <div className="auth-form-field">
+              <label htmlFor="reset-email" className="auth-form-label">
+                Email address
+              </label>
+              <input
+                id="reset-email"
+                type="email"
+                className="auth-form-input"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="you@example.com"
+                disabled={resetLoading}
+                required
+              />
+            </div>
 
-              <div className="auth-secondary-actions">
-                <button
-                  type="submit"
-                  disabled={resetLoading}
-                  className="auth-form-submit-btn"
-                >
-                  {resetLoading ? "Sending..." : "Send reset link"}
-                </button>
+            <div className="auth-secondary-actions">
+              <button
+                type="submit"
+                disabled={resetLoading}
+                className="auth-form-submit-btn"
+              >
+                {resetLoading ? "Sending..." : "Send reset link"}
+              </button>
 
-                <button
-                  type="button"
-                  className="auth-form-secondary-btn"
-                  onClick={() => {
-                    setShowResetPanel(false);
-                    setResetError(null);
-                    setResetSuccess("");
-                  }}
-                  disabled={resetLoading}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
-
-          {resetSuccess && (
-            <button
-              type="button"
-              className="auth-form-secondary-btn"
-              onClick={() => {
-                setShowResetPanel(false);
-                setResetError(null);
-                setResetSuccess("");
-              }}
-            >
-              Close
-            </button>
-          )}
+              <button
+                type="button"
+                className="auth-form-secondary-btn"
+                onClick={() => {
+                  setShowResetPanel(false);
+                  setResetMsg("");
+                }}
+                disabled={resetLoading}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </form>

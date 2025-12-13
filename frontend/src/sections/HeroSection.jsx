@@ -14,6 +14,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { FEATURE_FLAGS } from '../config/featureFlags.js';
 import './HeroSection.css';
 
 const MATRIX_CHARS = "01ABCDEF#$%@";
@@ -95,7 +96,10 @@ export default function HeroSection() {
           A unified digital ecosystem connecting creators, developers, and organizations through intelligent AI tools, secure blockchain infrastructure, and transparent token economics.
         </p>
         <div className="hero-buttons">
-          <Link to="/download" className="btn-primary">
+          <Link 
+            to={FEATURE_FLAGS.DOWNLOADS ? "/download" : "/coming-soon?feature=Downloads"} 
+            className="btn-primary"
+          >
             <span className="btn-ripple"></span>
             Download Whitepaper
           </Link>

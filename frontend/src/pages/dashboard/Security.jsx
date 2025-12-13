@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
-import { api } from "../../utils/apiClient.js";
+import { api, API_BASE_URL } from "../../utils/apiClient.js";
 import { QRCodeCanvas } from 'qrcode.react';
 import {
   getUserSessions,
@@ -1131,7 +1131,7 @@ function Security() {
                       style={{ fontSize: '0.9em', padding: '6px 12px' }}
                       onClick={() => {
                         // Redirect to connect endpoint
-                        window.location.href = `/api/v1/auth/oauth/connect/${provider}`;
+                        window.location.href = `${API_BASE_URL}/auth/oauth/connect/${provider}`;
                       }}
                     >
                       Connect

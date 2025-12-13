@@ -19,7 +19,9 @@ function AdminLayout() {
     return badges[role] || null;
   };
 
-  const roleBadge = user?.role ? getRoleBadge(user.role) : null;
+  // Get role badge - check both user.role (singular) and user.roles (array)
+  const userRole = user?.role || (Array.isArray(user?.roles) && user.roles.length > 0 ? user.roles[0] : null);
+  const roleBadge = userRole ? getRoleBadge(userRole) : null;
 
   // Note: Access control is handled by AdminRouteGuard, so we don't need to check here
   // If this component renders, the user is already authenticated and has admin role

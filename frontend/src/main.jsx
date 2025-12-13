@@ -8,8 +8,8 @@ import Layout from './components/layout/Layout.jsx';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import ActivationPage from './pages/ActivationPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import SocialAuthCallback from './pages/SocialAuthCallback';
 import DocsPage from './pages/DocsPage';
 import DevDesignPage from './pages/DevDesignPage';
@@ -33,6 +33,9 @@ import InternalRouteGuard from './components/InternalRouteGuard.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AdminRouteGuard from './components/AdminRouteGuard.jsx';
 import BlogSlugRedirect from './components/BlogSlugRedirect.jsx';
+import ComingSoon from './pages/ComingSoon/index.jsx';
+import FeatureGate from './components/FeatureGate.jsx';
+import { FEATURE_FLAGS } from './config/featureFlags.js';
 import './index.css';
 
 const router = createBrowserRouter([
@@ -45,12 +48,12 @@ const router = createBrowserRouter([
       { path: '/', element: <LandingPage /> },
       { path: '/auth', element: <AuthPage /> },
       { path: '/activate', element: <ActivationPage /> },
-      { path: '/auth/forgot-password', element: <ForgotPasswordPage /> },
-      { path: '/reset-password', element: <ResetPasswordPage /> },
+      { path: '/forgot-password', element: <ForgotPassword /> },
+      { path: '/reset-password', element: <ResetPassword /> },
       { path: '/auth/social/callback', element: <SocialAuthCallback /> },
       { path: '/docs', element: <DocsPage /> },
       { path: '/dev-design', element: <DevDesignPage /> },
-      { path: '/download', element: <DownloadPage /> },
+      { path: '/download', element: <FeatureGate enabled={FEATURE_FLAGS.DOWNLOADS} featureName="Downloads"><DownloadPage /></FeatureGate> },
       { path: '/community', element: <CommunityPage /> },
       { path: '/coming-soon', element: <ComingSoonPage /> },
       
@@ -60,7 +63,7 @@ const router = createBrowserRouter([
         children: [
           { path: '/internal/landing', element: <LandingPage /> },
           { path: '/internal/login', element: <LoginPage /> },
-          { path: '/internal/download', element: <DownloadPage /> },
+          { path: '/internal/download', element: <FeatureGate enabled={FEATURE_FLAGS.DOWNLOADS} featureName="Downloads"><DownloadPage /></FeatureGate> },
           { path: '/internal/contact', element: <ContactPage /> },
           { path: '/internal/community', element: <CommunityPage /> },
           { path: '/internal/blog', element: <BlogPage /> },
@@ -69,7 +72,7 @@ const router = createBrowserRouter([
           {
             element: <ProtectedRoute />,
             children: [
-              { path: '/internal/wallet', element: <WalletPage /> },
+              { path: '/internal/wallet', element: <FeatureGate enabled={FEATURE_FLAGS.WALLET} featureName="Wallet"><WalletPage /></FeatureGate> },
             ],
           },
         ],
@@ -89,14 +92,14 @@ const router = createBrowserRouter([
           { path: 'overview', element: <Overview /> },
           { path: 'profile', element: <Profile /> },
           { path: 'security', element: <Security /> },
-          { path: 'wallet', element: <DashboardWalletPage /> },
-          { path: 'challenge', element: <ChallengePage /> },
+          { path: 'wallet', element: <FeatureGate enabled={FEATURE_FLAGS.WALLET} featureName="Wallet"><DashboardWalletPage /></FeatureGate> },
+          { path: 'challenge', element: <FeatureGate enabled={FEATURE_FLAGS.CHALLENGE_PROGRAM} featureName="Challenge Program"><ChallengePage /></FeatureGate> },
         ],
       },
       // Amy Agent Shell - full-screen layout (no dashboard sidebar)
       {
         path: '/amy',
-        element: <AmyAgentShell />,
+        element: <FeatureGate enabled={FEATURE_FLAGS.AMY_AGENT} featureName="Amy Agent"><AmyAgentShell /></FeatureGate>,
       },
     ],
   },

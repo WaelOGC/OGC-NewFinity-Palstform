@@ -19,6 +19,9 @@ export default defineConfig({
         secure: false,
         // Preserve the full path including /api/v1
         rewrite: (path) => path, // Don't rewrite, keep /api/v1 as-is
+        // Ensure cookies are forwarded
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
       }
     }
   }

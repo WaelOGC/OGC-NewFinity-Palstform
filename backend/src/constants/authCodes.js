@@ -1,0 +1,79 @@
+/**
+ * Authentication Error and Success Code Catalog
+ * 
+ * This file defines all authentication-related response codes used across the platform.
+ * All auth endpoints must use codes from this catalog to ensure consistency.
+ * 
+ * Usage:
+ *   import { AUTH_OK, AUTH_ERROR } from '../constants/authCodes.js';
+ *   return ok(res, { code: AUTH_OK.AUTH_LOGIN_OK, message: '...', data: {...} }, 200);
+ */
+
+export const AUTH_OK = {
+  // Login/Logout
+  AUTH_LOGIN_OK: 'AUTH_LOGIN_OK',
+  AUTH_LOGOUT_OK: 'AUTH_LOGOUT_OK',
+  AUTH_SESSION_OK: 'AUTH_SESSION_OK',
+  AUTH_REFRESH_OK: 'AUTH_REFRESH_OK',
+  
+  // Registration
+  AUTH_REGISTER_OK: 'AUTH_REGISTER_OK',
+  
+  // User info
+  AUTH_ME_OK: 'AUTH_ME_OK',
+  
+  // Password reset
+  AUTH_PASSWORD_RESET_SENT: 'AUTH_PASSWORD_RESET_SENT',
+  AUTH_PASSWORD_RESET_OK: 'AUTH_PASSWORD_RESET_OK',
+  
+  // Activation
+  AUTH_ACTIVATION_OK: 'AUTH_ACTIVATION_OK',
+  
+  // OAuth
+  AUTH_OAUTH_OK: 'AUTH_OAUTH_OK',
+  
+  // 2FA
+  AUTH_2FA_REQUIRED: 'AUTH_2FA_REQUIRED',
+};
+
+export const AUTH_ERROR = {
+  // Validation
+  AUTH_VALIDATION_ERROR: 'AUTH_VALIDATION_ERROR',
+  
+  // Authentication
+  AUTH_NOT_AUTHENTICATED: 'AUTH_NOT_AUTHENTICATED',
+  AUTH_FORBIDDEN: 'AUTH_FORBIDDEN',
+  AUTH_INVALID_CREDENTIALS: 'AUTH_INVALID_CREDENTIALS',
+  
+  // Account status
+  AUTH_ACCOUNT_PENDING: 'AUTH_ACCOUNT_PENDING',
+  AUTH_ACCOUNT_DISABLED: 'AUTH_ACCOUNT_DISABLED',
+  AUTH_EMAIL_NOT_VERIFIED: 'AUTH_EMAIL_NOT_VERIFIED',
+  
+  // Rate limiting
+  AUTH_RATE_LIMITED: 'AUTH_RATE_LIMITED',
+  
+  // Tokens
+  AUTH_TOKEN_INVALID: 'AUTH_TOKEN_INVALID',
+  AUTH_TOKEN_EXPIRED: 'AUTH_TOKEN_EXPIRED',
+  
+  // Password reset
+  AUTH_PASSWORD_RESET_INVALID: 'AUTH_PASSWORD_RESET_INVALID',
+  AUTH_PASSWORD_RESET_EXPIRED: 'AUTH_PASSWORD_RESET_EXPIRED',
+  AUTH_PASSWORD_RESET_USED: 'AUTH_PASSWORD_RESET_USED',
+  
+  // Activation
+  AUTH_ACTIVATION_INVALID: 'AUTH_ACTIVATION_INVALID',
+  AUTH_ACTIVATION_EXPIRED: 'AUTH_ACTIVATION_EXPIRED',
+  AUTH_ACTIVATION_ALREADY_USED: 'AUTH_ACTIVATION_ALREADY_USED',
+  
+  // OAuth
+  AUTH_OAUTH_NEEDS_EMAIL: 'AUTH_OAUTH_NEEDS_EMAIL',
+  AUTH_OAUTH_TICKET_INVALID: 'AUTH_OAUTH_TICKET_INVALID',
+  
+  // 2FA
+  AUTH_2FA_INVALID: 'AUTH_2FA_INVALID',
+  
+  // Server errors
+  AUTH_SERVER_ERROR: 'AUTH_SERVER_ERROR',
+};

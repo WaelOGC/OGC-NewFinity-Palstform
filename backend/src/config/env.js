@@ -199,6 +199,8 @@ const env = {
   DB_NAME: process.env.DB_NAME,
 
   // Email/SMTP (optional)
+  EMAIL_MODE: process.env.EMAIL_MODE || (process.env.NODE_ENV === 'production' ? 'smtp' : 'console'),
+  ENABLE_EMAIL_TEST_ENDPOINT: parseBoolean(process.env.ENABLE_EMAIL_TEST_ENDPOINT, false),
   SMTP_HOST: process.env.SMTP_HOST,
   SMTP_PORT: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined,
   SMTP_USER: process.env.SMTP_USER,

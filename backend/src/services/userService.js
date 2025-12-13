@@ -746,10 +746,11 @@ export async function updateDeviceLastSeen({ userId, deviceId }) {
  * @param {number} userId - User ID
  * @returns {Promise<Array>} Array of device records
  * Note: Falls back to AuthSession data if UserDevices table doesn't exist
+ * Note: Handles schema drift for isTrusted column (falls back to query without it)
  */
 export async function getUserDevices(userId) {
   try {
-    // Try to query UserDevices table first
+    // Try to query UserDevices table with isTrusted column first
     const [rows] = await pool.query(
       `SELECT id, deviceFingerprint, deviceName, userAgent, ipAddress, isTrusted, lastSeenAt, createdAt
        FROM UserDevices
@@ -759,6 +760,35 @@ export async function getUserDevices(userId) {
     );
     return rows;
   } catch (err) {
+    // Handle schema drift: isTrusted column may not exist
+    if (err.code === 'ER_BAD_FIELD_ERROR' || (err.message && err.message.includes('Unknown column'))) {
+      console.warn('[SchemaDrift] UserDevices.isTrusted missing — fallback query used');
+      try {
+        // Retry query without isTrusted column
+        const [rows] = await pool.query(
+          `SELECT id, deviceFingerprint, deviceName, userAgent, ipAddress, lastSeenAt, createdAt
+           FROM UserDevices
+           WHERE userId = ?
+           ORDER BY lastSeenAt DESC`,
+          [userId]
+        );
+        // Map results to include isTrusted: false for each device
+        return rows.map(device => ({
+          ...device,
+          isTrusted: false
+        }));
+      } catch (fallbackErr) {
+        // If fallback query also fails, check if table doesn't exist
+        if (fallbackErr.code === 'ER_NO_SUCH_TABLE' || fallbackErr.code === '42S02') {
+          // Fall through to AuthSession fallback by setting err to fallbackErr
+          err = fallbackErr;
+        } else {
+          // For other errors in fallback, rethrow
+          throw fallbackErr;
+        }
+      }
+    }
+    
     // If UserDevices table doesn't exist, fall back to AuthSession data
     if (err.code === 'ER_NO_SUCH_TABLE' || err.code === '42S02') {
       try {

@@ -11,24 +11,28 @@ import { getTwoFactorStatusForUser, verifyUserTotpCode } from '../services/twoFa
 import { getRecoveryCodesStatusForUser, consumeRecoveryCode } from '../services/twoFactorRecoveryService.js';
 import { createTwoFactorTicket, verifyTwoFactorTicket } from '../utils/twoFactorTicket.js';
 import { logUserActivity } from '../services/activityService.js';
-import { sendOk, sendError } from '../utils/apiResponse.js';
+import { sendOk, sendError, ok, fail } from '../utils/apiResponse.js';
 import { validatePasswordStrength } from '../utils/passwordPolicy.js';
+import { AUTH_OK, AUTH_ERROR } from '../constants/authCodes.js';
+import { authLog, AUTH_EVENTS } from '../utils/authLogger.js';
 import { createPasswordResetToken, findValidPasswordResetToken, markPasswordResetTokenUsed, findValidPasswordResetTokenByToken, updateUserPassword } from '../services/passwordResetService.js';
 import { revokeAllUserSessions } from '../services/sessionService.js';
 import { normalizeAccountStatus, ACCOUNT_STATUS, canUserLogin } from '../utils/accountStatus.js';
+import { createOAuthEmailTicket } from '../utils/oauthEmailTicket.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { getOAuthNeedsEmailRedirect, getOAuthSuccessRedirect } = require('../utils/oauthConfig.cjs');
 
 // Note: JWT configuration and session creation logic moved to utils/authSession.js
 // This keeps the code DRY and allows both email/password and social login to share the same session logic
 
 export async function register({ email, password, fullName, termsAccepted }, res) {
   try {
-    console.log(`[REGISTER] Attempting registration for: ${email}`);
-    
     // Validate terms acceptance
     if (!termsAccepted) {
       const error = new Error('Terms & Conditions must be accepted');
       error.statusCode = 400;
-      error.code = 'TERMS_NOT_ACCEPTED';
+      error.code = AUTH_ERROR.AUTH_VALIDATION_ERROR;
       throw error;
     }
 
@@ -40,24 +44,21 @@ export async function register({ email, password, fullName, termsAccepted }, res
         [email]
       );
     } catch (dbError) {
-      console.error('[REGISTER] Database error checking existing user:', {
-        code: dbError.code,
-        message: dbError.message,
-        sqlState: dbError.sqlState
-      });
+      authLog(AUTH_EVENTS.REGISTER_FAILED, { email, error: dbError.message, code: dbError.code });
       // Handle database connection errors
       if (dbError.code === 'ER_ACCESS_DENIED_ERROR' || dbError.code === 'ECONNREFUSED' || dbError.code === 'ENOTFOUND') {
         const error = new Error('Database connection failed. Please check your database configuration.');
         error.statusCode = 503;
-        error.code = dbError.code;
+        error.code = AUTH_ERROR.AUTH_SERVER_ERROR;
         throw error;
       }
       throw dbError;
     }
     if (existing.length > 0) {
+      authLog(AUTH_EVENTS.REGISTER_FAILED, { email, reason: 'EMAIL_ALREADY_EXISTS' });
       const error = new Error('Email already in use');
       error.statusCode = 409;
-      error.code = 'EMAIL_ALREADY_EXISTS';
+      error.code = AUTH_ERROR.AUTH_VALIDATION_ERROR;
       throw error;
     }
 
@@ -78,16 +79,11 @@ export async function register({ email, password, fullName, termsAccepted }, res
         [email, passwordHash, fullName || null, initialRole, ACCOUNT_STATUS.PENDING, ACCOUNT_STATUS.PENDING, true, now, termsVersion]
       );
     } catch (dbError) {
-      console.error('[REGISTER] Database error creating user:', {
-        code: dbError.code,
-        message: dbError.message,
-        sqlState: dbError.sqlState
-      });
+      authLog(AUTH_EVENTS.REGISTER_FAILED, { email, error: dbError.message, code: dbError.code });
       throw dbError;
     }
 
     const userId = result.insertId;
-    console.log(`[REGISTER] User created with ID: ${userId}`);
 
     // Create activation token
     const { token: activationToken } = await createActivationToken(userId);
@@ -95,10 +91,10 @@ export async function register({ email, password, fullName, termsAccepted }, res
     // Send activation email
     try {
       await sendActivationEmail({ to: email, token: activationToken, fullName });
-      console.log(`✅ Registration successful for ${email}, activation email sent`);
+      authLog(AUTH_EVENTS.REGISTER_SUCCESS, { userId, email });
     } catch (emailError) {
       // Log email error but don't fail registration
-      console.error(`⚠️  Registration succeeded but failed to send activation email:`, emailError);
+      authLog(AUTH_EVENTS.REGISTER_SUCCESS, { userId, email, emailError: 'Failed to send activation email' });
       // In production, you might want to queue this for retry
     }
 
@@ -110,18 +106,13 @@ export async function register({ email, password, fullName, termsAccepted }, res
       requiresActivation: true
     };
   } catch (error) {
-    console.error('[REGISTER] Registration error:', {
-      message: error.message,
-      code: error.code,
-      statusCode: error.statusCode,
-      sqlState: error.sqlState
-    });
+    authLog(AUTH_EVENTS.REGISTER_FAILED, { email, error: error.message, code: error.code });
     
     // Handle MySQL duplicate entry error
     if (error.code === 'ER_DUP_ENTRY' || error.message.includes('Duplicate entry')) {
       const dupError = new Error('Email already in use');
       dupError.statusCode = 409;
-      dupError.code = 'EMAIL_ALREADY_EXISTS';
+      dupError.code = AUTH_ERROR.AUTH_VALIDATION_ERROR;
       throw dupError;
     }
     // Re-throw with status code if already set
@@ -132,7 +123,7 @@ export async function register({ email, password, fullName, termsAccepted }, res
     if (error.code && error.code.startsWith('ER_')) {
       const dbError = new Error(`Database error: ${error.message}`);
       dbError.statusCode = 500;
-      dbError.code = error.code;
+      dbError.code = AUTH_ERROR.AUTH_SERVER_ERROR;
       throw dbError;
     }
     throw error;
@@ -150,22 +141,18 @@ export async function login({ email, password }, res, req = null) {
     } catch (dbError) {
       // Handle database connection errors
       if (dbError.code === 'ER_ACCESS_DENIED_ERROR' || dbError.code === 'ECONNREFUSED') {
+        authLog(AUTH_EVENTS.LOGIN_FAILED, { email, error: 'Database connection failed', code: dbError.code });
         const error = new Error('Database connection failed. Please check your database configuration.');
         error.statusCode = 503;
-        error.code = dbError.code;
+        error.code = AUTH_ERROR.AUTH_SERVER_ERROR;
         throw error;
       }
       // Handle missing column errors (log detailed error for debugging)
       if (dbError.code === 'ER_BAD_FIELD_ERROR' || (dbError.message && dbError.message.includes('Unknown column'))) {
-        console.error('[AuthLogin] Database schema error during login:', {
-          code: dbError.code,
-          message: dbError.message,
-          sqlState: dbError.sqlState,
-          sqlMessage: dbError.sqlMessage
-        });
+        authLog(AUTH_EVENTS.LOGIN_FAILED, { email, error: 'Database schema error', code: dbError.code });
         const error = new Error('Database error occurred. Please try again later.');
         error.statusCode = 500;
-        error.code = 'DATABASE_SCHEMA_ERROR';
+        error.code = AUTH_ERROR.AUTH_SERVER_ERROR;
         error.originalError = dbError;
         throw error;
       }
@@ -175,15 +162,19 @@ export async function login({ email, password }, res, req = null) {
     
     // Always return generic error for invalid credentials (security: don't reveal if email exists)
     if (!user) {
+      authLog(AUTH_EVENTS.LOGIN_FAILED, { email, reason: 'INVALID_CREDENTIALS' });
       const error = new Error('Invalid email or password');
       error.statusCode = 401;
+      error.code = AUTH_ERROR.AUTH_INVALID_CREDENTIALS;
       throw error;
     }
 
-    const ok = await bcrypt.compare(password, user.password);
-    if (!ok) {
+    const passwordOk = await bcrypt.compare(password, user.password);
+    if (!passwordOk) {
+      authLog(AUTH_EVENTS.LOGIN_FAILED, { email, userId: user.id, reason: 'INVALID_CREDENTIALS' });
       const error = new Error('Invalid email or password');
       error.statusCode = 401;
+      error.code = AUTH_ERROR.AUTH_INVALID_CREDENTIALS;
       throw error;
     }
 
@@ -191,23 +182,26 @@ export async function login({ email, password }, res, req = null) {
     const accountStatus = normalizeAccountStatus(user.accountStatus || user.status);
     
     if (accountStatus === ACCOUNT_STATUS.DISABLED) {
+      authLog(AUTH_EVENTS.LOGIN_FAILED, { email, userId: user.id, reason: 'ACCOUNT_DISABLED' });
       const error = new Error('Account is disabled');
       error.statusCode = 403;
-      error.code = 'ACCOUNT_DISABLED';
+      error.code = AUTH_ERROR.AUTH_ACCOUNT_DISABLED;
       throw error;
     }
 
     if (accountStatus === ACCOUNT_STATUS.PENDING) {
+      authLog(AUTH_EVENTS.LOGIN_FAILED, { email, userId: user.id, reason: 'ACCOUNT_PENDING' });
       const error = new Error('Account not activated');
       error.statusCode = 403;
-      error.code = 'ACCOUNT_NOT_VERIFIED';
+      error.code = AUTH_ERROR.AUTH_ACCOUNT_PENDING;
       throw error;
     }
 
     if (!canUserLogin(accountStatus)) {
+      authLog(AUTH_EVENTS.LOGIN_FAILED, { email, userId: user.id, reason: 'ACCOUNT_STATUS_INVALID' });
       const error = new Error('Account status invalid');
       error.statusCode = 403;
-      error.code = 'ACCOUNT_STATUS_INVALID';
+      error.code = AUTH_ERROR.AUTH_ACCOUNT_DISABLED;
       throw error;
     }
 
@@ -237,9 +231,10 @@ export async function login({ email, password }, res, req = null) {
       }
       
       // Return 2FA_REQUIRED response
+      authLog(AUTH_EVENTS.AUTH_2FA_REQUIRED, { userId: user.id, email });
       return {
-        status: '2FA_REQUIRED',
-        code: 'TWO_FACTOR_REQUIRED',
+        status: 'OK',
+        code: AUTH_OK.AUTH_2FA_REQUIRED,
         message: 'Two-factor authentication is required to complete login.',
         data: {
           ticket,
@@ -252,7 +247,9 @@ export async function login({ email, password }, res, req = null) {
     }
 
     // Use shared session creation helper (same logic for email/password and social login)
-    return await createAuthSessionForUser(res, user, req);
+    const sessionResult = await createAuthSessionForUser(res, user, req);
+    authLog(AUTH_EVENTS.LOGIN_SUCCESS, { userId: user.id, email });
+    return sessionResult;
   } catch (error) {
     // Re-throw with status code if already set
     if (error.statusCode) {
@@ -262,20 +259,16 @@ export async function login({ email, password }, res, req = null) {
     if (error.code && error.code.startsWith('ER_')) {
       // If it's a schema error (missing column), log detailed error
       if (error.code === 'ER_BAD_FIELD_ERROR' || (error.message && error.message.includes('Unknown column'))) {
-        console.error('[AuthLogin] Database schema error during login:', {
-          code: error.code,
-          message: error.message,
-          sqlState: error.sqlState,
-          sqlMessage: error.sqlMessage
-        });
+        authLog(AUTH_EVENTS.LOGIN_FAILED, { email, error: 'Database schema error', code: error.code });
         const dbError = new Error('Database error occurred. Please try again later.');
         dbError.statusCode = 500;
-        dbError.code = 'DATABASE_SCHEMA_ERROR';
+        dbError.code = AUTH_ERROR.AUTH_SERVER_ERROR;
         throw dbError;
       }
+      authLog(AUTH_EVENTS.LOGIN_FAILED, { email, error: error.message, code: error.code });
       const dbError = new Error(`Database error: ${error.message}`);
       dbError.statusCode = 500;
-      dbError.code = error.code;
+      dbError.code = AUTH_ERROR.AUTH_SERVER_ERROR;
       throw dbError;
     }
     throw error;
@@ -288,7 +281,10 @@ export async function refresh(req, res) {
     const refreshToken = req.cookies?.[env.JWT_COOKIE_REFRESH_NAME] || req.body?.refreshToken;
     
     if (!refreshToken) {
-      throw new Error('Refresh token required');
+      const error = new Error('Refresh token required');
+      error.statusCode = 401;
+      error.code = AUTH_ERROR.AUTH_TOKEN_INVALID;
+      throw error;
     }
 
     const payload = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET);
@@ -313,21 +309,33 @@ export async function refresh(req, res) {
       res.cookie(env.JWT_COOKIE_ACCESS_NAME, accessToken, getCookieOptions(parseExpiresIn(env.JWT_ACCESS_EXPIRES_IN)));
     }
 
+    authLog(AUTH_EVENTS.SESSION_REFRESH, { userId: payload.userId });
     return { access: accessToken };
-  } catch {
-    throw new Error('Invalid refresh token');
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      const error = new Error('Refresh token expired');
+      error.statusCode = 401;
+      error.code = AUTH_ERROR.AUTH_TOKEN_EXPIRED;
+      throw error;
+    }
+    const error = new Error('Invalid refresh token');
+    error.statusCode = 401;
+    error.code = AUTH_ERROR.AUTH_TOKEN_INVALID;
+    throw error;
   }
 }
 
 export async function logout(req, res) {
+  const userId = req.user?.id;
+  
   // PHASE S2: Revoke current session if available
-  if (req.session && req.session.id && req.user && req.user.id) {
+  if (req.session && req.session.id && userId) {
     try {
       const { revokeSession } = await import('../services/sessionService.js');
-      await revokeSession(req.user.id, req.session.id);
+      await revokeSession(userId, req.session.id);
     } catch (err) {
       // Log but don't fail logout if session revocation fails
-      console.warn('[Logout] Failed to revoke session:', err.message);
+      authLog(AUTH_EVENTS.LOGOUT, { userId, warning: 'Failed to revoke session', error: err.message });
     }
   }
   
@@ -341,7 +349,8 @@ export async function logout(req, res) {
     res.clearCookie('ogc_session', cookieOptions); // PHASE S2: Clear session cookie
   }
   
-  return { success: true, userId: req.user?.id };
+  authLog(AUTH_EVENTS.LOGOUT, { userId });
+  return { success: true, userId };
 }
 
 /**
@@ -365,8 +374,6 @@ function hashResetToken(token) {
  */
 export async function forgotPassword({ email }) {
   try {
-    console.log(`[FORGOT_PASSWORD] Request received for: ${email}`);
-    
     // Normalize email
     const normalizedEmail = email.trim().toLowerCase();
     
@@ -378,42 +385,32 @@ export async function forgotPassword({ email }) {
         [normalizedEmail]
       );
     } catch (dbError) {
-      console.error('[FORGOT_PASSWORD] Database error:', {
-        code: dbError.code,
-        message: dbError.message,
-      });
+      authLog(AUTH_EVENTS.FORGOT_PASSWORD_FAILED, { email: normalizedEmail, error: dbError.message, code: dbError.code });
       if (dbError.code === 'ER_ACCESS_DENIED_ERROR' || dbError.code === 'ECONNREFUSED' || dbError.code === 'ENOTFOUND') {
         const error = new Error('Database connection failed. Please check your database configuration.');
         error.statusCode = 503;
-        error.code = dbError.code;
+        error.code = AUTH_ERROR.AUTH_SERVER_ERROR;
         throw error;
       }
       throw dbError;
     }
 
     // Always return success message (security: don't reveal if email exists)
-    // If user exists and has a password (not OAuth-only), generate token and send email
+    // If user exists, generate token and send email (ALL users, including OAuth-only)
     if (rows.length > 0) {
       const user = rows[0];
       
-      // Check if user has a password (not OAuth-only account)
-      if (!user.password) {
-        // OAuth-only account - don't send reset email, but still return generic success
-        console.log(`[FORGOT_PASSWORD] OAuth-only account (no password) for: ${user.email}`);
-        return {
-          status: 'OK',
-          code: 'RESET_EMAIL_SENT',
-          message: "If an account exists for that email, a reset link has been sent.",
-        };
-      }
-      
       // Create reset token using PasswordResetToken table
+      // ALL users can reset password, including OAuth-only accounts
+      let emailSent = false;
+      let emailError = null;
+      
       try {
-        const { tokenPlain, expiresAt } = await createPasswordResetToken(user.id);
-        console.log(`[FORGOT_PASSWORD] Reset token generated for user ID: ${user.id}`);
+        const tokenResult = await createPasswordResetToken(user.id);
+        const expiresAt = tokenResult.expiresAt;
         
         // Build reset URL (canonical format: /reset-password?token=<TOKEN>)
-        const resetUrl = `${env.FRONTEND_BASE_URL.replace(/\/+$/, '')}/reset-password?token=${encodeURIComponent(tokenPlain)}`;
+        const resetUrl = `${env.FRONTEND_BASE_URL.replace(/\/+$/, '')}/reset-password?token=${encodeURIComponent(tokenResult.tokenPlain)}`;
         
         // Send password reset email
         try {
@@ -422,35 +419,29 @@ export async function forgotPassword({ email }) {
             resetLink: resetUrl,
             expiresAt: expiresAt
           });
-          console.log(`✅ Password reset email sent to ${user.email}`);
-        } catch (emailError) {
-          // Log email error but don't fail the request
-          console.error(`⚠️  Failed to send password reset email:`, emailError);
-          // In production, you might want to queue this for retry
+          emailSent = true;
+          authLog(AUTH_EVENTS.FORGOT_PASSWORD_SENT, { userId: user.id, email: user.email });
+        } catch (err) {
+          emailError = err;
+          authLog(AUTH_EVENTS.FORGOT_PASSWORD_FAILED, { userId: user.id, email: user.email, error: err.message });
+          // Don't throw - still return success to client (security best practice)
         }
       } catch (tokenError) {
-        console.error('[FORGOT_PASSWORD] Error creating reset token:', {
-          code: tokenError.code,
-          message: tokenError.message,
-        });
+        authLog(AUTH_EVENTS.FORGOT_PASSWORD_FAILED, { userId: user.id, email: user.email, error: tokenError.message });
         // Don't reveal error to user - still return generic success
       }
-    } else {
-      console.log(`[FORGOT_PASSWORD] Email not found (returning generic message): ${normalizedEmail}`);
     }
     
     // Always return the same generic message (security best practice)
+    // Never reveal whether email exists or if email was actually sent
     return {
       status: 'OK',
-      code: 'RESET_EMAIL_SENT',
+      code: AUTH_OK.AUTH_PASSWORD_RESET_SENT,
       message: "If an account exists for that email, a reset link has been sent.",
+      data: {},
     };
   } catch (error) {
-    console.error('[FORGOT_PASSWORD] Error:', {
-      message: error.message,
-      code: error.code,
-      statusCode: error.statusCode,
-    });
+    authLog(AUTH_EVENTS.FORGOT_PASSWORD_FAILED, { email, error: error.message, code: error.code });
     
     // Re-throw with status code if already set
     if (error.statusCode) {
@@ -460,7 +451,7 @@ export async function forgotPassword({ email }) {
     if (error.code && error.code.startsWith('ER_')) {
       const dbError = new Error(`Database error: ${error.message}`);
       dbError.statusCode = 500;
-      dbError.code = error.code;
+      dbError.code = AUTH_ERROR.AUTH_SERVER_ERROR;
       throw dbError;
     }
     throw error;
@@ -530,20 +521,18 @@ export async function validateResetToken({ token }) {
  */
 export async function resetPassword({ token, password }) {
   try {
-    console.log(`[RESET_PASSWORD] Request received`);
-    
     // Validate required fields
     if (!token) {
       const error = new Error('Reset token is required.');
       error.statusCode = 400;
-      error.code = 'RESET_TOKEN_MISSING';
+      error.code = AUTH_ERROR.AUTH_PASSWORD_RESET_INVALID;
       throw error;
     }
     
     if (!password) {
       const error = new Error('Password is required.');
       error.statusCode = 400;
-      error.code = 'PASSWORD_INVALID';
+      error.code = AUTH_ERROR.AUTH_VALIDATION_ERROR;
       throw error;
     }
     
@@ -552,7 +541,7 @@ export async function resetPassword({ token, password }) {
     if (!passwordValidation.ok) {
       const error = new Error(passwordValidation.errors.join(' '));
       error.statusCode = 400;
-      error.code = 'PASSWORD_INVALID';
+      error.code = AUTH_ERROR.AUTH_VALIDATION_ERROR;
       throw error;
     }
     
@@ -560,9 +549,19 @@ export async function resetPassword({ token, password }) {
     const resetToken = await findValidPasswordResetTokenByToken(token);
     
     if (!resetToken) {
+      authLog(AUTH_EVENTS.RESET_PASSWORD_FAILED, { reason: 'INVALID_OR_EXPIRED_TOKEN' });
       const error = new Error('This reset link is invalid or has expired.');
       error.statusCode = 400;
-      error.code = 'RESET_TOKEN_INVALID_OR_EXPIRED';
+      error.code = AUTH_ERROR.AUTH_PASSWORD_RESET_EXPIRED;
+      throw error;
+    }
+    
+    // Check if token is already used
+    if (resetToken.usedAt) {
+      authLog(AUTH_EVENTS.RESET_PASSWORD_FAILED, { userId: resetToken.userId, reason: 'TOKEN_ALREADY_USED' });
+      const error = new Error('This reset link has already been used.');
+      error.statusCode = 400;
+      error.code = AUTH_ERROR.AUTH_PASSWORD_RESET_USED;
       throw error;
     }
     
@@ -570,7 +569,7 @@ export async function resetPassword({ token, password }) {
     if (!resetToken.userId) {
       const error = new Error('User not found.');
       error.statusCode = 404;
-      error.code = 'USER_NOT_FOUND';
+      error.code = AUTH_ERROR.AUTH_VALIDATION_ERROR;
       throw error;
     }
     
@@ -580,21 +579,16 @@ export async function resetPassword({ token, password }) {
     // Update user's password
     try {
       await updateUserPassword(resetToken.userId, passwordHash);
-      console.log(`✅ Password reset successful for user ID: ${resetToken.userId}`);
     } catch (dbError) {
-      console.error('[RESET_PASSWORD] Database error updating password:', {
-        code: dbError.code,
-        message: dbError.message,
-      });
+      authLog(AUTH_EVENTS.RESET_PASSWORD_FAILED, { userId: resetToken.userId, error: dbError.message });
       throw dbError;
     }
     
     // Mark token as used (single-use token)
     try {
       await markPasswordResetTokenUsed(resetToken.id);
-      console.log(`✅ Reset token marked as used: ${resetToken.id}`);
     } catch (tokenError) {
-      console.error('[RESET_PASSWORD] Error marking token as used:', tokenError);
+      authLog(AUTH_EVENTS.RESET_PASSWORD_FAILED, { userId: resetToken.userId, warning: 'Failed to mark token as used' });
       // Don't fail the request if token marking fails - password is already updated
     }
     
@@ -602,7 +596,6 @@ export async function resetPassword({ token, password }) {
     try {
       await revokeAllUserSessions(resetToken.userId);
     } catch (sessionError) {
-      console.error('[RESET_PASSWORD] Error revoking sessions:', sessionError);
       // Don't fail the request if session revocation fails
     }
     
@@ -618,7 +611,6 @@ export async function resetPassword({ token, password }) {
         },
       });
     } catch (logError) {
-      console.error('[RESET_PASSWORD] Error logging activity:', logError);
       // Don't fail the request if logging fails
     }
     
@@ -629,21 +621,18 @@ export async function resetPassword({ token, password }) {
         changedAt: new Date(),
       });
     } catch (emailError) {
-      console.warn('[RESET_PASSWORD] Failed to send password changed alert:', emailError);
       // Don't fail the request if email fails
     }
     
+    authLog(AUTH_EVENTS.RESET_PASSWORD_SUCCESS, { userId: resetToken.userId, email: resetToken.email });
     return {
       status: 'OK',
-      code: 'PASSWORD_RESET_SUCCESS',
+      code: AUTH_OK.AUTH_PASSWORD_RESET_OK,
       message: 'Your password has been reset successfully.',
+      data: {},
     };
   } catch (error) {
-    console.error('[RESET_PASSWORD] Error:', {
-      message: error.message,
-      code: error.code,
-      statusCode: error.statusCode,
-    });
+    authLog(AUTH_EVENTS.RESET_PASSWORD_FAILED, { error: error.message, code: error.code });
     
     // Re-throw with status code if already set
     if (error.statusCode) {
@@ -653,7 +642,7 @@ export async function resetPassword({ token, password }) {
     if (error.code && error.code.startsWith('ER_')) {
       const dbError = new Error(`Database error: ${error.message}`);
       dbError.statusCode = 500;
-      dbError.code = error.code;
+      dbError.code = AUTH_ERROR.AUTH_SERVER_ERROR;
       throw dbError;
     }
     throw error;
@@ -1104,19 +1093,19 @@ export async function postLoginTwoFactor(req, res, next) {
 
     // Validate input
     if (!ticket || !mode || !code) {
-      return sendError(res, {
-        code: 'VALIDATION_ERROR',
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_VALIDATION_ERROR,
         message: 'Ticket, mode, and code are required.',
-        statusCode: 400,
-      });
+        data: {},
+      }, 400);
     }
 
     if (mode !== 'totp' && mode !== 'recovery') {
-      return sendError(res, {
-        code: 'VALIDATION_ERROR',
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_VALIDATION_ERROR,
         message: 'Mode must be either "totp" or "recovery".',
-        statusCode: 400,
-      });
+        data: {},
+      }, 400);
     }
 
     // Verify the ticket
@@ -1124,11 +1113,12 @@ export async function postLoginTwoFactor(req, res, next) {
     try {
       decoded = verifyTwoFactorTicket(ticket);
     } catch (err) {
-      return sendError(res, {
-        code: 'INVALID_2FA_TICKET',
+      authLog(AUTH_EVENTS.AUTH_2FA_FAILED, { reason: 'INVALID_TICKET' });
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_2FA_INVALID,
         message: 'Two-factor challenge has expired or is invalid.',
-        statusCode: 401,
-      });
+        data: {},
+      }, 401);
     }
 
     const userId = decoded.userId;
@@ -1140,11 +1130,11 @@ export async function postLoginTwoFactor(req, res, next) {
     );
 
     if (userRows.length === 0) {
-      return sendError(res, {
-        code: 'ACCOUNT_NOT_FOUND',
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_NOT_AUTHENTICATED,
         message: 'User account not found.',
-        statusCode: 401,
-      });
+        data: {},
+      }, 401);
     }
 
     const user = userRows[0];
@@ -1153,27 +1143,27 @@ export async function postLoginTwoFactor(req, res, next) {
     const accountStatus = normalizeAccountStatus(user.accountStatus || user.status);
     
     if (accountStatus === ACCOUNT_STATUS.DISABLED) {
-      return sendError(res, {
-        code: 'ACCOUNT_DISABLED',
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_ACCOUNT_DISABLED,
         message: 'Account is disabled.',
-        statusCode: 403,
-      });
+        data: {},
+      }, 403);
     }
 
     if (accountStatus === ACCOUNT_STATUS.PENDING) {
-      return sendError(res, {
-        code: 'ACCOUNT_NOT_VERIFIED',
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_ACCOUNT_PENDING,
         message: 'Account not activated.',
-        statusCode: 403,
-      });
+        data: {},
+      }, 403);
     }
 
     if (!canUserLogin(accountStatus)) {
-      return sendError(res, {
-        code: 'ACCOUNT_STATUS_INVALID',
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_ACCOUNT_DISABLED,
         message: 'Account status invalid.',
-        statusCode: 403,
-      });
+        data: {},
+      }, 403);
     }
 
     const ipAddress = req.ip || req.headers['x-forwarded-for']?.split(',')[0].trim() || req.connection?.remoteAddress || req.socket?.remoteAddress;
@@ -1183,11 +1173,11 @@ export async function postLoginTwoFactor(req, res, next) {
     if (mode === 'totp') {
       // Validate TOTP code format
       if (!/^\d{6}$/.test(code)) {
-        return sendError(res, {
-          code: 'INVALID_TOTP_CODE',
+        return fail(res, {
+          code: AUTH_ERROR.AUTH_2FA_INVALID,
           message: 'TOTP code must be 6 digits.',
-          statusCode: 400,
-        });
+          data: {},
+        }, 400);
       }
 
       try {
@@ -1204,14 +1194,15 @@ export async function postLoginTwoFactor(req, res, next) {
             metadata: { method: 'totp' }
           });
         } catch (activityError) {
-          console.error('Failed to record 2FA failure activity:', activityError);
+          // Don't fail if activity logging fails
         }
 
-        return sendError(res, {
-          code: 'INVALID_TOTP_CODE',
+        authLog(AUTH_EVENTS.AUTH_2FA_FAILED, { userId, method: 'totp' });
+        return fail(res, {
+          code: AUTH_ERROR.AUTH_2FA_INVALID,
           message: 'The code from your authenticator app is not correct.',
-          statusCode: 400,
-        });
+          data: {},
+        }, 400);
       }
     } else if (mode === 'recovery') {
       // Normalize recovery code (remove spaces and dashes, convert to uppercase)
@@ -1237,11 +1228,12 @@ export async function postLoginTwoFactor(req, res, next) {
           console.error('Failed to record recovery code failure activity:', activityError);
         }
 
-        return sendError(res, {
-          code: 'INVALID_RECOVERY_CODE',
+        authLog(AUTH_EVENTS.AUTH_2FA_FAILED, { userId, method: 'recovery', reason: result.reason });
+        return fail(res, {
+          code: AUTH_ERROR.AUTH_2FA_INVALID,
           message: 'This recovery code is invalid or has already been used.',
-          statusCode: 400,
-        });
+          data: {},
+        }, 400);
       }
 
       // Log recovery code usage
@@ -1273,22 +1265,26 @@ export async function postLoginTwoFactor(req, res, next) {
         metadata: { loginMethod: 'email_password_2fa', method: mode }
       });
     } catch (activityError) {
-      console.error('Failed to record 2FA login activity:', activityError);
+      // Don't fail if activity logging fails
     }
 
+    authLog(AUTH_EVENTS.AUTH_2FA_SUCCESS, { userId, method: mode });
     // Return success response matching the normal login format
-    // Use consistent JSON format: { status: 'OK', code: 'LOGIN_2FA_SUCCESS', message: '...', data: {...} }
-    return sendOk(res, {
-      access: sessionResult.access,
-      refresh: sessionResult.refresh,
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role || 'STANDARD_USER',
-        status: user.status
+    return ok(res, {
+      code: AUTH_OK.AUTH_LOGIN_OK,
+      message: 'Two-factor verification successful.',
+      data: {
+        access: sessionResult.access,
+        refresh: sessionResult.refresh,
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role || 'STANDARD_USER',
+          status: user.status
+        }
       }
-    }, 200, 'LOGIN_2FA_SUCCESS', 'Two-factor verification successful.');
+    }, 200);
   } catch (err) {
     return next(err);
   }
@@ -1339,6 +1335,34 @@ export async function handleOAuthCallback(req, res, next, providerName) {
         });
       }
       return res.redirect(`${SOCIAL_FAILURE_REDIRECT}&provider=${providerName}&error=authentication_failed`);
+    }
+    
+    // Check if email is missing (passport verify callback passes special marker object)
+    if (user && user.__oauthMissingEmail) {
+      console.log(`[OAUTH] Missing email from ${providerName}. Redirecting to needs_email flow.`);
+      
+      // Create email ticket with profile data
+      const ticket = createOAuthEmailTicket({
+        provider: user.provider || providerName,
+        providerUserId: user.providerUserId,
+        displayName: user.displayName || null,
+        avatarUrl: user.avatarUrl || null,
+      });
+      
+      // Redirect to frontend with needs_email parameter and ticket
+      const redirectUrl = getOAuthNeedsEmailRedirect(providerName, ticket);
+      
+      // Check if this is an API request (JSON preferred)
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return sendError(res, {
+          code: 'OAUTH_EMAIL_REQUIRED',
+          message: 'OAuth provider did not provide an email address. Please complete authentication by providing your email.',
+          statusCode: 400,
+          data: { ticket, provider: providerName },
+        });
+      }
+      
+      return res.redirect(redirectUrl);
     }
     
     // If this is a connect flow, re-sync with existingUserId to properly link the provider
@@ -1485,8 +1509,12 @@ export async function handleOAuthCallback(req, res, next, providerName) {
       }, 200, 'OAUTH_LOGIN_SUCCESS', 'Login via OAuth successful.');
     }
     
-    // Browser redirect flow: cookies are already set, so just send user to dashboard
-    return res.redirect(`${env.FRONTEND_BASE_URL}/dashboard`);
+    // Browser redirect flow: cookies are already set by createAuthSessionForUser above
+    // Cookies are set synchronously via res.cookie() before redirect, so they will be sent in the response
+    // Redirect to frontend with oauth=success parameter (canonical redirect URL)
+    // The frontend will verify cookies via /auth/me and then redirect to dashboard
+    const successRedirect = getOAuthSuccessRedirect(providerName);
+    return res.redirect(successRedirect);
   } catch (err) {
     console.error(`[${providerName.toUpperCase()}_CALLBACK] Error:`, {
       message: err.message,

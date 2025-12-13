@@ -26,51 +26,50 @@ import {
   updateUserStatus,
   updateUserFeatureFlags,
 } from '../services/userService.js';
+import { getAdminUsers } from '../services/adminUsersService.js';
 import { normalizeAccountStatus, ACCOUNT_STATUS } from '../utils/accountStatus.js';
 import {
   getUserSessions,
   revokeSession,
   revokeAllUserSessions,
 } from '../services/sessionService.js';
-import { sendOk, sendError } from '../utils/apiResponse.js';
+import { sendOk, sendError, ok, fail } from '../utils/apiResponse.js';
 import pool from '../db.js';
 
 /**
  * GET /api/v1/admin/users
  * List users with pagination, search, and filtering
+ * Schema-drift tolerant: never crashes on missing columns
  */
 export async function listAdminUsers(req, res) {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const pageSize = parseInt(req.query.pageSize) || parseInt(req.query.limit) || 20;
-    const search = req.query.search || '';
-    const role = req.query.role || '';
-    const status = req.query.status || '';
+    // Validate and normalize pagination inputs
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 25));
+    
+    // Support both 'q' (requirements) and 'search' (backward compatibility)
+    const q = req.query.q || req.query.search || '';
 
-    const result = await searchUsers({
+    // Call schema-drift tolerant service
+    const result = await getAdminUsers({
       page,
-      limit: pageSize,
-      search,
-      role: role || undefined,
-      status: status || undefined,
+      limit,
+      q,
     });
 
-    // Transform to requested format: { items, page, pageSize, total }
-    const responseData = {
-      items: result.items || [],
-      page: result.pagination?.page || page,
-      pageSize: result.pagination?.limit || pageSize,
-      total: result.pagination?.total || 0,
-    };
-
-    return sendOk(res, responseData, 200, 'ADMIN_USERS_LIST');
+    // Return success with consistent JSON format
+    return ok(res, {
+      code: 'ADMIN_USERS_OK',
+      message: 'Users retrieved successfully',
+      data: result,
+    }, 200);
   } catch (error) {
     console.error('listAdminUsers error:', error);
-    return sendError(res, {
+    return fail(res, {
       code: 'ADMIN_USERS_LIST_FAILED',
       message: 'Failed to fetch users',
-      statusCode: 500
-    });
+      data: {},
+    }, 500);
   }
 }
 
@@ -611,23 +610,27 @@ export async function getAdminUserDevices(req, res) {
     const userId = parseInt(req.params.userId);
 
     if (!userId || isNaN(userId)) {
-      return sendError(res, {
+      return fail(res, {
         code: 'VALIDATION_ERROR',
         message: 'Invalid user ID',
-        statusCode: 400
-      });
+        data: { devices: [] }
+      }, 400);
     }
 
     const devices = await getUserDevices(userId);
 
-    return sendOk(res, { devices });
+    return ok(res, {
+      code: 'USER_DEVICES_OK',
+      message: 'Devices retrieved successfully',
+      data: { devices: Array.isArray(devices) ? devices : [] }
+    });
   } catch (error) {
     console.error('getAdminUserDevices error:', error);
-    return sendError(res, {
-      code: 'DATABASE_ERROR',
+    return fail(res, {
+      code: 'USER_DEVICES_ERROR',
       message: 'Failed to fetch user devices',
-      statusCode: 500
-    });
+      data: { devices: [] }
+    }, 500);
   }
 }
 

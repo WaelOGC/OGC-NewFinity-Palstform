@@ -305,23 +305,82 @@ export function AuthProvider({ children }) {
     window.localStorage.removeItem("ogc_token");
   }
 
+  // OAuth redirect flow: manually refresh auth state after OAuth success
+  // This is called from AuthPage when oauth=success to verify cookies are set
+  // Works with both token-based and cookie-based auth (OAuth uses cookies)
+  async function checkAuth() {
+    try {
+      // For OAuth, cookies are set by backend, so we can call /auth/me directly
+      // If token exists, include it; otherwise rely on cookies
+      const options = token ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      } : {};
+
+      // Fetch user data (cookies will be sent automatically)
+      const data = await api.get('/auth/me', options);
+
+      if (data && data.user) {
+        setUser(data.user);
+        setAuthError(null);
+        // Update token if provided in response
+        if (data.access) {
+          setToken(data.access);
+          window.localStorage.setItem("ogc_token", data.access);
+        }
+        console.log('[Auth] OAuth checkAuth: Loaded user:', data.user);
+        return data.user;
+      }
+
+      // No user data returned
+      setUser(null);
+      setToken(null);
+      window.localStorage.removeItem("ogc_token");
+      setAuthError(null);
+      return null;
+    } catch (err) {
+      // If 401, clear auth state
+      if (err?.httpStatus === 401 || err?.status === 401 || err?.statusCode === 401) {
+        setUser(null);
+        setToken(null);
+        window.localStorage.removeItem("ogc_token");
+        setAuthError(null);
+      }
+      console.error("[Auth] checkAuth failed", err);
+      throw err;
+    }
+  }
+
   // Helper functions for role and permission checks
   const hasRole = (requiredRole) => {
     if (!user) return false;
-    return user.role === requiredRole;
+    // Check both user.role (singular) and user.roles (array) for compatibility
+    if (user.role === requiredRole) return true;
+    if (Array.isArray(user.roles) && user.roles.includes(requiredRole)) return true;
+    return false;
   };
 
   const hasAnyRole = (roles) => {
     if (!user || !Array.isArray(roles) || roles.length === 0) {
       return false;
     }
-    return roles.includes(user.role);
+    // Check both user.role (singular) and user.roles (array) for compatibility
+    // Backend returns roles as array, but some code may still use role (singular)
+    if (user.role && roles.includes(user.role)) return true;
+    if (Array.isArray(user.roles)) {
+      return user.roles.some(role => roles.includes(role));
+    }
+    return false;
   };
 
   const hasPermission = (permission) => {
     if (!user) return false;
     // FOUNDER has all permissions (effectivePermissions is null)
-    if (user.role === 'FOUNDER' || user.effectivePermissions === null) {
+    // Check both user.role (singular) and user.roles (array)
+    const isFounder = user.role === 'FOUNDER' || 
+                      (Array.isArray(user.roles) && user.roles.includes('FOUNDER'));
+    if (isFounder || user.effectivePermissions === null) {
       return true;
     }
     // Check if user has the permission in their effectivePermissions array
@@ -333,7 +392,10 @@ export function AuthProvider({ children }) {
       return false;
     }
     // FOUNDER has all permissions (effectivePermissions is null)
-    if (user.role === 'FOUNDER' || user.effectivePermissions === null) {
+    // Check both user.role (singular) and user.roles (array)
+    const isFounder = user.role === 'FOUNDER' || 
+                      (Array.isArray(user.roles) && user.roles.includes('FOUNDER'));
+    if (isFounder || user.effectivePermissions === null) {
       return true;
     }
     // Check if user has at least one of the required permissions
@@ -366,6 +428,8 @@ export function AuthProvider({ children }) {
     register,
     logout,
     resendActivation,
+    // OAuth redirect flow: manually refresh auth state after OAuth success
+    checkAuth,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

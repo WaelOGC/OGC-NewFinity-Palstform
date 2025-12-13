@@ -1,6 +1,6 @@
 # OGC NewFinity — Admin Panel Specification & Operational Workflows (v1.0)
 
-
+> **Note:** This document preserves the original admin panel specification and operational workflows. This section maintains the original platform intent and existing operational requirements.
 
 ## 1. Introduction
 

@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+    "free:4000": "node scripts/free-port.js 4000",
+    "dev:clean": "node scripts/free-port.js 4000 && nodemon src/index.js",
+    "start:clean": "node scripts/free-port.js 4000 && node src/index.js",
     "prod": "NODE_ENV=production node src/index.js",
     "test:wallet": "node test-wallet-api.js",
     "test:smtp": "node ./scripts/test-smtp.js",

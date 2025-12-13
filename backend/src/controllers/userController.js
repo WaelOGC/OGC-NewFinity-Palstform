@@ -27,7 +27,7 @@ import {
   revokeAllOtherSessions,
   revokeAllUserSessions,
 } from "../services/sessionService.js";
-import { sendOk, sendError } from "../utils/apiResponse.js";
+import { sendOk, sendError, ok, fail } from "../utils/apiResponse.js";
 import { sendPasswordChangedAlertEmail, sendTwoFactorStatusChangedEmail } from "../services/emailService.js";
 import { logUserActivity } from "../services/activityService.js";
 import pool from "../db.js";
@@ -421,24 +421,28 @@ export async function getSecurityDevices(req, res) {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      return sendError(res, {
+      return fail(res, {
         code: "UNAUTHORIZED",
         message: "Authentication required",
-        statusCode: 401
-      });
+        data: { devices: [] }
+      }, 401);
     }
 
     const devices = await getUserDevices(userId);
     
     // Ensure we always return an array, even if empty
-    return sendOk(res, { devices: Array.isArray(devices) ? devices : [] });
+    return ok(res, {
+      code: "USER_DEVICES_OK",
+      message: "Devices retrieved successfully",
+      data: { devices: Array.isArray(devices) ? devices : [] }
+    });
   } catch (error) {
     console.error("getSecurityDevices error:", error);
-    return sendError(res, {
-      code: "DATABASE_ERROR",
+    return fail(res, {
+      code: "USER_DEVICES_ERROR",
       message: "Failed to fetch devices",
-      statusCode: 500
-    });
+      data: { devices: [] }
+    }, 500);
   }
 }
 

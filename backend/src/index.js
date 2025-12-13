@@ -1,5 +1,6 @@
 // Load and validate environment variables FIRST before any other imports
 import env from './config/env.js';
+import { createRequire } from 'module';
 
 import express from 'express';
 import cors from 'cors';
@@ -154,8 +155,8 @@ const HOST = env.HOST;
 // Initialize email service and start server
 (async () => {
   try {
-    const emailInit = initEmailService();
-    console.log(`[EmailService] Initialized in ${emailInit.mode} mode (from: ${emailInit.from})`);
+    // Initialize email service (prints its own startup summary)
+    initEmailService();
     
     // Dev-only: Ensure Phase 5 migration is applied (runs only in non-production)
     await ensurePhase5Migration();
@@ -166,6 +167,17 @@ const HOST = env.HOST;
     app.listen(PORT, HOST, () => {
       const baseUrl = `http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`;
       
+      // OAuth configuration verification
+      const require = createRequire(import.meta.url);
+      const {
+        getBackendBaseUrl,
+        getFrontendBaseUrl,
+        getOAuthCallbackUrl,
+        OAUTH_PROVIDERS
+      } = require('./utils/oauthConfig.cjs');
+      const backendBaseUrl = getBackendBaseUrl();
+      const frontendBaseUrl = getFrontendBaseUrl();
+      
       // Comprehensive startup logs - impossible to ignore
       console.log('\n' + '='.repeat(60));
       console.log('[Backend] ✅ Server Started Successfully');
@@ -173,12 +185,36 @@ const HOST = env.HOST;
       console.log(`[Backend] Listening on http://${HOST}:${PORT}`);
       console.log(`[Backend] Environment: ${env.NODE_ENV}`);
       console.log(`[Backend] Base URL: ${baseUrl}`);
-      console.log(`[Backend] Frontend URL: ${env.FRONTEND_BASE_URL}`);
-      console.log(`[Backend] Cookie Secure: ${env.COOKIE_SECURE}`);
+      console.log(`[Backend] Frontend URL: ${frontendBaseUrl}`);
+      
+      // OAuth Configuration
+      console.log('\n[OAuth Config] OAuth Configuration:');
+      console.log(`[OAuth Config] Backend URL: ${backendBaseUrl}`);
+      console.log(`[OAuth Config] Frontend URL: ${frontendBaseUrl}`);
+      if (!env.FRONTEND_BASE_URL) {
+        console.warn('[OAuth Config] WARNING: FRONTEND_BASE_URL is missing. OAuth redirects will be wrong.');
+      }
+      console.log('[OAuth Config] Callback URLs:');
+      OAUTH_PROVIDERS.forEach(provider => {
+        console.log(`[OAuth Config]   ${provider}: ${getOAuthCallbackUrl(provider)}`);
+      });
+      
+      console.log(`\n[Backend] Cookie Secure: ${env.COOKIE_SECURE}`);
       console.log(`[Backend] Cookie SameSite: ${env.COOKIE_SAMESITE}`);
       console.log(`[Backend] Health: ${baseUrl}/api/v1/health`);
       console.log(`[Backend] Status: ${baseUrl}/status`);
       console.log('='.repeat(60) + '\n');
+    }).on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error('\n' + '='.repeat(60));
+        console.error(`[Backend] ❌ Port ${PORT} is already in use.`);
+        console.error('[Backend] Run: npm run dev:clean');
+        console.error('='.repeat(60) + '\n');
+        process.exit(1);
+      } else {
+        console.error('[Backend] Server error:', error);
+        process.exit(1);
+      }
     });
   } catch (error) {
     console.error('Failed to start server:', error.message);

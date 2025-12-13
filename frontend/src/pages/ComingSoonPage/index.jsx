@@ -6,10 +6,13 @@
  */
 
 import React, { useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import '../../styles/coming-soon.css';
 import './styles.css';
 
 export default function ComingSoonPage() {
+  const [searchParams] = useSearchParams();
+  const featureName = searchParams.get('feature') || 'This feature';
   const canvasRef = useRef(null);
   const animationFrameRef = useRef(null);
 
@@ -166,19 +169,31 @@ export default function ComingSoonPage() {
         </div>
 
         {/* Main Title */}
-        <h1 className="cs-title">OGC NewFinity Platform</h1>
+        <h1 className="cs-title">
+          {featureName !== 'This feature' ? `${featureName} - Coming Soon` : 'OGC NewFinity Platform'}
+        </h1>
 
         {/* Description */}
         <div className="cs-description">
-          <p>
-            The OGC NewFinity Platform is currently under active development. We are building a unified ecosystem that integrates advanced AI tools, blockchain infrastructure, and comprehensive community features into a single, cohesive platform. This system will bring together productivity tools, AI-powered services, blockchain integrations, and community-driven initiatives to create a seamless experience for users, developers, and contributors.
-          </p>
-          <p>
-            Our current focus is on establishing a robust architecture, implementing enterprise-grade security measures, optimizing system performance, and ensuring long-term reliability. The platform will provide users and contributors with intuitive dashboards, powerful development tools, and seamless access to services across the OGC NewFinity ecosystem. We are prioritizing scalability, security, and user experience as foundational elements of the platform.
-          </p>
-          <p>
-            Once complete, the platform will deliver comprehensive dashboards for managing accounts, tokens, and contributions. It will offer integrated tools for development, collaboration, and innovation. The system is designed to support the OGC NewFinity Challenge Program, token management, AI agent services, and future governance features. We appreciate your patience and interest as we continue to develop and refine the platform. Thank you for being part of this journey.
-          </p>
+          {featureName !== 'This feature' ? (
+            <p>
+              <strong>{featureName}</strong> is under active development. We're working hard to bring you
+              this feature and will make it available as soon as it's ready. Thank you for your patience
+              and interest in the OGC NewFinity Platform.
+            </p>
+          ) : (
+            <>
+              <p>
+                The OGC NewFinity Platform is currently under active development. We are building a unified ecosystem that integrates advanced AI tools, blockchain infrastructure, and comprehensive community features into a single, cohesive platform. This system will bring together productivity tools, AI-powered services, blockchain integrations, and community-driven initiatives to create a seamless experience for users, developers, and contributors.
+              </p>
+              <p>
+                Our current focus is on establishing a robust architecture, implementing enterprise-grade security measures, optimizing system performance, and ensuring long-term reliability. The platform will provide users and contributors with intuitive dashboards, powerful development tools, and seamless access to services across the OGC NewFinity ecosystem. We are prioritizing scalability, security, and user experience as foundational elements of the platform.
+              </p>
+              <p>
+                Once complete, the platform will deliver comprehensive dashboards for managing accounts, tokens, and contributions. It will offer integrated tools for development, collaboration, and innovation. The system is designed to support the OGC NewFinity Challenge Program, token management, AI agent services, and future governance features. We appreciate your patience and interest as we continue to develop and refine the platform. Thank you for being part of this journey.
+              </p>
+            </>
+          )}
         </div>
 
         {/* Social Links */}

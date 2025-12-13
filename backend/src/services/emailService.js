@@ -2,21 +2,25 @@
  * Email Service for OGC NewFinity
  * Handles sending activation emails and other transactional emails
  * 
- * Supports two modes:
- * - "smtp": All SMTP variables are configured → emails are sent via SMTP
- * - "console": SMTP not configured → emails are logged to console (graceful fallback)
+ * Supports two modes (controlled by EMAIL_MODE env var):
+ * - "smtp": Emails are sent via SMTP (requires full SMTP configuration)
+ * - "console": Emails are logged to console (no real email delivery)
  * 
- * SMTP configuration variables (optional):
- * EMAIL_FROM, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SECURE
+ * Default behavior:
+ * - Development: defaults to "console" unless explicitly set to "smtp"
+ * - Production: defaults to "smtp" and FAILS STARTUP if SMTP config is missing
+ * 
+ * SMTP configuration variables (required when EMAIL_MODE=smtp):
+ * SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE (optional)
  */
 
 import nodemailer from 'nodemailer';
 import env from '../config/env.js';
-import { validateEmailConfig } from '../config/env.js';
 
-let EMAIL_MODE = "console"; // "smtp" or "console"
+let EMAIL_MODE = null; // Will be set by initEmailService
 let EMAIL_FROM = null;
 let transporter = null;
+let SMTP_HOST = null; // Store for logging (masked)
 
 /**
  * Get activation base URL for building activation links
@@ -28,39 +32,121 @@ export function getActivationBaseUrl() {
 }
 
 /**
+ * Mask SMTP host for logging (shows only domain, hides subdomain/IP)
+ * @param {string} host - SMTP host
+ * @returns {string} Masked host
+ */
+function maskHost(host) {
+  if (!host) return 'unknown';
+  // If it's an IP, show only first octet
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+    const parts = host.split('.');
+    return `${parts[0]}.***.***.***`;
+  }
+  // If it's a domain, show only the main domain
+  const parts = host.split('.');
+  if (parts.length >= 2) {
+    return `***.${parts.slice(-2).join('.')}`;
+  }
+  return '***';
+}
+
+/**
  * Initialize email service
- * Determines mode based on SMTP configuration availability
- * @returns {Object} { mode: "smtp" | "console", from: string }
+ * Reads EMAIL_MODE from env and validates SMTP configuration if needed
+ * @returns {Object} { mode: "smtp" | "console", from: string, host?: string }
+ * @throws {Error} If EMAIL_MODE=smtp in production and SMTP config is missing
  */
 export function initEmailService() {
-  EMAIL_FROM = env.SMTP_FROM;
-
-  const smtpReady =
-    env.SMTP_HOST &&
-    env.SMTP_PORT &&
-    env.SMTP_USER &&
-    env.SMTP_PASS;
-
-  if (!smtpReady) {
-    EMAIL_MODE = "console";
-    console.warn("[EmailService] SMTP not fully configured → using console mode.");
-    return { mode: EMAIL_MODE, from: EMAIL_FROM };
+  // Read EMAIL_MODE from env (defaults handled in env.js)
+  EMAIL_MODE = (env.EMAIL_MODE || '').toLowerCase();
+  
+  // Validate EMAIL_MODE value
+  if (EMAIL_MODE !== 'smtp' && EMAIL_MODE !== 'console') {
+    const defaultMode = env.NODE_ENV === 'production' ? 'smtp' : 'console';
+    console.warn(`[EmailService] Invalid EMAIL_MODE="${env.EMAIL_MODE}", defaulting to "${defaultMode}"`);
+    EMAIL_MODE = defaultMode;
   }
 
-  // Configure SMTP transporter
-  transporter = nodemailer.createTransport({
+  EMAIL_FROM = env.SMTP_FROM;
+
+  // Check SMTP configuration completeness
+  const smtpVars = {
     host: env.SMTP_HOST,
     port: env.SMTP_PORT,
-    secure: env.SMTP_SECURE,
-    auth: {
-      user: env.SMTP_USER,
-      pass: env.SMTP_PASS,
-    },
-  });
+    user: env.SMTP_USER,
+    pass: env.SMTP_PASS,
+    from: EMAIL_FROM,
+  };
+  
+  const smtpReady = smtpVars.host && smtpVars.port && smtpVars.user && smtpVars.pass && smtpVars.from;
+  const missingVars = Object.entries(smtpVars)
+    .filter(([_, value]) => !value)
+    .map(([key]) => {
+      const varMap = {
+        host: 'SMTP_HOST',
+        port: 'SMTP_PORT',
+        user: 'SMTP_USER',
+        pass: 'SMTP_PASS',
+        from: 'SMTP_FROM or EMAIL_FROM',
+      };
+      return varMap[key];
+    });
 
-  EMAIL_MODE = "smtp";
-  console.log("[EmailService] SMTP mode enabled.");
-  return { mode: EMAIL_MODE, from: EMAIL_FROM };
+  // If EMAIL_MODE=smtp, SMTP config is REQUIRED
+  if (EMAIL_MODE === 'smtp') {
+    if (!smtpReady) {
+      const errorMsg = `\n❌ EMAIL_MODE=smtp but SMTP configuration is incomplete!\n` +
+        `Missing variables: ${missingVars.join(', ')}\n` +
+        `Please configure all SMTP variables or set EMAIL_MODE=console\n`;
+      
+      if (env.NODE_ENV === 'production') {
+        // In production, FAIL STARTUP
+        throw new Error(errorMsg);
+      } else {
+        // In development, warn loudly but allow startup
+        console.error('\n' + '='.repeat(60));
+        console.error('[EmailService] ⚠️  PRODUCTION MODE REQUIRES SMTP!');
+        console.error(errorMsg);
+        console.error('='.repeat(60) + '\n');
+        // Fall back to console mode in dev
+        EMAIL_MODE = 'console';
+      }
+    } else {
+      // Configure SMTP transporter
+      SMTP_HOST = env.SMTP_HOST;
+      transporter = nodemailer.createTransport({
+        host: env.SMTP_HOST,
+        port: env.SMTP_PORT,
+        secure: env.SMTP_SECURE,
+        auth: {
+          user: env.SMTP_USER,
+          pass: env.SMTP_PASS,
+        },
+      });
+    }
+  }
+
+  // Print startup summary
+  if (EMAIL_MODE === 'smtp') {
+    console.log(`[EmailService] mode=smtp host=${maskHost(SMTP_HOST)} from=${EMAIL_FROM}`);
+  } else {
+    console.log(`[EmailService] mode=console (no real email delivery)`);
+  }
+
+  return { 
+    mode: EMAIL_MODE, 
+    from: EMAIL_FROM,
+    host: EMAIL_MODE === 'smtp' ? maskHost(SMTP_HOST) : null,
+  };
+}
+
+/**
+ * Get current email mode
+ * @returns {string} "smtp" | "console"
+ */
+export function getEmailMode() {
+  return EMAIL_MODE || 'console';
 }
 
 /**
@@ -70,11 +156,12 @@ export function initEmailService() {
  * @param {string} options.subject - Email subject
  * @param {string} options.text - Plain text content
  * @param {string} options.html - HTML content
- * @returns {Promise<Object>} Result object with success and messageId (if sent)
+ * @returns {Promise<Object>} Result object with success, mode, messageId (if sent), and error (if failed)
+ * @throws {Error} If EMAIL_MODE=smtp and send fails (errors are NOT silently caught)
  */
 export async function sendEmail({ to, subject, text, html }) {
   if (EMAIL_MODE === "console") {
-    console.log("\n--- EMAIL (CONSOLE MODE) ---");
+    console.log("\n--- EMAIL_MODE=console (no real email sent) ---");
     console.log("TO:", to);
     console.log("SUBJECT:", subject);
     console.log("TEXT:", text);
@@ -84,18 +171,37 @@ export async function sendEmail({ to, subject, text, html }) {
   }
 
   if (!transporter) {
-    throw new Error("SMTP transporter not initialized.");
+    const error = new Error("SMTP transporter not initialized. EMAIL_MODE=smtp but SMTP config is missing.");
+    console.error('[EmailService] SMTP send failed:', error.message);
+    throw error;
   }
 
-  const info = await transporter.sendMail({
-    from: EMAIL_FROM,
-    to,
-    subject,
-    text,
-    html,
-  });
+  try {
+    const info = await transporter.sendMail({
+      from: EMAIL_FROM,
+      to,
+      subject,
+      text,
+      html,
+    });
 
-  return { success: true, messageId: info.messageId, mode: "smtp" };
+    return { 
+      success: true, 
+      messageId: info.messageId, 
+      mode: "smtp",
+      host: maskHost(SMTP_HOST),
+    };
+  } catch (error) {
+    // Surface SMTP failures clearly - do NOT silently succeed
+    console.error('[EmailService] SMTP send failed:', {
+      to,
+      subject,
+      error: error.message,
+      code: error.code,
+      host: maskHost(SMTP_HOST),
+    });
+    throw error;
+  }
 }
 
 /**
@@ -169,12 +275,22 @@ export async function sendActivationEmail({ to, token, fullName = null }) {
 
   try {
     const result = await sendEmail({ to, subject, text, html });
+    
+    // Enhanced logging for activation emails
     if (result.mode === "smtp") {
-      console.log(`[EmailService] Activation email sent to ${to} (Message ID: ${result.messageId})`);
+      console.log(`[EmailService] Activation email sent to ${to} | mode=${result.mode} host=${result.host || 'unknown'} messageId=${result.messageId}`);
+    } else {
+      console.log(`[EmailService] Activation email (console mode) | mode=${result.mode} | Activation link: ${activationUrl}`);
     }
+    
     return result;
   } catch (err) {
-    console.error('[EmailService] Failed to send activation email', err);
+    console.error('[EmailService] Failed to send activation email:', {
+      to,
+      mode: getEmailMode(),
+      error: err.message,
+      host: EMAIL_MODE === 'smtp' ? maskHost(SMTP_HOST) : null,
+    });
     throw new Error(`Failed to send activation email: ${err.message}`);
   }
 }
@@ -252,16 +368,18 @@ If you did not request this, you can safely ignore this email.
   </html>
   `;
 
-  try {
-    const result = await sendEmail({ to, subject, text, html });
-    if (result.mode === "smtp") {
-      console.log(`[EmailService] Password reset email sent to ${to} (Message ID: ${result.messageId})`);
-    }
-    return result;
-  } catch (err) {
-    console.error('[EmailService] Failed to send password reset email', err);
-    throw new Error(`Failed to send password reset email: ${err.message}`);
+  // Use the same sendEmail function that activation emails use
+  // Errors will propagate (not silently caught) - no try/catch here
+  const result = await sendEmail({ to, subject, text, html });
+  
+  // Enhanced logging for password reset emails
+  if (result.mode === "smtp") {
+    console.log(`[EmailService] Password reset email sent to ${to} | mode=${result.mode} host=${result.host || 'unknown'} messageId=${result.messageId}`);
+  } else {
+    console.log(`[EmailService] Password reset email (console mode) | mode=${result.mode} | Reset link: ${resetLink} | Expires: ${formattedExpiry}`);
   }
+  
+  return result;
 }
 
 /**

@@ -2,6 +2,8 @@ import jwt from 'jsonwebtoken';
 import { findValidSessionByToken, touchSession } from '../services/sessionService.js';
 import env from '../config/env.js';
 import { getCookieOptions } from '../utils/authSession.js';
+import { fail } from '../utils/apiResponse.js';
+import { AUTH_ERROR } from '../constants/authCodes.js';
 
 export async function requireAuth(req, res, next) {
   try {
@@ -16,11 +18,11 @@ export async function requireAuth(req, res, next) {
     const token = tokenFromCookie || tokenFromHeader;
 
     if (!token) {
-      return res.status(401).json({ 
-        status: 'ERROR',
-        message: 'Authentication required',
-        code: 'UNAUTHENTICATED'
-      });
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_NOT_AUTHENTICATED,
+        message: 'Not authenticated.',
+        data: {},
+      }, 401);
     }
 
     // Verify JWT
@@ -40,20 +42,20 @@ export async function requireAuth(req, res, next) {
       
       res.clearCookie('ogc_session', cookieOptions);
       res.clearCookie(cookieName, cookieOptions);
-      return res.status(401).json({
-        status: 'ERROR',
-        message: 'Session expired or revoked. Please log in again.',
-        code: 'SESSION_INVALID',
-      });
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_NOT_AUTHENTICATED,
+        message: 'Not authenticated.',
+        data: {},
+      }, 401);
     }
 
     // Verify session belongs to the user from JWT
     if (session.userId !== userId) {
-      return res.status(401).json({
-        status: 'ERROR',
-        message: 'Session mismatch.',
-        code: 'SESSION_MISMATCH',
-      });
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_NOT_AUTHENTICATED,
+        message: 'Not authenticated.',
+        data: {},
+      }, 401);
     }
 
     // Attach user and session to request
@@ -83,18 +85,18 @@ export async function requireAuth(req, res, next) {
     res.clearCookie(env.JWT_COOKIE_ACCESS_NAME, cookieOptions);
     
     if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
-      return res.status(401).json({ 
-        status: 'ERROR',
-        message: 'Invalid or expired token',
-        code: 'TOKEN_INVALID'
-      });
+      return fail(res, {
+        code: err.name === 'TokenExpiredError' ? AUTH_ERROR.AUTH_TOKEN_EXPIRED : AUTH_ERROR.AUTH_TOKEN_INVALID,
+        message: 'Not authenticated.',
+        data: {},
+      }, 401);
     }
     
-    return res.status(401).json({ 
-      status: 'ERROR',
+    return fail(res, {
+      code: AUTH_ERROR.AUTH_NOT_AUTHENTICATED,
       message: 'Not authenticated.',
-      code: 'UNAUTHENTICATED'
-    });
+      data: {},
+    }, 401);
   }
 }
 

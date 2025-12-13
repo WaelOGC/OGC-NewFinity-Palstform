@@ -8,9 +8,9 @@ import TwitterStrategy from 'passport-twitter';
 import { Strategy as LinkedInStrategy } from 'passport-linkedin-oauth2';
 import { Strategy as DiscordStrategy } from 'passport-discord';
 import { syncOAuthProfile } from '../services/userService.js';
-
-// Base callback URL configuration
-const baseCallbackUrl = env.BACKEND_URL;
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { getOAuthCallbackUrl } = require('../utils/oauthConfig.cjs');
 
 /**
  * Helper to extract OAuth profile data from provider profile
@@ -86,18 +86,34 @@ function extractOAuthProfileData(provider, profile) {
 // Configure Google OAuth Strategy
 if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
   try {
+    const callbackURL = getOAuthCallbackUrl('google');
+    console.log(`[OAuth Config] google callback: ${callbackURL}`);
+    
     passport.use(
       'google',
       new GoogleStrategy(
         {
           clientID: env.GOOGLE_CLIENT_ID,
           clientSecret: env.GOOGLE_CLIENT_SECRET,
-          callbackURL: `${baseCallbackUrl}/api/v1/auth/google/callback`,
+          callbackURL,
         },
         async (accessToken, refreshToken, profile, done) => {
           try {
             const { email, emailVerified, username, displayName, avatarUrl, profileJson } = 
               extractOAuthProfileData('google', profile);
+            
+            // Check if email is missing - if so, pass profile data to callback handler for missing email flow
+            if (!email) {
+              // Pass profile data as a special marker object that callback handler can detect
+              return done(null, {
+                __oauthMissingEmail: true,
+                provider: 'google',
+                providerUserId: profile.id,
+                displayName,
+                avatarUrl,
+                emailVerified: false,
+              });
+            }
             
             // Note: existingUserId is not available in passport verify callback
             // Connect flow will be handled in the callback route handler
@@ -134,8 +150,10 @@ if (env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET) {
 
     const clientID = env.GITHUB_CLIENT_ID;
     const clientSecret = env.GITHUB_CLIENT_SECRET;
-
+    const callbackURL = getOAuthCallbackUrl('github');
+    
     console.log('[GitHub OAuth] env', { clientID, hasSecret: !!clientSecret });
+    console.log(`[OAuth Config] github callback: ${callbackURL}`);
 
     passport.use(
       'github',
@@ -143,13 +161,26 @@ if (env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET) {
         {
           clientID,
           clientSecret,
-          callbackURL: `${baseCallbackUrl}/api/v1/auth/github/callback`,
+          callbackURL,
           scope: ['user:email'],
         },
         async (accessToken, refreshToken, profile, done) => {
           try {
             const { email, emailVerified, username, displayName, avatarUrl, profileJson } = 
               extractOAuthProfileData('github', profile);
+            
+            // Check if email is missing - if so, pass profile data to callback handler for missing email flow
+            if (!email) {
+              // Pass profile data as a special marker object that callback handler can detect
+              return done(null, {
+                __oauthMissingEmail: true,
+                provider: 'github',
+                providerUserId: profile.id,
+                displayName,
+                avatarUrl,
+                emailVerified: false,
+              });
+            }
             
             const { user } = await syncOAuthProfile({
               provider: 'github',
@@ -182,19 +213,35 @@ if (env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET) {
 // Configure Twitter OAuth Strategy
 if (env.TWITTER_CLIENT_ID && env.TWITTER_CLIENT_SECRET) {
   try {
+    const callbackURL = getOAuthCallbackUrl('twitter');
+    console.log(`[OAuth Config] twitter callback: ${callbackURL}`);
+    
     passport.use(
       'twitter',
       new TwitterStrategy(
         {
           consumerKey: env.TWITTER_CLIENT_ID,
           consumerSecret: env.TWITTER_CLIENT_SECRET,
-          callbackURL: `${baseCallbackUrl}/api/v1/auth/twitter/callback`,
+          callbackURL,
           includeEmail: true,
         },
         async (token, tokenSecret, profile, done) => {
           try {
             const { email, emailVerified, username, displayName, avatarUrl, profileJson } = 
               extractOAuthProfileData('twitter', profile);
+            
+            // Check if email is missing - if so, pass profile data to callback handler for missing email flow
+            if (!email) {
+              // Pass profile data as a special marker object that callback handler can detect
+              return done(null, {
+                __oauthMissingEmail: true,
+                provider: 'twitter',
+                providerUserId: profile.id,
+                displayName,
+                avatarUrl,
+                emailVerified: false,
+              });
+            }
             
             const { user } = await syncOAuthProfile({
               provider: 'twitter',
@@ -225,13 +272,16 @@ if (env.TWITTER_CLIENT_ID && env.TWITTER_CLIENT_SECRET) {
 // Configure LinkedIn OAuth Strategy
 if (env.LINKEDIN_CLIENT_ID && env.LINKEDIN_CLIENT_SECRET) {
   try {
+    const callbackURL = getOAuthCallbackUrl('linkedin');
+    console.log(`[OAuth Config] linkedin callback: ${callbackURL}`);
+    
     passport.use(
       'linkedin',
       new LinkedInStrategy(
         {
           clientID: env.LINKEDIN_CLIENT_ID,
           clientSecret: env.LINKEDIN_CLIENT_SECRET,
-          callbackURL: `${baseCallbackUrl}/api/v1/auth/linkedin/callback`,
+          callbackURL,
           scope: ['openid', 'profile', 'email'],
           state: false,
         },
@@ -239,6 +289,19 @@ if (env.LINKEDIN_CLIENT_ID && env.LINKEDIN_CLIENT_SECRET) {
           try {
             const { email, emailVerified, username, displayName, avatarUrl, profileJson } = 
               extractOAuthProfileData('linkedin', profile);
+            
+            // Check if email is missing - if so, pass profile data to callback handler for missing email flow
+            if (!email) {
+              // Pass profile data as a special marker object that callback handler can detect
+              return done(null, {
+                __oauthMissingEmail: true,
+                provider: 'linkedin',
+                providerUserId: profile.id,
+                displayName,
+                avatarUrl,
+                emailVerified: false,
+              });
+            }
             
             const { user } = await syncOAuthProfile({
               provider: 'linkedin',
@@ -278,19 +341,35 @@ console.log('[Discord OAuth] env', {
 // Always register the strategy, even if env vars are missing (for testing)
 try {
   console.log('[Discord OAuth] registering Discord strategy...');
+  const callbackURL = getOAuthCallbackUrl('discord');
+  console.log(`[OAuth Config] discord callback: ${callbackURL}`);
+  
   passport.use(
     'discord',
     new DiscordStrategy(
       {
         clientID: env.DISCORD_CLIENT_ID || '',
         clientSecret: env.DISCORD_CLIENT_SECRET || '',
-        callbackURL: `${baseCallbackUrl}/api/v1/auth/discord/callback`,
+        callbackURL,
         scope: ['identify', 'email'],
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
           const { email, emailVerified, username, displayName, avatarUrl, profileJson } = 
             extractOAuthProfileData('discord', profile);
+          
+          // Check if email is missing - if so, pass profile data to callback handler for missing email flow
+          if (!email) {
+            // Pass profile data as a special marker object that callback handler can detect
+            return done(null, {
+              __oauthMissingEmail: true,
+              provider: 'discord',
+              providerUserId: profile.id,
+              displayName,
+              avatarUrl,
+              emailVerified: false,
+            });
+          }
           
           const { user } = await syncOAuthProfile({
             provider: 'discord',

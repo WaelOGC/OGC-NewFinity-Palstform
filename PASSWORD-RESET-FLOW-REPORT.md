@@ -345,6 +345,34 @@ curl -X POST http://localhost:4000/api/v1/auth/reset-password \
 # Expected: Error with code RESET_TOKEN_INVALID_OR_EXPIRED
 ```
 
+### Frontend UI Verification (End-to-End)
+
+1. **Request reset from UI:**
+   - Navigate to `/auth/forgot-password`
+   - Enter email address
+   - Click "Send reset link"
+   - Should show: "If the email exists, a reset link was sent."
+
+2. **Open email link:**
+   - Check email (or console output if SMTP not configured)
+   - Click link: `{FRONTEND_BASE_URL}/reset-password?token=<TOKEN>`
+   - Should open reset password page
+
+3. **Set new password:**
+   - Enter new password (minimum 8 characters)
+   - Confirm password
+   - Click "Reset password"
+   - Should show success message and redirect to `/auth` after 3 seconds
+
+4. **Log in with new password:**
+   - Navigate to `/auth` (login page)
+   - Enter email and new password
+   - Should successfully log in
+
+5. **Test error handling:**
+   - Try to use same reset link again (should fail with "invalid or expired" message)
+   - Try reset link without token (should show "Invalid reset link")
+
 ## Testing Checklist
 
 - [x] Email link format matches `/reset-password?token=`
@@ -383,6 +411,41 @@ curl -X POST http://localhost:4000/api/v1/auth/reset-password \
 3. Consider adding expiration time display in email template (already included)
 4. Consider adding "Remember me" option for password reset flow
 5. Consider adding password strength meter in frontend
+
+## Known Issues
+
+### ⚠️ Known Issue — Duplicate "Forgot Password" Implementations (UX Conflict)
+
+During debugging, it was confirmed that:
+
+- The external route `/forgot-password` is fully functional and correctly integrated with the backend.
+
+- The embedded "Reset your password" section inside `/auth` (login page) uses a separate UI flow that:
+  - Shares the same visual template,
+  - But is implemented independently,
+  - And does not consistently trigger the password reset API.
+
+This resulted in:
+
+- One working password reset flow (external page),
+- One non-working reset panel (inline on the login page),
+- Confusion during testing due to identical UX but different execution paths.
+
+**Important clarification:**
+
+- This is not a backend issue.
+- The password reset system itself works correctly.
+- The problem is caused by duplicated frontend logic for the same feature.
+
+**Recommended resolution (future task):**
+
+- Consolidate password reset logic into a single canonical frontend implementation.
+- Reuse that implementation both for:
+  - The external `/forgot-password` route, and
+  - The embedded reset section inside `/auth`.
+- Avoid maintaining parallel reset flows with shared UI but separate logic.
+
+This note is intentionally added to prevent repeated debugging cycles and task duplication.
 
 ## Summary
 

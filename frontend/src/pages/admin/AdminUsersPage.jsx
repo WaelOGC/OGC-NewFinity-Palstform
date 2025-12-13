@@ -33,20 +33,57 @@ function AdminUsersPage() {
         role: roleFilterOverride !== null ? roleFilterOverride : roleFilter,
       });
       
-      if (data && Array.isArray(data.items)) {
-        setUsers(data.items);
+      // Backend returns: { users: [], page: 1, limit: 25, total: 0 }
+      // Backend users have: { id, email, username, displayName, roles: [], accountStatus, createdAt, ... }
+      if (data && Array.isArray(data.users)) {
+        // Normalize user objects to match frontend expectations
+        // Backend returns roles array, but frontend expects role (singular) for display
+        // Backend returns displayName, but frontend expects fullName
+        const normalizedUsers = data.users.map(user => ({
+          ...user,
+          role: user.role || (Array.isArray(user.roles) && user.roles.length > 0 ? user.roles[0] : null),
+          fullName: user.fullName || user.displayName || null,
+        }));
+        
+        // Apply role filter on frontend if backend doesn't support it
+        let filteredUsers = normalizedUsers;
+        const activeRoleFilter = roleFilterOverride !== null ? roleFilterOverride : roleFilter;
+        if (activeRoleFilter) {
+          filteredUsers = normalizedUsers.filter(user => {
+            // Check if user.role matches or if user.roles array contains the filter
+            return user.role === activeRoleFilter || 
+                   (Array.isArray(user.roles) && user.roles.includes(activeRoleFilter));
+          });
+        }
+        
+        setUsers(filteredUsers);
         setPagination({
           page: data.page || page,
-          pageSize: data.pageSize || 20,
+          pageSize: data.limit || 20, // Backend returns 'limit', not 'pageSize'
           total: data.total || 0,
-          totalPages: Math.ceil((data.total || 0) / (data.pageSize || 20)),
+          totalPages: Math.ceil((data.total || 0) / (data.limit || 20)),
+        });
+      } else if (data && data.users === undefined) {
+        // Backend returned data but without users array - might be empty or error
+        console.warn('Admin users response missing users array:', data);
+        setUsers([]);
+        setPagination({
+          page: data.page || page,
+          pageSize: data.limit || 20,
+          total: data.total || 0,
+          totalPages: Math.ceil((data.total || 0) / (data.limit || 20)),
         });
       } else {
-        setError("Failed to load users");
+        setError("Failed to load users: Invalid response format");
       }
     } catch (err) {
       console.error("Error fetching users:", err);
-      setError(err?.message || "The server encountered an error. Please try again later.");
+      // Check for ADMIN_REQUIRED error code
+      if (err?.code === 'ADMIN_REQUIRED' || err?.backendCode === 'ADMIN_REQUIRED') {
+        setError("Admin access required. You do not have permission to view this page.");
+      } else {
+        setError(err?.message || "The server encountered an error. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }

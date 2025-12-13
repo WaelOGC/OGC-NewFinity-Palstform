@@ -59,6 +59,8 @@ const ALLOWED_ROUTES = {
   // Legacy routes (kept for backward compatibility)
   'POST /api/v1/auth/reset-password/validate': true,
   'POST /api/v1/auth/reset-password': true,
+  // OAuth completion (for missing email flow)
+  'POST /api/v1/auth/oauth/complete': true,
   // Account System Expansion (Phase 1) - User Profile Routes
   'GET /api/v1/user/profile': true,
   'PUT /api/v1/user/profile': true,
@@ -620,15 +622,19 @@ export async function fetchAdminUsers({ page = 1, pageSize = 20, search = '', ro
   const params = new URLSearchParams();
   
   params.set('page', page.toString());
-  params.set('pageSize', pageSize.toString());
+  params.set('limit', pageSize.toString()); // Backend expects 'limit', not 'pageSize'
   
-  if (search) params.set('search', search);
-  if (role) params.set('role', role);
+  // Backend expects 'q' for search (also supports 'search' for backward compatibility)
+  if (search) params.set('q', search);
+  
+  // Note: Backend doesn't currently support role filtering via query param
+  // Role filtering is handled on frontend after fetching
   
   const data = await apiRequest(`/admin/users?${params.toString()}`, {
     method: 'GET',
   });
-  // data = { items: [...], page, pageSize, total }
+  // Backend returns: { users: [...], page, limit, total }
+  // apiRequest unwraps { status: 'OK', data: { users: [...], page, limit, total } } to just the data object
   return data;
 }
 
@@ -718,14 +724,25 @@ export async function adminRevokeAllUserSessions(userId) {
  */
 
 /**
- * Request a password reset email
+ * Request a password reset email (canonical function - single source of truth)
+ * Uses the standard /auth/forgot-password endpoint
  * @param {string} email - User's email address
  * @returns {Promise<Object>} Response with message
+ */
+export async function requestPasswordReset(email) {
+  return api.post('/auth/forgot-password', { email });
+}
+
+/**
+ * Request a password reset email (legacy - kept for backward compatibility)
+ * @param {string} email - User's email address
+ * @returns {Promise<Object>} Response with message
+ * @deprecated Use requestPasswordReset instead
  */
 export async function requestPasswordResetEmail(email) {
   const payload = { email };
 
-  const data = await apiRequest("/api/v1/auth/password/reset/request", {
+  const data = await apiRequest("/auth/password/reset/request", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -766,7 +783,7 @@ export async function loginWithTwoFactor({ ticket, mode, code }) {
 export async function deleteOwnAccount(password) {
   const payload = { password };
 
-  const data = await apiRequest("/api/v1/user/account/delete", {
+  const data = await apiRequest("/user/account/delete", {
     method: "POST",
     body: JSON.stringify(payload),
   });

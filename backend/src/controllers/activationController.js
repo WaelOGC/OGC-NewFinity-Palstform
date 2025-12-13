@@ -8,6 +8,9 @@ import { findValidActivationToken, markActivationTokenUsed, createActivationToke
 import { sendResendActivationEmail, sendAccountActivatedEmail } from '../services/emailService.js';
 import { logUserActivity } from '../services/activityService.js';
 import { normalizeAccountStatus, ACCOUNT_STATUS } from '../utils/accountStatus.js';
+import { ok, fail } from '../utils/apiResponse.js';
+import { AUTH_OK, AUTH_ERROR } from '../constants/authCodes.js';
+import { authLog, AUTH_EVENTS } from '../utils/authLogger.js';
 
 /**
  * Activate user account with token
@@ -22,22 +25,23 @@ export async function activate(req, res, next) {
     const token = req.body.token;
 
     if (!token) {
-      return res.status(400).json({
-        status: 'ERROR',
-        code: 'ACTIVATION_TOKEN_MISSING',
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_VALIDATION_ERROR,
         message: 'Activation token is required.',
-      });
+        data: {},
+      }, 400);
     }
 
     // Find valid activation token
     const activationRow = await findValidActivationToken(token);
 
     if (!activationRow) {
-      return res.status(400).json({
-        status: 'ERROR',
-        code: 'ACTIVATION_TOKEN_INVALID_OR_EXPIRED',
+      authLog(AUTH_EVENTS.ACTIVATION_FAILED, { reason: 'INVALID_OR_EXPIRED_TOKEN' });
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_ACTIVATION_INVALID,
         message: 'This activation link is invalid or has expired.',
-      });
+        data: {},
+      }, 400);
     }
 
     const userId = activationRow.userId;
@@ -49,11 +53,11 @@ export async function activate(req, res, next) {
     );
 
     if (userRows.length === 0) {
-      return res.status(400).json({
-        status: 'ERROR',
-        code: 'ACTIVATION_USER_NOT_FOUND',
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_VALIDATION_ERROR,
         message: 'Account not found for this activation link.',
-      });
+        data: {},
+      }, 400);
     }
 
     const user = userRows[0];
@@ -63,6 +67,16 @@ export async function activate(req, res, next) {
     const currentStatus = normalizeAccountStatus(user.accountStatus || user.status);
     const isAlreadyActive = currentStatus === ACCOUNT_STATUS.ACTIVE;
     const wasActiveBefore = isAlreadyActive || user.emailVerified === 1;
+
+    // Check if token was already used
+    if (activationRow.usedAt) {
+      authLog(AUTH_EVENTS.ACTIVATION_FAILED, { userId, reason: 'TOKEN_ALREADY_USED' });
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_ACTIVATION_ALREADY_USED,
+        message: 'This activation link has already been used.',
+        data: {},
+      }, 400);
+    }
 
     if (!isAlreadyActive) {
       // Update user status to ACTIVE and mark email as verified
@@ -89,9 +103,7 @@ export async function activate(req, res, next) {
           displayName: user.fullName,
           activatedAt: new Date(),
         });
-        console.log(`[Activation] Account activated email sent to ${user.email}`);
       } catch (emailError) {
-        console.error('[Activation] Failed to send account activated email:', emailError);
         // Don't fail activation if email sending fails - activation is already complete
       }
     }
@@ -109,20 +121,18 @@ export async function activate(req, res, next) {
         metadata: { activationTokenId: activationRow.id }
       });
     } catch (activityError) {
-      console.warn('[Activation] Failed to log activity:', activityError);
       // Don't fail activation if logging fails
     }
 
+    authLog(AUTH_EVENTS.ACTIVATION_SUCCESS, { userId, email: user.email, wasAlreadyActive: isAlreadyActive });
     // Return appropriate response based on whether account was already active
-    // Canonical format: { status: "OK", message: "...", userId: 123 }
-    return res.status(200).json({
-      status: 'OK',
-      code: isAlreadyActive ? 'ACCOUNT_ALREADY_ACTIVE' : 'ACCOUNT_ACTIVATED',
+    return ok(res, {
+      code: AUTH_OK.AUTH_ACTIVATION_OK,
       message: isAlreadyActive
         ? 'This account is already active.'
-        : 'Account activated',
-      userId: userId,
-    });
+        : 'Account activated successfully.',
+      data: { userId },
+    }, 200);
   } catch (err) {
     console.error('[Activation] Error:', err);
     return next(err);
@@ -137,10 +147,11 @@ export async function resendActivation(req, res) {
     const { email } = req.body;
 
     if (!email) {
-      return res.status(400).json({
-        status: 'ERROR',
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_VALIDATION_ERROR,
         message: 'Email is required',
-      });
+        data: {},
+      }, 400);
     }
 
     // Check if user exists with pending_verification status
@@ -162,25 +173,27 @@ export async function resendActivation(req, res) {
         // Send activation email
         try {
           await sendResendActivationEmail(user.email, activationToken, user.fullName);
-          console.log(`✅ Resend activation email sent to ${user.email}`);
+          authLog(AUTH_EVENTS.ACTIVATION_SUCCESS, { userId: user.id, email: user.email, action: 'RESEND' });
         } catch (emailError) {
-          console.error(`⚠️  Failed to send resend activation email:`, emailError);
+          authLog(AUTH_EVENTS.ACTIVATION_FAILED, { userId: user.id, email: user.email, error: emailError.message });
           // Still return success to avoid revealing email existence
         }
       }
     }
 
     // Generic success message
-    return res.status(200).json({
-      status: 'OK',
+    return ok(res, {
+      code: AUTH_OK.AUTH_ACTIVATION_OK,
       message: 'If an account exists for this email, a new activation link has been sent',
-    });
+      data: {},
+    }, 200);
   } catch (error) {
-    console.error('Resend activation error:', error);
-    return res.status(500).json({
-      status: 'ERROR',
+    authLog(AUTH_EVENTS.ACTIVATION_FAILED, { email, error: error.message });
+    return fail(res, {
+      code: AUTH_ERROR.AUTH_SERVER_ERROR,
       message: 'Failed to process request',
-    });
+      data: {},
+    }, 500);
   }
 }
 

@@ -8,7 +8,8 @@ import { requireAuth } from '../middleware/auth.js';
 import { createAuthSessionForUser } from '../utils/authSession.js';
 import { recordLoginActivity, registerDevice } from '../services/userService.js';
 import { logUserActivity } from '../services/activityService.js';
-import { sendOk, sendError } from '../utils/apiResponse.js';
+import { sendOk, sendError, ok, fail } from '../utils/apiResponse.js';
+import { AUTH_OK, AUTH_ERROR } from '../constants/authCodes.js';
 import { normalizeAccountStatus, ACCOUNT_STATUS } from '../utils/accountStatus.js';
 import pool from '../db.js';
 import env from '../config/env.js';
@@ -47,18 +48,15 @@ router.post('/register', async (req, res, next) => {
     const body = registerSchema.parse(req.body);
     const result = await register(body, res);
     // Use standardized response format
-    return sendOk(res, {
+    return ok(res, {
+      code: AUTH_OK.AUTH_REGISTER_OK,
       message: result.message || 'Registration successful. Please check your email to activate your account.',
-      requiresActivation: result.requiresActivation !== false,
-      userId: result.userId,
+      data: {
+        requiresActivation: result.requiresActivation !== false,
+        userId: result.userId,
+      },
     }, 201);
   } catch (err) { 
-    console.error('REGISTER ERROR', {
-      message: err.message,
-      code: err.code,
-      statusCode: err.statusCode,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-    });
     next(err); 
   }
 });
@@ -69,15 +67,14 @@ router.post('/login', async (req, res, next) => {
     const result = await login(body, res, req);
     
     // Phase S6: Check if 2FA is required (new format)
-    if (result.status === '2FA_REQUIRED') {
+    if (result.status === 'OK' && result.code === AUTH_OK.AUTH_2FA_REQUIRED) {
       // Activity logging is already done in the login controller
       // Return the 2FA_REQUIRED response directly
-      return res.status(200).json({
-        status: result.status,
+      return ok(res, {
         code: result.code,
         message: result.message,
         data: result.data
-      });
+      }, 200);
     }
     
     // Phase 3: Check if 2FA is required (legacy format)
@@ -110,56 +107,22 @@ router.post('/login', async (req, res, next) => {
         console.error('Failed to fetch user for 2FA activity recording:', dbError);
       }
       
-      return sendOk(res, {
-        twoFactorRequired: true,
-        challengeToken: result.challengeToken
-      });
+      return ok(res, {
+        code: AUTH_OK.AUTH_2FA_REQUIRED,
+        message: 'Two-factor authentication is required.',
+        data: {
+          twoFactorRequired: true,
+          challengeToken: result.challengeToken
+        }
+      }, 200);
     }
     
-    // Fetch user data for response (user is already validated in login controller)
-    let userData = null;
-    try {
-      const [userRows] = await pool.query(
-        'SELECT id, email, fullName, role, status FROM User WHERE email = ?',
-        [body.email]
-      );
-      
-      if (userRows.length > 0) {
-        userData = {
-          id: userRows[0].id,
-          email: userRows[0].email,
-          fullName: userRows[0].fullName,
-          role: userRows[0].role || 'STANDARD_USER',
-          status: userRows[0].status
-        };
-        
-        // Phase 2: Record login activity and register device
-        const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-        const userAgent = req.headers['user-agent'];
-        
-        try {
-          // Record login activity
-          await recordLoginActivity(userRows[0].id, {
-            ipAddress,
-            userAgent,
-            metadata: { loginMethod: 'email_password' }
-          });
-          
-          // Register/update device
-          await registerDevice({
-            userId: userRows[0].id,
-            userAgent,
-            ipAddress
-          });
-        } catch (activityError) {
-          // Log but don't fail login if activity recording fails
-          console.error('Failed to record login activity or register device:', activityError);
-        }
-      }
-    } catch (dbError) {
-      // Log but don't fail login if user data fetch fails
-      console.error('Failed to fetch user data for response:', dbError);
-    }
+    // Normal login success - result already contains session data from createAuthSessionForUser
+    return ok(res, {
+      code: AUTH_OK.AUTH_LOGIN_OK,
+      message: 'Login successful.',
+      data: result
+    }, 200);
     
     // Use standardized response format
     return sendOk(
@@ -218,7 +181,8 @@ const loginTwoFactorLimiter = rateLimit({
   message: { 
     status: 'ERROR',
     message: 'Too many 2FA verification attempts. Please try again later.',
-    code: 'RATE_LIMIT_EXCEEDED'
+    code: AUTH_ERROR.AUTH_RATE_LIMITED,
+    data: {}
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -308,50 +272,69 @@ router.post('/logout', requireAuth, async (req, res, next) => {
 // Lightweight session health check endpoint (no database calls, no auth required)
 router.get('/session', checkSession);
 
-// Protected route: returns current user with full access data
-// This endpoint is the single source of truth for the frontend auth store and must always include user.role, permissions, and featureFlags
+// Protected route: returns current user with stable, schema-drift-tolerant response
+// Task 10: This endpoint must never crash due to DB schema drift and must return consistent JSON shape
 router.get('/me', requireAuth, async (req, res, next) => {
   try {
-    // req.user is set by requireAuth middleware
-    // Use getUserWithAccessData to get full role/permissions/flags data
-    const { getUserWithAccessData } = await import('../services/userService.js');
-    const user = await getUserWithAccessData(req.user.id);
+    // req.user is set by requireAuth middleware (req.user.id is the userId)
+    const { getAuthMe } = await import('../services/authMeService.js');
+    
+    // Get normalized user object (schema-drift safe)
+    const user = await getAuthMe(req.user.id);
     
     if (!user) {
-      return sendError(res, {
-        code: 'USER_NOT_FOUND',
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_NOT_AUTHENTICATED,
         message: 'User not found',
-        statusCode: 404
-      });
+        data: {}
+      }, 404);
     }
     
-    // Normalize and check account status
-    const accountStatus = normalizeAccountStatus(user.accountStatus || user.status);
-    if (accountStatus === ACCOUNT_STATUS.DISABLED) {
-      return sendError(res, {
-        code: 'ACCOUNT_DISABLED',
-        message: 'This account has been disabled.',
-        statusCode: 403
-      });
-    }
-    
-    // Return user with role, permissions, effectivePermissions, featureFlags, and connectedProviders
-    return sendOk(res, {
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role || 'STANDARD_USER', // Role must always be present for frontend auth checks
-        permissions: user.permissions, // Raw permissions (may be null)
-        effectivePermissions: user.effectivePermissions, // Computed permissions (null for FOUNDER = all permissions)
-        featureFlags: user.featureFlags, // Merged feature flags
-        connectedProviders: user.connectedProviders || [], // Connected OAuth providers
-        accountStatus: accountStatus,
-        lastLoginAt: user.lastLoginAt,
-        createdAt: user.createdAt,
+    // Check account status (if available)
+    if (user.accountStatus) {
+      const accountStatus = normalizeAccountStatus(user.accountStatus);
+      if (accountStatus === ACCOUNT_STATUS.DISABLED) {
+        return fail(res, {
+          code: AUTH_ERROR.AUTH_ACCOUNT_DISABLED,
+          message: 'This account has been disabled.',
+          data: {}
+        }, 403);
       }
-    }, 200, 'CURRENT_USER_PROFILE', 'User profile retrieved successfully.');
+    }
+    
+    // Return consistent response shape as per Task 10 requirements
+    return ok(res, {
+      code: AUTH_OK.AUTH_ME_OK,
+      message: 'Authenticated.',
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          displayName: user.displayName,
+          avatarUrl: user.avatarUrl,
+          accountStatus: user.accountStatus,
+          provider: user.provider,
+          roles: user.roles,
+          permissions: user.permissions
+        }
+      }
+    }, 200);
   } catch (err) {
+    // Handle database errors gracefully
+    if (err.code && err.code.startsWith('ER_')) {
+      console.error('[AUTH_ME] Database error:', {
+        code: err.code,
+        message: err.message,
+      });
+      // Return minimal safe response instead of crashing
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_SERVER_ERROR,
+        message: 'Database error occurred. Please try again later.',
+        data: {}
+      }, 500);
+    }
+    // Pass other errors to error handler
     next(err);
   }
 });
@@ -373,7 +356,8 @@ const resendActivationLimiter = rateLimit({
   message: { 
     status: 'ERROR',
     message: 'Too many activation email requests. Please try again later.',
-    code: 'RATE_LIMIT_EXCEEDED'
+    code: AUTH_ERROR.AUTH_RATE_LIMITED,
+    data: {}
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -394,7 +378,8 @@ const forgotPasswordLimiter = rateLimit({
   message: { 
     status: 'ERROR',
     message: 'Too many password reset requests. Please try again later.',
-    code: 'RATE_LIMIT_EXCEEDED'
+    code: AUTH_ERROR.AUTH_RATE_LIMITED,
+    data: {}
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -425,7 +410,8 @@ const passwordResetRequestLimiter = rateLimit({
   message: { 
     status: 'ERROR',
     message: 'Too many password reset requests. Please try again later.',
-    code: 'RATE_LIMIT_EXCEEDED'
+    code: AUTH_ERROR.AUTH_RATE_LIMITED,
+    data: {}
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -638,6 +624,215 @@ router.get('/oauth/connect/:provider', requireAuth, async (req, res, next) => {
     return res.redirect(oauthUrl);
   } catch (err) {
     next(err);
+  }
+});
+
+/**
+ * Complete OAuth authentication when email was missing
+ * This endpoint is called after user provides email for OAuth flow where provider didn't return email
+ * Usage: POST /api/v1/auth/oauth/complete
+ * Body: { "ticket": "<ticket>", "email": "<email>" }
+ */
+router.post('/oauth/complete', async (req, res, next) => {
+  try {
+    const { ticket, email } = req.body;
+    
+    if (!ticket || !email) {
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_VALIDATION_ERROR,
+        message: 'Ticket and email are required.',
+        data: {},
+      }, 400);
+    }
+    
+    // Import required utilities
+    const { verifyOAuthEmailTicket } = await import('../utils/oauthEmailTicket.js');
+    const { syncOAuthProfile } = await import('../services/userService.js');
+    const { createAuthSessionForUser } = await import('../utils/authSession.js');
+    const { createRequire } = await import('module');
+    const require = createRequire(import.meta.url);
+    const { getOAuthSuccessRedirect } = require('../utils/oauthConfig.cjs');
+    
+    // Verify ticket
+    let ticketData;
+    try {
+      ticketData = verifyOAuthEmailTicket(ticket);
+    } catch (ticketError) {
+      if (ticketError.code === 'OAUTH_TICKET_EXPIRED' || ticketError.code === 'OAUTH_TICKET_INVALID') {
+        return fail(res, {
+          code: AUTH_ERROR.AUTH_OAUTH_TICKET_INVALID,
+          message: 'OAuth ticket is invalid or has expired. Please try logging in again.',
+          data: {},
+        }, 401);
+      }
+      throw ticketError;
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return fail(res, {
+        code: AUTH_ERROR.AUTH_VALIDATION_ERROR,
+        message: 'Please provide a valid email address.',
+        data: {},
+      }, 400);
+    }
+    
+    const normalizedEmail = email.trim().toLowerCase();
+    const { provider, providerUserId, displayName, avatarUrl } = ticketData;
+    
+    // Check if user exists with this email
+    const [emailRows] = await pool.query(
+      'SELECT id, email FROM User WHERE email = ? LIMIT 1',
+      [normalizedEmail]
+    );
+    
+    if (emailRows.length > 0) {
+      // User exists - link provider to existing user
+      const existingUser = emailRows[0];
+      
+      try {
+        const syncResult = await syncOAuthProfile({
+          provider,
+          providerUserId,
+          email: normalizedEmail,
+          emailVerified: false, // User-provided email, not verified by provider
+          displayName,
+          avatarUrl,
+          existingUserId: existingUser.id, // Link to existing user
+        });
+        
+        const user = syncResult.user;
+        
+        // Create session
+        await createAuthSessionForUser(res, user, req);
+        
+        // Record login activity
+        const ipAddress = req.ip || req.headers['x-forwarded-for']?.split(',')[0].trim() || req.connection?.remoteAddress || req.socket?.remoteAddress;
+        const userAgent = req.headers['user-agent'];
+        try {
+          const { recordLoginActivity, registerDevice } = await import('../services/userService.js');
+          await recordLoginActivity(user.id, {
+            ipAddress,
+            userAgent,
+            metadata: { loginMethod: `${provider}_oauth`, completedViaEmail: true }
+          });
+          await registerDevice({
+            userId: user.id,
+            userAgent,
+            ipAddress
+          });
+        } catch (activityError) {
+          console.error('[OAuth Complete] Failed to record login activity:', activityError);
+        }
+        
+        console.log(`[OAuth Complete] Successfully linked ${provider} to existing user ${user.id} with email ${normalizedEmail}`);
+        
+        // Return success
+        if (req.headers.accept && req.headers.accept.includes('application/json')) {
+          return sendOk(res, {
+            provider,
+            user: {
+              id: user.id,
+              email: user.email,
+              fullName: user.fullName,
+              role: user.role,
+            },
+          }, 200, 'OAUTH_COMPLETED', 'OAuth completed successfully.');
+        }
+        
+        // Browser redirect
+        const redirectUrl = getOAuthSuccessRedirect(provider);
+        return res.redirect(redirectUrl);
+        
+      } catch (linkError) {
+        console.error(`[OAuth Complete] Error linking ${provider} to user ${existingUser.id}:`, linkError);
+        
+        if (linkError.code === 'OAUTH_ACCOUNT_ALREADY_LINKED' || linkError.code === 'OAUTH_EMAIL_CONFLICT') {
+          return fail(res, {
+            code: AUTH_ERROR.AUTH_VALIDATION_ERROR,
+            message: linkError.message || 'This email is already associated with a different account.',
+            data: {},
+          }, 409);
+        }
+        
+        return fail(res, {
+          code: AUTH_ERROR.AUTH_SERVER_ERROR,
+          message: 'Failed to link OAuth provider to account.',
+          data: {},
+        }, 500);
+      }
+    } else {
+      // User doesn't exist - create new user with provided email
+      try {
+        const syncResult = await syncOAuthProfile({
+          provider,
+          providerUserId,
+          email: normalizedEmail,
+          emailVerified: false, // User-provided email, not verified by provider
+          displayName,
+          avatarUrl,
+          // No existingUserId - will create new user
+        });
+        
+        const user = syncResult.user;
+        
+        // Create session
+        await createAuthSessionForUser(res, user, req);
+        
+        // Record login activity
+        const ipAddress = req.ip || req.headers['x-forwarded-for']?.split(',')[0].trim() || req.connection?.remoteAddress || req.socket?.remoteAddress;
+        const userAgent = req.headers['user-agent'];
+        try {
+          const { recordLoginActivity, registerDevice } = await import('../services/userService.js');
+          await recordLoginActivity(user.id, {
+            ipAddress,
+            userAgent,
+            metadata: { loginMethod: `${provider}_oauth`, completedViaEmail: true, isNewUser: true }
+          });
+          await registerDevice({
+            userId: user.id,
+            userAgent,
+            ipAddress
+          });
+        } catch (activityError) {
+          console.error('[OAuth Complete] Failed to record login activity:', activityError);
+        }
+        
+        console.log(`[OAuth Complete] Successfully created new user ${user.id} with ${provider} OAuth and email ${normalizedEmail}`);
+        
+        // Return success
+        if (req.headers.accept && req.headers.accept.includes('application/json')) {
+          return ok(res, {
+            code: AUTH_OK.AUTH_OAUTH_OK,
+            message: 'OAuth completed successfully.',
+            data: {
+              provider,
+              user: {
+                id: user.id,
+                email: user.email,
+                fullName: user.fullName,
+                role: user.role,
+              },
+            },
+          }, 200);
+        }
+        
+        // Browser redirect
+        const redirectUrl = getOAuthSuccessRedirect(provider);
+        return res.redirect(redirectUrl);
+        
+      } catch (createError) {
+        return fail(res, {
+          code: AUTH_ERROR.AUTH_SERVER_ERROR,
+          message: createError.message || 'Failed to complete OAuth authentication.',
+          data: {},
+        }, 500);
+      }
+    }
+  } catch (err) {
+    console.error('[OAuth Complete] Unexpected error:', err);
+    return next(err);
   }
 });
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
+import { FEATURE_FLAGS } from '../../config/featureFlags.js';
 import '../../index.css';
 import './dashboard-pages.css';
 
@@ -52,6 +53,7 @@ export default function Overview() {
         <div className="overview-grid-main">
           {/* Quick access cards */}
           <div className="overview-quick-grid">
+            {/* Wallet card - always visible */}
             <button
               type="button"
               className="overview-card overview-card--primary"
@@ -59,7 +61,11 @@ export default function Overview() {
             >
               <div className="overview-card-header">
                 <span className="title">Wallet</span>
-                <span className="tag tag--live">Live</span>
+                {FEATURE_FLAGS.WALLET ? (
+                  <span className="tag tag--live">Live</span>
+                ) : (
+                  <span className="tag">Coming Soon</span>
+                )}
               </div>
               <p className="overview-card-text">
                 View your OGCFinity balance, staking preview, rewards, and recent transactions.
@@ -67,6 +73,7 @@ export default function Overview() {
               <span className="overview-card-cta">Open wallet →</span>
             </button>
 
+            {/* Amy Agent card - always visible */}
             <button
               type="button"
               className="overview-card overview-card--secondary"
@@ -74,7 +81,11 @@ export default function Overview() {
             >
               <div className="overview-card-header">
                 <span className="title">Amy Agent</span>
-                <span className="tag">Preview</span>
+                {FEATURE_FLAGS.AMY_AGENT ? (
+                  <span className="tag">Preview</span>
+                ) : (
+                  <span className="tag">Coming Soon</span>
+                )}
               </div>
               <p className="overview-card-text">
                 Central AI workspace for writing, coding, research, and automation. Opens in a dedicated
@@ -83,6 +94,7 @@ export default function Overview() {
               <span className="overview-card-cta">Open Amy →</span>
             </button>
 
+            {/* Challenge Program card - always visible */}
             <button
               type="button"
               className="overview-card overview-card--secondary"
@@ -90,7 +102,11 @@ export default function Overview() {
             >
               <div className="overview-card-header">
                 <span className="title">Challenge Program</span>
-                <span className="tag">Preview</span>
+                {FEATURE_FLAGS.CHALLENGE_PROGRAM ? (
+                  <span className="tag">Preview</span>
+                ) : (
+                  <span className="tag">Coming Soon</span>
+                )}
               </div>
               <p className="overview-card-text">
                 Participate in the OGC NewFinity Challenge tracks for students, teams, and
