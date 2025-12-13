@@ -29,6 +29,7 @@ import ChallengePage from './pages/dashboard/ChallengePage.jsx';
 import AmyAgentShell from './pages/amy/AmyAgentShell.jsx';
 import AdminLayout from './components/admin/AdminLayout.jsx';
 import AdminUsersPage from './pages/admin/AdminUsersPage.jsx';
+import AdminAuditLogsPage from './pages/admin/AdminAuditLogsPage.jsx';
 import InternalRouteGuard from './components/InternalRouteGuard.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AdminRouteGuard from './components/AdminRouteGuard.jsx';
@@ -129,6 +130,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <AdminUsersPage /> },
           { path: 'users', element: <AdminUsersPage /> },
+          { path: 'audit-logs', element: <AdminAuditLogsPage /> },
         ],
       },
     ],

@@ -33,6 +33,9 @@ import {
   revokeSession,
   revokeAllUserSessions,
 } from '../services/sessionService.js';
+import { assignRole, revokeRole, getUserRoles, getPrimaryRole } from '../services/roleService.js';
+import { setFeatureFlag, bulkSetFeatureFlags } from '../services/featureFlagService.js';
+import { logAdminAction, listAdminAuditLogs } from '../services/adminAuditLogService.js';
 import { sendOk, sendError, ok, fail } from '../utils/apiResponse.js';
 import pool from '../db.js';
 
@@ -208,8 +211,28 @@ export async function updateAdminUserRole(req, res) {
     }
 
     const oldRole = currentUser.role;
+    const oldRoles = await getUserRoles(userId);
+    const oldPrimaryRole = oldRoles.length > 0 ? getPrimaryRole(oldRoles) : oldRole;
 
-    // Update role
+    // Get admin role for audit log
+    const adminRoles = await getUserRoles(adminId);
+    const adminRole = adminRoles.length > 0 ? getPrimaryRole(adminRoles) : (req.user?.role || 'UNKNOWN');
+
+    // Update role using new roleService (supports multi-role)
+    // For now, we'll assign the new role and revoke old roles if needed
+    // This maintains backward compatibility with single-role model
+    await assignRole({ userId, role, assignedBy: adminId, expiresAt: null });
+    
+    // Revoke old roles (if they exist in user_roles table)
+    if (oldRoles.length > 0) {
+      for (const oldRoleName of oldRoles) {
+        if (oldRoleName !== role) {
+          await revokeRole({ userId, role: oldRoleName, revokedBy: adminId });
+        }
+      }
+    }
+
+    // Also update legacy User.role column for backward compatibility
     const updatedUser = await updateUserRole(userId, role);
 
     // If role is SUSPENDED or BANNED, also update accountStatus
@@ -217,7 +240,31 @@ export async function updateAdminUserRole(req, res) {
       await updateUserStatus(userId, role === 'SUSPENDED' ? 'SUSPENDED' : 'BANNED');
     }
 
-    // Log activity
+    // Log to admin audit log
+    try {
+      await logAdminAction({
+        actorId: adminId,
+        actorRole: adminRole,
+        action: 'ROLE_UPDATED',
+        targetType: 'USER',
+        targetId: String(userId),
+        metadata: {
+          before: {
+            role: oldPrimaryRole,
+            roles: oldRoles,
+          },
+          after: {
+            role: role,
+            roles: [role],
+          },
+        },
+        req,
+      });
+    } catch (auditError) {
+      console.error('Failed to log role update to admin audit:', auditError);
+    }
+
+    // Also log to user activity log (legacy)
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     try {
@@ -228,7 +275,7 @@ export async function updateAdminUserRole(req, res) {
         ipAddress,
         userAgent,
         metadata: {
-          oldRole,
+          oldRole: oldPrimaryRole,
           newRole: role,
         },
       });
@@ -302,13 +349,35 @@ export async function updateAdminUserStatus(req, res) {
 
     const oldStatus = normalizeAccountStatus(currentUser.accountStatus || ACCOUNT_STATUS.ACTIVE);
 
+    // Get admin role for audit log
+    const adminRoles = await getUserRoles(adminId);
+    const adminRole = adminRoles.length > 0 ? getPrimaryRole(adminRoles) : (req.user?.role || 'UNKNOWN');
+
     // Update status (normalizedStatus is already normalized)
     const updatedUser = await updateUserStatus(userId, normalizedStatus);
 
     // Note: Role syncing removed - status and role are now independent
     // DISABLED status does not automatically change role
 
-    // Log activity
+    // Log to admin audit log
+    try {
+      await logAdminAction({
+        actorId: adminId,
+        actorRole: adminRole,
+        action: 'STATUS_UPDATED',
+        targetType: 'USER',
+        targetId: String(userId),
+        metadata: {
+          before: { status: oldStatus },
+          after: { status: normalizedStatus },
+        },
+        req,
+      });
+    } catch (auditError) {
+      console.error('Failed to log status update to admin audit:', auditError);
+    }
+
+    // Also log to user activity log (legacy)
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     try {
@@ -399,10 +468,33 @@ export async function toggleAdminUserStatus(req, res) {
       });
     }
 
+    // Get admin role for audit log
+    const adminRoles = await getUserRoles(adminId);
+    const adminRole = adminRoles.length > 0 ? getPrimaryRole(adminRoles) : (req.user?.role || 'UNKNOWN');
+
     // Update status
     const updatedUser = await updateUserStatus(userId, newStatus);
 
-    // Log activity
+    // Log to admin audit log
+    try {
+      await logAdminAction({
+        actorId: adminId,
+        actorRole: adminRole,
+        action: 'STATUS_UPDATED',
+        targetType: 'USER',
+        targetId: String(userId),
+        metadata: {
+          before: { status: oldStatus },
+          after: { status: newStatus },
+          action: 'TOGGLE',
+        },
+        req,
+      });
+    } catch (auditError) {
+      console.error('Failed to log status toggle to admin audit:', auditError);
+    }
+
+    // Also log to user activity log (legacy)
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     try {
@@ -473,10 +565,35 @@ export async function updateAdminUserFeatureFlags(req, res) {
 
     const oldFlags = currentUser.featureFlags || {};
 
-    // Update feature flags (merge with existing)
+    // Get admin role for audit log
+    const adminRoles = await getUserRoles(adminId);
+    const adminRole = adminRoles.length > 0 ? getPrimaryRole(adminRoles) : (req.user?.role || 'UNKNOWN');
+
+    // Update feature flags using new featureFlagService (supports table + legacy JSON)
+    await bulkSetFeatureFlags({ userId, flagsObject: featureFlags, updatedBy: adminId });
+
+    // Also update legacy User.featureFlags JSON column for backward compatibility
     const updatedUser = await updateUserFeatureFlags(userId, featureFlags);
 
-    // Log activity
+    // Log to admin audit log
+    try {
+      await logAdminAction({
+        actorId: adminId,
+        actorRole: adminRole,
+        action: 'FEATURE_FLAG_UPDATED',
+        targetType: 'USER',
+        targetId: String(userId),
+        metadata: {
+          before: { featureFlags: oldFlags },
+          after: { featureFlags: featureFlags },
+        },
+        req,
+      });
+    } catch (auditError) {
+      console.error('Failed to log feature flag update to admin audit:', auditError);
+    }
+
+    // Also log to user activity log (legacy)
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
     try {
@@ -699,10 +816,29 @@ export async function revokeAdminUserSession(req, res) {
       });
     }
 
-    // Record admin activity
+    // Get admin role for audit log
     const adminUserId = req.user?.id;
+    const adminRoles = await getUserRoles(adminUserId);
+    const adminRole = adminRoles.length > 0 ? getPrimaryRole(adminRoles) : (req.user?.role || 'UNKNOWN');
+
+    // Log to admin audit log
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
+    try {
+      await logAdminAction({
+        actorId: adminUserId,
+        actorRole: adminRole,
+        action: 'SESSION_REVOKED',
+        targetType: 'USER',
+        targetId: String(userId),
+        metadata: { targetSessionId: sessionId },
+        req,
+      });
+    } catch (auditError) {
+      console.error('Failed to log session revocation to admin audit:', auditError);
+    }
+
+    // Also log to user activity log (legacy)
     try {
       await logUserActivity({
         userId, // Target user whose session was revoked
@@ -745,10 +881,29 @@ export async function revokeAllAdminUserSessions(req, res) {
 
     const revokedCount = await revokeAllUserSessions(userId);
 
-    // Record admin activity
+    // Get admin role for audit log
     const adminUserId = req.user?.id;
+    const adminRoles = await getUserRoles(adminUserId);
+    const adminRole = adminRoles.length > 0 ? getPrimaryRole(adminRoles) : (req.user?.role || 'UNKNOWN');
+
+    // Log to admin audit log
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
+    try {
+      await logAdminAction({
+        actorId: adminUserId,
+        actorRole: adminRole,
+        action: 'ALL_SESSIONS_REVOKED',
+        targetType: 'USER',
+        targetId: String(userId),
+        metadata: { revokedCount },
+        req,
+      });
+    } catch (auditError) {
+      console.error('Failed to log sessions revocation to admin audit:', auditError);
+    }
+
+    // Also log to user activity log (legacy)
     try {
       await logUserActivity({
         userId, // Target user whose sessions were revoked
@@ -768,6 +923,64 @@ export async function revokeAllAdminUserSessions(req, res) {
     return sendError(res, {
       code: 'DATABASE_ERROR',
       message: 'Failed to revoke sessions',
+      statusCode: 500
+    });
+  }
+}
+
+/**
+ * GET /api/v1/admin/audit-logs
+ * List admin audit logs with filtering and pagination
+ */
+export async function getAdminAuditLogs(req, res) {
+  try {
+    // Parse and validate query parameters
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize) || 20));
+    
+    const action = req.query.action || null;
+    const actorId = req.query.actorId ? parseInt(req.query.actorId) : null;
+    const targetType = req.query.targetType || null;
+    const dateFrom = req.query.dateFrom || null;
+    const dateTo = req.query.dateTo || null;
+    const q = req.query.q || null;
+
+    // Validate actorId if provided
+    if (req.query.actorId && (isNaN(actorId) || actorId <= 0)) {
+      return sendError(res, {
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid actorId parameter',
+        statusCode: 400
+      });
+    }
+
+    // Call service to get audit logs
+    const result = await listAdminAuditLogs({
+      page,
+      pageSize,
+      action,
+      actorId,
+      targetType,
+      dateFrom,
+      dateTo,
+      q,
+    });
+
+    // Return standardized response
+    return sendOk(res, {
+      items: result.items || [],
+      pagination: result.pagination || {
+        page,
+        pageSize,
+        total: 0,
+        totalPages: 0,
+      },
+    });
+  } catch (error) {
+    console.error('getAdminAuditLogs error:', error);
+    return sendError(res, {
+      code: 'DATABASE_ERROR',
+      message: 'Failed to fetch audit logs',
       statusCode: 500
     });
   }

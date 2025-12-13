@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { fetchAdminUserDetail, toggleAdminUserStatus } from "../../utils/apiClient.js";
 import "./user-detail-drawer.css";
 
@@ -7,6 +7,48 @@ function UserDetailDrawer({ userId, isOpen, onClose, onUserStatusChange }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [toggling, setToggling] = useState(false);
+  const drawerRef = useRef(null);
+
+  // ESC key handler
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        if (typeof onClose === 'function') {
+          onClose();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [isOpen, onClose]);
+
+  // Focus management
+  useEffect(() => {
+    if (isOpen && drawerRef.current) {
+      // Focus the drawer when it opens
+      const firstFocusable = drawerRef.current.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      if (firstFocusable) {
+        firstFocusable.focus();
+      }
+    }
+  }, [isOpen]);
+
+  // Body scroll lock when drawer is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && userId) {
@@ -81,25 +123,43 @@ function UserDetailDrawer({ userId, isOpen, onClose, onUserStatusChange }) {
     }
   };
 
-  if (!isOpen) return null;
+  // Don't render when closed to prevent click capture
+  if (!isOpen) {
+    return null;
+  }
+
+  // Ensure onClose is a function
+  const handleClose = () => {
+    if (typeof onClose === 'function') {
+      onClose();
+    }
+  };
 
   return (
     <>
       {/* Backdrop */}
       <div 
         className="user-detail-drawer-backdrop" 
-        onClick={onClose}
+        onClick={handleClose}
         aria-hidden="true"
       />
       
       {/* Drawer */}
-      <div className={`user-detail-drawer ${isOpen ? 'user-detail-drawer-open' : ''}`}>
+      <div 
+        ref={drawerRef}
+        className="user-detail-drawer user-detail-drawer-open"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="user-detail-drawer-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="user-detail-drawer-header">
-          <h2 className="user-detail-drawer-title">User Details</h2>
+          <h2 id="user-detail-drawer-title" className="user-detail-drawer-title">User Details</h2>
           <button 
             className="user-detail-drawer-close"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Close drawer"
+            type="button"
           >
             ×
           </button>
@@ -150,7 +210,9 @@ function UserDetailDrawer({ userId, isOpen, onClose, onUserStatusChange }) {
               <div className="user-detail-drawer-field">
                 <label className="user-detail-drawer-label">Role</label>
                 <div className="user-detail-drawer-value">
-                  {user.role || "STANDARD_USER"}
+                  <span className="user-detail-drawer-role-chip">
+                    {user.role || "STANDARD_USER"}
+                  </span>
                 </div>
               </div>
 
@@ -158,7 +220,17 @@ function UserDetailDrawer({ userId, isOpen, onClose, onUserStatusChange }) {
               <div className="user-detail-drawer-field">
                 <label className="user-detail-drawer-label">Account Status</label>
                 <div className="user-detail-drawer-value">
-                  {user.accountStatus || "ACTIVE"}
+                  <span className={`user-detail-drawer-status-chip ${
+                    user.accountStatus === 'ACTIVE' 
+                      ? 'user-detail-drawer-status-chip-active'
+                      : user.accountStatus === 'SUSPENDED'
+                      ? 'user-detail-drawer-status-chip-suspended'
+                      : user.accountStatus === 'BANNED'
+                      ? 'user-detail-drawer-status-chip-banned'
+                      : ''
+                  }`}>
+                    {user.accountStatus || "ACTIVE"}
+                  </span>
                 </div>
                 {/* Toggle button - only show for non-FOUNDER users with ACTIVE or DISABLED status */}
                 {user.role !== 'FOUNDER' && (user.accountStatus === 'ACTIVE' || user.accountStatus === 'DISABLED') && (
@@ -218,9 +290,15 @@ function UserDetailDrawer({ userId, isOpen, onClose, onUserStatusChange }) {
             </div>
           )}
 
-          {!loading && !error && !user && (
+          {!loading && !error && !user && userId && (
             <div className="user-detail-drawer-empty">
-              No user data available
+              Loading user details...
+            </div>
+          )}
+
+          {!loading && !error && !user && !userId && (
+            <div className="user-detail-drawer-empty">
+              Select a user to view details.
             </div>
           )}
         </div>

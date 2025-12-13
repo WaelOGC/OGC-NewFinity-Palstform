@@ -13,7 +13,16 @@ export function errorHandler(err, req, res, next) {
   
   // Log the full error for debugging (always log in development)
   const isDev = process.env.NODE_ENV !== 'production';
-  console.error('Error handler caught:', {
+  
+  // ALWAYS console.error with full stack
+  console.error('[ERROR HANDLER] Full error stack:');
+  console.error(err);
+  if (err.stack) {
+    console.error('[ERROR HANDLER] Stack trace:');
+    console.error(err.stack);
+  }
+  
+  console.error('[ERROR HANDLER] Error details:', {
     message: err.message,
     code: err.code,
     statusCode: err.statusCode || err.status,
@@ -53,8 +62,18 @@ export function errorHandler(err, req, res, next) {
   // Use status code from error if available, otherwise default to 500
   const statusCode = err.statusCode || err.status || 500;
   
-  // In development, include error message; in production, use generic message
+  // In development, include error message and stack; in production, use generic message
   const message = isDev ? err.message : 'The server encountered an error. Please try again later.';
+  
+  // In development, return full error details including stack
+  if (isDev) {
+    return res.status(statusCode).json({
+      status: 'ERROR',
+      code: err.code || 'INTERNAL_SERVER_ERROR',
+      message: message,
+      stack: err.stack,
+    });
+  }
   
   // Always return JSON with consistent format: { status: "ERROR", code, message }
   return sendError(res, {

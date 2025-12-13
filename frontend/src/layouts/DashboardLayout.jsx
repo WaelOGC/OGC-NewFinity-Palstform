@@ -5,6 +5,7 @@ import { useTheme } from "../context/ThemeContext.jsx";
 import { Bell, MessageCircle, SunMedium, Moon } from 'lucide-react';
 import Sidebar from "../components/sidebar/DashboardSidebar.jsx";
 import ScrollToTopButton from "../components/common/ScrollToTopButton.jsx";
+import OGCLogo from "../components/branding/OGCLogo.jsx";
 import "../index.css";
 import "./dashboard-layout.css";
 
@@ -80,7 +81,9 @@ function DashboardLayout() {
   return (
     <div className="ogc-dashboard-root">
       <header className="ogc-dashboard-topbar">
-        <div className="ogc-dashboard-logo">OGC <span>NewFinity</span></div>
+        <div className="ogc-dashboard-logo">
+          <OGCLogo />
+        </div>
         <div className="ogc-dashboard-topbar-right">
           {roleBadge && (
             <span className={`role-badge ${roleBadge.className}`}>

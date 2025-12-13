@@ -1,19 +1,22 @@
 /**
- * Access Control Middleware (Phase 5)
+ * Access Control Middleware (Phase 7)
  * 
  * Provides role-based and permission-based access control for routes.
  * All middleware functions require that requireAuth has already been called
  * to populate req.user with user data.
+ * 
+ * Updated to use new roleService (multi-role support) and adminAuditLogService.
  */
 
 import {
-  hasRole,
-  hasAnyRole,
   hasPermission,
   hasAnyPermission,
   getUserWithAccessData,
 } from '../services/userService.js';
 import { recordUserActivity } from '../services/userService.js';
+import { userHasRole, userHasAnyRole, getUserRoles, getPrimaryRole } from '../services/roleService.js';
+import { isFeatureEnabled } from '../services/featureFlagService.js';
+import { logAdminAction } from '../services/adminAuditLogService.js';
 
 /**
  * Require user to have a specific role
@@ -44,8 +47,35 @@ export function requireRole(requiredRole) {
         req.user = user;
       }
 
-      if (!hasRole(user, requiredRole)) {
-        // Log access denied
+      // Check role using new roleService (supports multi-role + expiry)
+      const userRoles = await getUserRoles(user.id);
+      const hasRequiredRole = userRoles.includes(requiredRole);
+      
+      // Fallback to legacy single role check if new service returns empty
+      const effectiveRole = userRoles.length > 0 ? getPrimaryRole(userRoles) : (user.role || null);
+      const hasLegacyRole = effectiveRole === requiredRole;
+
+      if (!hasRequiredRole && !hasLegacyRole) {
+        // Log access denied to admin audit log
+        const actorRole = effectiveRole || user.role || 'UNKNOWN';
+        await logAdminAction({
+          actorId: user.id,
+          actorRole,
+          action: 'ACCESS_DENIED',
+          targetType: 'ENDPOINT',
+          targetId: req.path,
+          metadata: {
+            reason: 'Insufficient role',
+            requiredRole,
+            userRoles,
+            effectiveRole,
+            endpoint: req.path,
+            method: req.method,
+          },
+          req,
+        }).catch(err => console.error('Failed to log access denied to admin audit:', err));
+
+        // Also log to user activity log (legacy)
         await recordUserActivity({
           userId: user.id,
           type: 'ACCESS_DENIED',
@@ -54,7 +84,7 @@ export function requireRole(requiredRole) {
           metadata: {
             reason: 'Insufficient role',
             requiredRole,
-            userRole: user.role,
+            userRole: effectiveRole,
             endpoint: req.path,
             method: req.method,
           },
@@ -62,11 +92,11 @@ export function requireRole(requiredRole) {
 
         return res.status(403).json({
           status: 'ERROR',
-          code: 'INSUFFICIENT_ROLE',
+          code: 'ADMIN_REQUIRED',
           message: 'You do not have permission to access this resource.',
           details: {
             requiredRole,
-            userRole: user.role,
+            userRole: effectiveRole,
           },
         });
       }
@@ -111,8 +141,35 @@ export function requireAnyRole(roles) {
         req.user = user;
       }
 
-      if (!hasAnyRole(user, roles)) {
-        // Log access denied
+      // Check roles using new roleService (supports multi-role + expiry)
+      const userRoles = await getUserRoles(user.id);
+      const hasAnyRequiredRole = await userHasAnyRole(user.id, roles);
+      
+      // Fallback to legacy single role check if new service returns empty
+      const effectiveRole = userRoles.length > 0 ? getPrimaryRole(userRoles) : (user.role || null);
+      const hasLegacyRole = effectiveRole && roles.includes(effectiveRole);
+
+      if (!hasAnyRequiredRole && !hasLegacyRole) {
+        // Log access denied to admin audit log
+        const actorRole = effectiveRole || user.role || 'UNKNOWN';
+        await logAdminAction({
+          actorId: user.id,
+          actorRole,
+          action: 'ACCESS_DENIED',
+          targetType: 'ENDPOINT',
+          targetId: req.path,
+          metadata: {
+            reason: 'Insufficient role',
+            requiredRoles: roles,
+            userRoles,
+            effectiveRole,
+            endpoint: req.path,
+            method: req.method,
+          },
+          req,
+        }).catch(err => console.error('Failed to log access denied to admin audit:', err));
+
+        // Also log to user activity log (legacy)
         await recordUserActivity({
           userId: user.id,
           type: 'ACCESS_DENIED',
@@ -121,7 +178,7 @@ export function requireAnyRole(roles) {
           metadata: {
             reason: 'Insufficient role',
             requiredRoles: roles,
-            userRole: user.role,
+            userRole: effectiveRole,
             endpoint: req.path,
             method: req.method,
           },
@@ -129,11 +186,11 @@ export function requireAnyRole(roles) {
 
         return res.status(403).json({
           status: 'ERROR',
-          code: 'INSUFFICIENT_ROLE',
+          code: 'ADMIN_REQUIRED',
           message: 'You do not have permission to access this resource.',
           details: {
             requiredRoles: roles,
-            userRole: user.role,
+            userRole: effectiveRole,
           },
         });
       }
@@ -181,7 +238,29 @@ export function requirePermission(permission) {
       }
 
       if (!hasPermission(user, permission)) {
-        // Log access denied
+        // Get user roles for audit log
+        const userRoles = await getUserRoles(user.id);
+        const effectiveRole = userRoles.length > 0 ? getPrimaryRole(userRoles) : (user.role || 'UNKNOWN');
+        
+        // Log access denied to admin audit log
+        await logAdminAction({
+          actorId: user.id,
+          actorRole: effectiveRole,
+          action: 'ACCESS_DENIED',
+          targetType: 'ENDPOINT',
+          targetId: req.path,
+          metadata: {
+            reason: 'Missing permission',
+            requiredPermission: permission,
+            userRoles,
+            effectiveRole,
+            endpoint: req.path,
+            method: req.method,
+          },
+          req,
+        }).catch(err => console.error('Failed to log access denied to admin audit:', err));
+
+        // Also log to user activity log (legacy)
         await recordUserActivity({
           userId: user.id,
           type: 'ACCESS_DENIED',
@@ -190,7 +269,7 @@ export function requirePermission(permission) {
           metadata: {
             reason: 'Missing permission',
             requiredPermission: permission,
-            userRole: user.role,
+            userRole: effectiveRole,
             endpoint: req.path,
             method: req.method,
           },
@@ -198,11 +277,11 @@ export function requirePermission(permission) {
 
         return res.status(403).json({
           status: 'ERROR',
-          code: 'INSUFFICIENT_PERMISSIONS',
+          code: 'FORBIDDEN',
           message: 'You do not have permission to access this resource.',
           details: {
             requiredPermission: permission,
-            userRole: user.role,
+            userRole: effectiveRole,
           },
         });
       }
@@ -250,7 +329,29 @@ export function requireAnyPermission(requiredPermissions = []) {
       }
 
       if (!hasAnyPermission(user, requiredPermissions)) {
-        // Log access denied
+        // Get user roles for audit log
+        const userRoles = await getUserRoles(user.id);
+        const effectiveRole = userRoles.length > 0 ? getPrimaryRole(userRoles) : (user.role || 'UNKNOWN');
+        
+        // Log access denied to admin audit log
+        await logAdminAction({
+          actorId: user.id,
+          actorRole: effectiveRole,
+          action: 'ACCESS_DENIED',
+          targetType: 'ENDPOINT',
+          targetId: req.path,
+          metadata: {
+            reason: 'Missing required permissions',
+            requiredPermissions,
+            userRoles,
+            effectiveRole,
+            endpoint: req.path,
+            method: req.method,
+          },
+          req,
+        }).catch(err => console.error('Failed to log access denied to admin audit:', err));
+
+        // Also log to user activity log (legacy)
         await recordUserActivity({
           userId: user.id,
           type: 'ACCESS_DENIED',
@@ -259,7 +360,7 @@ export function requireAnyPermission(requiredPermissions = []) {
           metadata: {
             reason: 'Missing required permissions',
             requiredPermissions,
-            userRole: user.role,
+            userRole: effectiveRole,
             endpoint: req.path,
             method: req.method,
           },
@@ -267,11 +368,11 @@ export function requireAnyPermission(requiredPermissions = []) {
 
         return res.status(403).json({
           status: 'ERROR',
-          code: 'INSUFFICIENT_PERMISSIONS',
+          code: 'FORBIDDEN',
           message: 'You do not have permission to access this resource.',
           details: {
             requiredPermissions,
-            userRole: user.role,
+            userRole: effectiveRole,
           },
         });
       }
@@ -316,10 +417,35 @@ export function requireFeatureFlag(flagName) {
         req.user = user;
       }
 
-      // Check feature flag
-      const flagValue = user.featureFlags?.[flagName];
-      if (flagValue !== true) {
-        // Log access denied
+      // Check feature flag using new featureFlagService (supports table + legacy JSON)
+      const flagEnabled = await isFeatureEnabled(user.id, flagName);
+      
+      // Fallback to legacy featureFlags if new service fails
+      const legacyFlagValue = user.featureFlags?.[flagName];
+      const hasFlag = flagEnabled || legacyFlagValue === true;
+
+      if (!hasFlag) {
+        // Get user roles for audit log
+        const userRoles = await getUserRoles(user.id);
+        const effectiveRole = userRoles.length > 0 ? getPrimaryRole(userRoles) : (user.role || 'UNKNOWN');
+        
+        // Log access denied to admin audit log
+        await logAdminAction({
+          actorId: user.id,
+          actorRole: effectiveRole,
+          action: 'ACCESS_DENIED',
+          targetType: 'ENDPOINT',
+          targetId: req.path,
+          metadata: {
+            reason: 'Feature flag not enabled',
+            requiredFlag: flagName,
+            endpoint: req.path,
+            method: req.method,
+          },
+          req,
+        }).catch(err => console.error('Failed to log access denied to admin audit:', err));
+
+        // Also log to user activity log (legacy)
         await recordUserActivity({
           userId: user.id,
           type: 'ACCESS_DENIED',

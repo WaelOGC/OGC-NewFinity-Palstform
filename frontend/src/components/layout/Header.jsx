@@ -12,6 +12,7 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import OGCLogo from '../branding/OGCLogo.jsx';
 import './Header.css';
 
 export default function Header() {
@@ -41,10 +42,7 @@ export default function Header() {
       <div className="header-container">
         {/* Logo/Brand */}
         <NavLink to="/" className="header-logo" onClick={closeMobileMenu}>
-          <div className="logo-text">
-            <span className="logo-main">OGC</span>
-            <span className="logo-sub">NewFinity</span>
-          </div>
+          <OGCLogo />
         </NavLink>
 
         {/* Desktop Navigation */}

@@ -97,6 +97,8 @@ const ALLOWED_ROUTES = {
   'GET /api/v1/admin/users/:userId/sessions': true,
   'POST /api/v1/admin/users/:userId/sessions/revoke': true,
   'POST /api/v1/admin/users/:userId/sessions/revoke-all': true,
+  // Phase 7: Admin Audit Logs
+  'GET /api/v1/admin/audit-logs': true,
   // Phase 9.2: Account Deletion
   'POST /api/v1/user/account/delete': true,
   // Phase 9.3: Data Export

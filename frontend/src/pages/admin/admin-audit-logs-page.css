@@ -1,0 +1,595 @@
+/* ============================================
+   ADMIN AUDIT LOGS PAGE - Plasma UI Upgrade
+   ============================================ */
+
+.admin-audit-logs-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Header */
+.admin-audit-logs-header {
+  margin-bottom: 2rem;
+}
+
+.admin-audit-logs-header h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.admin-audit-logs-subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* Command Bar - CSS Grid Layout for Stable, Wide Layout */
+/* Override hover transform for static feel */
+.plasma-command-bar.plasma-panel--raised:hover {
+  transform: translateY(0);
+}
+
+/* Force CSS Grid layout on desktop (≥1280px) - single row, no wrapping */
+@media (min-width: 1280px) {
+  .plasma-command-bar {
+    display: grid;
+    grid-template-columns: 1fr auto; /* Search takes flexible space, filters take auto */
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .plasma-command-bar-search {
+    min-width: 260px;
+  }
+
+  .plasma-command-bar-filters {
+    display: grid;
+    grid-template-columns: 160px 160px 160px 160px 160px min-content min-content; /* Action, Target, Actor ID, Date From, Date To, Clear (if visible), Apply */
+    gap: 0.75rem;
+    align-items: center;
+    grid-auto-flow: column;
+  }
+
+  /* Buttons take their natural width */
+  .plasma-command-bar-filters .plasma-button {
+    white-space: nowrap;
+  }
+}
+
+/* Tablet (768px to 1279px) - allow wrapping */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .plasma-command-bar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .plasma-command-bar-search {
+    min-width: 260px;
+    width: 100%;
+  }
+
+  .plasma-command-bar-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    align-items: center;
+  }
+}
+
+/* Mobile (<768px) - stack vertically (existing behavior maintained) */
+@media (max-width: 767px) {
+  .plasma-command-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .plasma-command-bar-search {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .plasma-command-bar-filters {
+    width: 100%;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .plasma-command-bar-filters .plasma-field-wrapper {
+    width: 100%;
+  }
+}
+
+/* Field wrapper minimum widths - locked to prevent clipping */
+.plasma-command-bar-filters .plasma-field-wrapper {
+  min-width: 160px;
+}
+
+/* Select fields - dropdown arrow */
+.plasma-command-bar-filters .plasma-field:is(select) {
+  padding: 0.75rem 0.75rem 0.75rem 2.75rem;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.5rem;
+  min-width: 160px;
+  width: 100%;
+}
+
+[data-theme='dark'] .plasma-command-bar-filters .plasma-field:is(select) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23aaa' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+}
+
+/* Date inputs - fully visible, no dropdown arrow */
+.plasma-command-bar-filters .plasma-field:is(input[type="date"]) {
+  padding: 0.75rem 0.75rem 0.75rem 2.75rem;
+  cursor: pointer;
+  min-width: 160px;
+  width: 100%;
+}
+
+/* Number inputs */
+.plasma-command-bar-filters .plasma-field:is(input[type="number"]) {
+  padding: 0.75rem 0.75rem 0.75rem 2.75rem;
+  min-width: 160px;
+  width: 100%;
+}
+
+/* Text inputs (search handled separately) */
+.plasma-command-bar-filters .plasma-field:is(input[type="text"]):not(.admin-audit-search) {
+  padding: 0.75rem 0.75rem 0.75rem 2.75rem;
+  min-width: 160px;
+  width: 100%;
+}
+
+/* Search input - flexible but with minimum */
+.admin-audit-search {
+  min-width: 260px;
+  width: 100%;
+}
+
+/* Filter inputs general */
+.admin-audit-filter {
+  min-width: 160px;
+}
+
+/* Loading State */
+.admin-audit-logs-loading {
+  padding: 3rem 2rem;
+  text-align: center;
+  background: var(--plasma-panel-bg);
+  border-radius: 12px;
+  border: 1px solid var(--plasma-panel-border);
+  box-shadow: var(--plasma-panel-shadow);
+  color: var(--text-secondary);
+}
+
+/* Error State */
+.admin-audit-logs-error {
+  padding: 3rem 2rem;
+  text-align: center;
+  background: var(--plasma-panel-bg);
+  border-radius: 12px;
+  border: 1px solid var(--plasma-pink);
+  box-shadow: var(--plasma-panel-shadow);
+  box-shadow: 0 0 16px rgba(255, 60, 172, 0.2);
+}
+
+.admin-audit-logs-error-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--plasma-pink);
+}
+
+.admin-audit-logs-error-message {
+  margin: 0 0 1.5rem 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.admin-audit-logs-error-banner {
+  padding: 1rem 1.5rem;
+  background: rgba(255, 60, 172, 0.15);
+  border: 1px solid var(--plasma-pink);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  color: var(--plasma-pink);
+  font-size: 0.9rem;
+}
+
+/* Empty State */
+.admin-audit-logs-empty-state {
+  padding: 3rem 2rem;
+  text-align: center;
+  background: var(--plasma-panel-bg);
+  border-radius: 12px;
+  border: 1px solid var(--plasma-panel-border);
+  box-shadow: var(--plasma-panel-shadow);
+}
+
+.admin-audit-logs-empty-icon {
+  margin: 0 auto 1.5rem;
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.admin-audit-logs-empty-state-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.admin-audit-logs-empty-state-message {
+  margin: 0 0 1.5rem 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.admin-audit-logs-empty-state-button {
+  padding: 0.75rem 1.5rem;
+  border: 1px solid var(--plasma-teal);
+  border-radius: 8px;
+  background: var(--plasma-panel-bg);
+  color: var(--plasma-teal);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px var(--plasma-glow-soft);
+}
+
+.admin-audit-logs-empty-state-button:hover {
+  box-shadow: 0 0 12px var(--plasma-glow-medium);
+  /* No transform - static but floating via shadow */
+}
+
+/* Table Container */
+.admin-audit-table-container {
+  background: var(--plasma-panel-bg);
+  border-radius: 12px;
+  border: 1px solid var(--plasma-panel-border);
+  box-shadow: var(--plasma-panel-shadow);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.admin-audit-table-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--plasma-teal),
+    var(--plasma-violet),
+    transparent
+  );
+  opacity: 0.6;
+  z-index: 1;
+}
+
+/* Table */
+.admin-audit-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-audit-table thead {
+  background: var(--bg-card-soft);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.admin-audit-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--plasma-panel-border);
+  position: relative;
+}
+
+/* Table Rows */
+.admin-audit-table-row {
+  cursor: pointer;
+  transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  border-left: 2px solid transparent;
+}
+
+.admin-audit-table-row:hover {
+  background: var(--plasma-panel-bg);
+  border-left-color: var(--plasma-teal);
+  box-shadow: 0 2px 12px var(--plasma-glow-soft),
+              inset 0 0 20px rgba(0, 255, 198, 0.05);
+  /* No transform - static but floating via shadow */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-audit-table-row {
+    transition: background 0.2s, border-color 0.2s;
+  }
+}
+
+.admin-audit-table-row.admin-audit-row-expanded {
+  background: var(--plasma-panel-bg);
+  border-left-color: var(--plasma-teal);
+}
+
+.admin-audit-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+/* Time Column */
+.admin-audit-time {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-audit-time-relative {
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: help;
+}
+
+/* Action Chips */
+.audit-action-chip {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid;
+  box-shadow: 0 0 8px;
+}
+
+.audit-action-chip--positive {
+  background: rgba(0, 255, 198, 0.15);
+  color: var(--plasma-teal);
+  border-color: var(--plasma-teal);
+  box-shadow: 0 0 8px rgba(0, 255, 198, 0.2);
+}
+
+.audit-action-chip--negative {
+  background: rgba(255, 60, 172, 0.15);
+  color: var(--plasma-pink);
+  border-color: var(--plasma-pink);
+  box-shadow: 0 0 8px rgba(255, 60, 172, 0.2);
+}
+
+.audit-action-chip--system {
+  background: rgba(88, 100, 255, 0.15);
+  color: var(--plasma-violet);
+  border-color: var(--plasma-violet);
+  box-shadow: 0 0 8px rgba(88, 100, 255, 0.2);
+}
+
+/* Target Column */
+.admin-audit-target {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-audit-target-type {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.admin-audit-target-id {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+/* Actor Column */
+.admin-audit-actor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-audit-actor-id {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.admin-audit-actor-role {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* IP Column */
+.admin-audit-ip {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.admin-audit-ip-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Expand Button */
+.admin-audit-expand-btn {
+  flex-shrink: 0;
+}
+
+/* Expanded Row Details */
+.admin-audit-row-details {
+  background: var(--bg-card-soft);
+}
+
+.admin-audit-row-details td {
+  padding: 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.admin-audit-details {
+  padding: 1.5rem;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  margin: 0.5rem 0;
+}
+
+.admin-audit-details-section {
+  margin-bottom: 1.5rem;
+}
+
+.admin-audit-details-section:last-child {
+  margin-bottom: 0;
+}
+
+.admin-audit-details-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  position: relative;
+}
+
+.admin-audit-details-header h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-audit-copy-btn {
+  flex-shrink: 0;
+}
+
+.admin-audit-copy-feedback {
+  position: absolute;
+  left: calc(100% + 0.5rem);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.25rem 0.5rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+}
+
+.admin-audit-copy-feedback-error {
+  color: var(--plasma-pink);
+}
+
+.admin-audit-metadata-full {
+  margin: 0;
+  padding: 1rem;
+  background: var(--bg-card-soft);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.admin-audit-details-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.admin-audit-meta-item {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.admin-audit-meta-item strong {
+  color: var(--text-secondary);
+  margin-right: 0.5rem;
+}
+
+/* Pagination */
+.admin-audit-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.admin-audit-pagination-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--plasma-panel-border);
+  border-radius: 8px;
+  background: var(--plasma-panel-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-audit-pagination-btn:hover:not(:disabled) {
+  background: var(--plasma-panel-bg);
+  border-color: var(--plasma-teal);
+  box-shadow: 0 0 8px var(--plasma-glow-soft);
+  /* No transform - static but floating via shadow */
+}
+
+.admin-audit-pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-audit-pagination-info {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Additional responsive adjustments for table */
+@media (max-width: 767px) {
+  .admin-audit-table-container {
+    overflow-x: auto;
+  }
+
+  .admin-audit-table {
+    min-width: 1000px;
+  }
+}

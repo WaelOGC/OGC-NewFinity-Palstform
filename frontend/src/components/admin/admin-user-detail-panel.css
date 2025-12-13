@@ -329,3 +329,64 @@
   opacity: 0.7;
   font-size: 0.9em;
 }
+
+.admin-detail-roles-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.admin-detail-role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-card-soft);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.admin-detail-role-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.admin-detail-role-expiry {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.admin-detail-revoke-role-btn {
+  background: none;
+  border: none;
+  color: var(--accent-danger);
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0;
+  width: 1.2rem;
+  height: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+
+.admin-detail-revoke-role-btn:hover:not(:disabled) {
+  background: var(--accent-danger-soft);
+}
+
+.admin-detail-revoke-role-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.admin-detail-note {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+}

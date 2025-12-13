@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { fetchAdminUsers } from "../../utils/apiClient.js";
 import UserDetailDrawer from "../../components/admin/UserDetailDrawer.jsx";
+import "../../styles/plasmaAdminUI.css";
 import "./admin-users-page.css";
 
 function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [pagination, setPagination] = useState({ page: 1, pageSize: 20, total: 0 });
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 25, total: 0 });
   
   // Filters
   const [search, setSearch] = useState("");
@@ -21,6 +22,10 @@ function AdminUsersPage() {
   // Track which user's email was copied
   const [copiedUserId, setCopiedUserId] = useState(null);
 
+  // Parallax effect for command bar
+  const commandBarRef = useRef(null);
+  const [parallaxStyle, setParallaxStyle] = useState({ transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg)' });
+
   const fetchUsers = async (page = 1, searchOverride = null, roleFilterOverride = null) => {
     try {
       setLoading(true);
@@ -28,7 +33,7 @@ function AdminUsersPage() {
       
       const data = await fetchAdminUsers({ 
         page, 
-        pageSize: 20,
+        pageSize: 25,
         search: searchOverride !== null ? searchOverride : search,
         role: roleFilterOverride !== null ? roleFilterOverride : roleFilter,
       });
@@ -59,9 +64,9 @@ function AdminUsersPage() {
         setUsers(filteredUsers);
         setPagination({
           page: data.page || page,
-          pageSize: data.limit || 20, // Backend returns 'limit', not 'pageSize'
+          pageSize: data.limit || 25, // Backend returns 'limit', not 'pageSize'
           total: data.total || 0,
-          totalPages: Math.ceil((data.total || 0) / (data.limit || 20)),
+          totalPages: Math.ceil((data.total || 0) / (data.limit || 25)),
         });
       } else if (data && data.users === undefined) {
         // Backend returned data but without users array - might be empty or error
@@ -69,9 +74,9 @@ function AdminUsersPage() {
         setUsers([]);
         setPagination({
           page: data.page || page,
-          pageSize: data.limit || 20,
+          pageSize: data.limit || 25,
           total: data.total || 0,
-          totalPages: Math.ceil((data.total || 0) / (data.limit || 20)),
+          totalPages: Math.ceil((data.total || 0) / (data.limit || 25)),
         });
       } else {
         setError("Failed to load users: Invalid response format");
@@ -93,6 +98,51 @@ function AdminUsersPage() {
     fetchUsers(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only fetch on mount - filter changes are handled explicitly
+
+  // Parallax effect handler
+  useEffect(() => {
+    const commandBar = commandBarRef.current;
+    if (!commandBar) return;
+
+    // Check for reduced motion preference
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+
+    const handleMouseMove = (e) => {
+      const rect = commandBar.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      const mouseX = e.clientX - centerX;
+      const mouseY = e.clientY - centerY;
+      
+      // Normalize to -1 to 1 range
+      const normalizedX = mouseX / (rect.width / 2);
+      const normalizedY = mouseY / (rect.height / 2);
+      
+      // Apply rotation (max 3-4 degrees)
+      const rotateY = normalizedX * 3;
+      const rotateX = -normalizedY * 3;
+      
+      setParallaxStyle({
+        transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
+      });
+    };
+
+    const handleMouseLeave = () => {
+      setParallaxStyle({
+        transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg)',
+      });
+    };
+
+    commandBar.addEventListener('mousemove', handleMouseMove);
+    commandBar.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      commandBar.removeEventListener('mousemove', handleMouseMove);
+      commandBar.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, []);
 
   const openUserDrawer = (userId) => {
     if (!userId) {
@@ -222,47 +272,84 @@ function AdminUsersPage() {
         </div>
       </div>
 
-      <div className="admin-users-filters">
-        <input
-          type="text"
-          placeholder="Search by email, name, or username..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              fetchUsers(1);
-            }
-          }}
-          className="admin-users-search"
-        />
-        <select
-          value={roleFilter}
-          onChange={(e) => {
-            setRoleFilter(e.target.value);
-            fetchUsers(1);
-          }}
-          className="admin-users-filter"
-        >
-          <option value="">All Roles</option>
-          <option value="FOUNDER">Founder</option>
-          <option value="CORE_TEAM">Core Team</option>
-          <option value="ADMIN">Admin</option>
-          <option value="MODERATOR">Moderator</option>
-          <option value="CREATOR">Creator</option>
-          <option value="STANDARD_USER">Standard</option>
-          <option value="SUSPENDED">Suspended</option>
-          <option value="BANNED">Banned</option>
-        </select>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="admin-users-filter"
-        >
-          <option value="">All Statuses</option>
-          <option value="ACTIVE">Active</option>
-          <option value="SUSPENDED">Suspended</option>
-          <option value="BANNED">Banned</option>
-        </select>
+      <div 
+        ref={commandBarRef}
+        className="plasma-command-bar plasma-panel--raised"
+        style={parallaxStyle}
+      >
+        <div className="plasma-command-bar-search">
+          <div className="plasma-field-wrapper">
+            <input
+              type="text"
+              placeholder="Search by email, name, or username..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  fetchUsers(1);
+                }
+              }}
+              className="plasma-field admin-users-search"
+            />
+            <svg className="plasma-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+          </div>
+        </div>
+        <div className="plasma-command-bar-filters">
+          <div className="plasma-field-wrapper">
+            <select
+              value={roleFilter}
+              onChange={(e) => {
+                setRoleFilter(e.target.value);
+                fetchUsers(1);
+              }}
+              className="plasma-field admin-users-filter"
+            >
+              <option value="">All Roles</option>
+              <option value="FOUNDER">Founder</option>
+              <option value="CORE_TEAM">Core Team</option>
+              <option value="ADMIN">Admin</option>
+              <option value="MODERATOR">Moderator</option>
+              <option value="CREATOR">Creator</option>
+              <option value="STANDARD_USER">Standard</option>
+              <option value="SUSPENDED">Suspended</option>
+              <option value="BANNED">Banned</option>
+            </select>
+            <svg className="plasma-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+          </div>
+          <div className="plasma-field-wrapper">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="plasma-field admin-users-filter"
+            >
+              <option value="">All Statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="SUSPENDED">Suspended</option>
+              <option value="BANNED">Banned</option>
+            </select>
+            <svg className="plasma-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+          </div>
+          {(search || roleFilter || statusFilter) && (
+            <button
+              onClick={handleClearFilters}
+              className="plasma-button plasma-button--ghost"
+              aria-label="Clear filters"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {loading && <div className="admin-users-loading">Loading users...</div>}
@@ -288,7 +375,7 @@ function AdminUsersPage() {
               <div className="admin-users-table-container">
                 <table className="admin-users-table">
                   <thead>
-                    <tr>
+                    <tr className="plasma-table-header">
                       <th>Name / Email</th>
                       <th>Role</th>
                       <th>Account Status</th>
@@ -305,7 +392,7 @@ function AdminUsersPage() {
                         <tr
                           key={user.id}
                           onClick={() => openUserDrawer(user.id)}
-                          className="admin-users-table-row"
+                          className="admin-users-table-row plasma-table-row"
                         >
                           <td>
                             <div className="admin-users-name">
@@ -315,12 +402,12 @@ function AdminUsersPage() {
                                 {user.email && (
                                   <>
                                     <button
-                                      className="admin-users-copy-btn"
+                                      className="plasma-icon-button admin-users-copy-btn"
                                       onClick={(e) => handleCopyEmail(e, user.email, user.id)}
                                       aria-label="Copy email"
                                       title="Copy email"
                                     >
-                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                       </svg>

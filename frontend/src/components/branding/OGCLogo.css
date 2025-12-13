@@ -1,0 +1,38 @@
+/* ============================================
+   OGC LOGO COMPONENT
+   Compact, theme-aware logo with subtle plasma hover
+   ============================================ */
+
+.ogc-logo {
+  height: 32px; /* Target: 28-36px, using 32px for balance */
+  width: auto;
+  object-fit: contain;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  display: block;
+  /* No background box */
+  background: transparent;
+}
+
+.ogc-logo:hover {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 0 8px rgba(0, 255, 198, 0.4))
+          drop-shadow(0 0 4px rgba(88, 100, 255, 0.3));
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .ogc-logo {
+    transition: filter 0.2s;
+  }
+  
+  .ogc-logo:hover {
+    transform: none;
+  }
+}
+
+/* Light theme hover glow adjustment */
+[data-theme='light'] .ogc-logo:hover {
+  filter: drop-shadow(0 0 6px rgba(88, 100, 255, 0.3))
+          drop-shadow(0 0 3px rgba(0, 255, 198, 0.2));
+}

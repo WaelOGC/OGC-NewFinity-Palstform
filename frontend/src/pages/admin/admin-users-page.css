@@ -22,48 +22,42 @@
   margin: 0;
 }
 
-.admin-users-filters {
-  display: flex;
-  gap: 1rem;
+/* Command Bar - now using plasma styles */
+.plasma-command-bar {
   margin-bottom: 1.5rem;
-  flex-wrap: wrap;
 }
 
+.plasma-command-bar-search .plasma-field {
+  width: 100%;
+  padding: 0.75rem 0.75rem 0.75rem 2.75rem;
+}
+
+.plasma-command-bar-filters .plasma-field-wrapper {
+  min-width: 150px;
+}
+
+.plasma-command-bar-filters .plasma-field {
+  padding: 0.75rem 0.75rem 0.75rem 2.75rem;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.5rem;
+}
+
+[data-theme='dark'] .plasma-command-bar-filters .plasma-field {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23aaa' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+}
+
+/* Legacy class support for existing styles */
 .admin-users-search {
   flex: 1;
   min-width: 250px;
-  padding: 0.75rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 4px;
-  font-size: 0.95rem;
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  transition: border-color 0.2s, background-color 0.2s;
-}
-
-.admin-users-search::placeholder {
-  color: var(--text-muted);
-}
-
-.admin-users-search:focus {
-  outline: none;
-  border-color: var(--accent);
 }
 
 .admin-users-filter {
-  padding: 0.75rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 4px;
-  font-size: 0.95rem;
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: border-color 0.2s, background-color 0.2s;
-}
-
-.admin-users-filter:focus {
-  outline: none;
-  border-color: var(--accent);
+  min-width: 150px;
 }
 
 .admin-users-loading,
@@ -85,9 +79,10 @@
 .admin-users-empty-state {
   padding: 3rem 2rem;
   text-align: center;
-  background: var(--bg-elevated);
-  border-radius: 8px;
-  border: 1px solid var(--border-subtle);
+  background: var(--plasma-panel-bg);
+  border-radius: 12px;
+  border: 1px solid var(--plasma-panel-border);
+  box-shadow: var(--plasma-panel-shadow);
 }
 
 .admin-users-empty-state-title {
@@ -105,18 +100,19 @@
 
 .admin-users-empty-state-button {
   padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  background: var(--accent);
-  color: var(--button-text-on-accent, #ffffff);
+  border: 1px solid var(--plasma-teal);
+  border-radius: 8px;
+  background: var(--plasma-panel-bg);
+  color: var(--plasma-teal);
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px var(--plasma-glow-soft);
 }
 
 .admin-users-empty-state-button:hover {
-  opacity: 0.9;
+  box-shadow: 0 0 12px var(--plasma-glow-medium);
   transform: translateY(-1px);
 }
 
@@ -124,12 +120,38 @@
   transform: translateY(0);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .admin-users-empty-state-button:hover {
+    transform: none;
+  }
+}
+
 .admin-users-table-container {
-  background: var(--bg-elevated);
-  border-radius: 8px;
-  border: 1px solid var(--border-subtle);
+  background: var(--plasma-panel-bg);
+  border-radius: 12px;
+  border: 1px solid var(--plasma-panel-border);
+  box-shadow: var(--plasma-panel-shadow);
   overflow: hidden;
   margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.admin-users-table-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--plasma-teal),
+    var(--plasma-violet),
+    transparent
+  );
+  opacity: 0.6;
+  z-index: 1;
 }
 
 .admin-users-table {
@@ -139,6 +161,7 @@
 
 .admin-users-table thead {
   background: var(--bg-card-soft);
+  position: relative;
 }
 
 .admin-users-table th {
@@ -149,16 +172,33 @@
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid var(--border-subtle);
+  border-bottom: 2px solid var(--plasma-panel-border);
+  position: relative;
 }
 
 .admin-users-table-row {
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  border-left: 2px solid transparent;
 }
 
 .admin-users-table-row:hover {
-  background: var(--bg-card-soft);
+  background: var(--plasma-panel-bg);
+  border-left-color: var(--plasma-teal);
+  box-shadow: 0 2px 12px var(--plasma-glow-soft),
+              inset 0 0 20px rgba(0, 255, 198, 0.05);
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-users-table-row {
+    transition: background 0.2s, border-color 0.2s;
+  }
+  
+  .admin-users-table-row:hover {
+    transform: none;
+  }
 }
 
 .admin-users-table td {
@@ -190,35 +230,9 @@
   font-size: 0.85rem;
 }
 
+/* Copy button now uses plasma-icon-button class */
 .admin-users-copy-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 1px solid var(--border-subtle);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s ease;
   flex-shrink: 0;
-}
-
-.admin-users-copy-btn:hover {
-  color: var(--text-primary);
-  border-color: var(--accent-soft, var(--accent));
-  background: var(--bg-card-soft);
-}
-
-.admin-users-copy-btn:active {
-  transform: scale(0.95);
-}
-
-.admin-users-copy-btn svg {
-  width: 14px;
-  height: 14px;
 }
 
 .admin-users-copy-feedback {
@@ -309,18 +323,24 @@
 }
 
 .status-badge-active {
-  background: var(--badge-active-bg);
-  color: var(--badge-active-text);
+  background: rgba(0, 255, 198, 0.15);
+  color: var(--plasma-teal);
+  border: 1px solid var(--plasma-teal);
+  box-shadow: 0 0 8px rgba(0, 255, 198, 0.2);
 }
 
 .status-badge-suspended {
-  background: var(--badge-suspended-bg);
-  color: var(--badge-suspended-text);
+  background: rgba(255, 188, 37, 0.15);
+  color: var(--plasma-yellow);
+  border: 1px solid var(--plasma-yellow);
+  box-shadow: 0 0 8px rgba(255, 188, 37, 0.2);
 }
 
 .status-badge-banned {
-  background: var(--badge-banned-bg);
-  color: var(--badge-banned-text);
+  background: rgba(255, 60, 172, 0.15);
+  color: var(--plasma-pink);
+  border: 1px solid var(--plasma-pink);
+  box-shadow: 0 0 8px rgba(255, 60, 172, 0.2);
 }
 
 .status-tooltip {
@@ -368,26 +388,64 @@
 
 .admin-users-pagination-btn {
   padding: 0.5rem 1rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 4px;
-  background: var(--bg-elevated);
+  border: 1px solid var(--plasma-panel-border);
+  border-radius: 8px;
+  background: var(--plasma-panel-bg);
   color: var(--text-primary);
   cursor: pointer;
   font-size: 0.9rem;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .admin-users-pagination-btn:hover:not(:disabled) {
-  background: var(--bg-card-soft);
-  border-color: var(--accent);
+  background: var(--plasma-panel-bg);
+  border-color: var(--plasma-teal);
+  box-shadow: 0 0 8px var(--plasma-glow-soft);
+  transform: translateY(-1px);
 }
 
 .admin-users-pagination-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-users-pagination-btn:hover:not(:disabled) {
+    transform: none;
+  }
 }
 
 .admin-users-pagination-info {
   color: var(--text-secondary);
   font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .plasma-command-bar {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .plasma-command-bar-search {
+    width: 100%;
+  }
+
+  .plasma-command-bar-filters {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .plasma-command-bar-filters .plasma-field-wrapper {
+    width: 100%;
+  }
+
+  .admin-users-table-container {
+    overflow-x: auto;
+  }
+
+  .admin-users-table {
+    min-width: 800px;
+  }
 }

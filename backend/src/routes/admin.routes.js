@@ -20,6 +20,7 @@ import {
   getAdminUserSessions,
   revokeAdminUserSession,
   revokeAllAdminUserSessions,
+  getAdminAuditLogs,
 } from '../controllers/adminController.js';
 
 const router = Router();
@@ -63,5 +64,8 @@ router.post('/users/:userId/sessions/revoke', revokeAdminUserSession);
 
 // POST /api/v1/admin/users/:userId/sessions/revoke-all - Revoke all sessions
 router.post('/users/:userId/sessions/revoke-all', revokeAllAdminUserSessions);
+
+// GET /api/v1/admin/audit-logs - List admin audit logs with filtering and pagination
+router.get('/audit-logs', getAdminAuditLogs);
 
 export default router;

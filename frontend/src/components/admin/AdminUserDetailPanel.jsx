@@ -6,9 +6,16 @@ import {
   adminRevokeUserSession,
   adminRevokeAllUserSessions,
 } from "../../utils/apiClient.js";
+import {
+  adminUpdateUserRole,
+  adminSetUserFeatureFlag,
+  adminBulkSetUserFeatureFlags,
+} from "../../utils/adminApi.js";
+import { useAuth } from "../../context/AuthContext.jsx";
 import "./admin-user-detail-panel.css";
 
 function AdminUserDetailPanel({ userId, onClose, onUserUpdated }) {
+  const { user: currentUser } = useAuth();
   const [user, setUser] = useState(null);
   const [userLoading, setUserLoading] = useState(false);
   const [userError, setUserError] = useState(null); // Can be string or { message, code }
@@ -29,6 +36,12 @@ function AdminUserDetailPanel({ userId, onClose, onUserUpdated }) {
   const [role, setRole] = useState("");
   const [accountStatus, setAccountStatus] = useState("ACTIVE");
   const [featureFlags, setFeatureFlags] = useState({});
+  
+  // Roles management state
+  const [userRoles, setUserRoles] = useState([]); // Array of role objects: { role: string, expiresAt: string|null }
+  const [newRole, setNewRole] = useState("");
+  const [roleExpiresAt, setRoleExpiresAt] = useState("");
+  const [roleLoading, setRoleLoading] = useState(false);
 
   // Load user and sessions when userId changes
   useEffect(() => {
@@ -52,6 +65,21 @@ function AdminUserDetailPanel({ userId, onClose, onUserUpdated }) {
           setRole(loadedUser.role || "");
           setAccountStatus(loadedUser.accountStatus || "ACTIVE");
           setFeatureFlags(loadedUser.featureFlags || {});
+          
+          // Handle roles: backend may return roles array or single role
+          if (Array.isArray(loadedUser.roles) && loadedUser.roles.length > 0) {
+            // If roles is an array of strings, convert to objects
+            const rolesArray = loadedUser.roles.map(r => 
+              typeof r === 'string' ? { role: r, expiresAt: null } : r
+            );
+            setUserRoles(rolesArray);
+          } else if (loadedUser.role) {
+            // Fallback to single role
+            setUserRoles([{ role: loadedUser.role, expiresAt: null }]);
+          } else {
+            setUserRoles([]);
+          }
+          
           setUserError(null);
         } else {
           setUserError("Failed to load user details");
@@ -212,15 +240,19 @@ function AdminUserDetailPanel({ userId, onClose, onUserUpdated }) {
       const updatedFlags = { ...featureFlags, [flagName]: value };
       setFeatureFlags(updatedFlags);
 
-      // API client now returns data directly (from { status: "OK", data: { user } })
-      const data = await api.put(`/admin/users/${user.id}/feature-flags`, {
-        featureFlags: { [flagName]: value },
-      });
+      // Use adminApi helper
+      const updatedUser = await adminSetUserFeatureFlag(user.id, { flag: flagName, enabled: value });
       
       // Success - API client throws on error
       setSuccess("Feature flag updated successfully");
-      if (data && data.user && data.user.featureFlags) {
-        setFeatureFlags(data.user.featureFlags);
+      if (updatedUser && updatedUser.featureFlags) {
+        setFeatureFlags(updatedUser.featureFlags);
+      } else if (updatedUser) {
+        // Refetch user to get updated flags
+        const fullDetail = await api.get(`/admin/users/${user.id}`);
+        if (fullDetail && fullDetail.user && fullDetail.user.featureFlags) {
+          setFeatureFlags(fullDetail.user.featureFlags);
+        }
       }
       if (onUserUpdated) onUserUpdated();
     } catch (err) {
@@ -230,6 +262,123 @@ function AdminUserDetailPanel({ userId, onClose, onUserUpdated }) {
       setError(err?.message || "Unable to update feature flag.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle role assignment
+  const handleAssignRole = async () => {
+    if (!user || !newRole) return;
+    
+    // Check if trying to revoke FOUNDER from self
+    const isSelf = currentUser && user.id === currentUser.id;
+    const isFounder = user.role === 'FOUNDER' || (Array.isArray(user.roles) && user.roles.includes('FOUNDER'));
+    
+    if (isSelf && isFounder && newRole !== 'FOUNDER') {
+      setError("You cannot revoke FOUNDER role from yourself.");
+      return;
+    }
+    
+    // Check if trying to revoke FOUNDER from any founder
+    if (isFounder && newRole !== 'FOUNDER') {
+      const confirmMsg = isSelf 
+        ? "You cannot revoke FOUNDER role from yourself."
+        : "Warning: You are about to revoke FOUNDER role. This action should be performed with caution. Continue?";
+      
+      if (!isSelf && !confirm(confirmMsg)) {
+        return;
+      }
+      if (isSelf) {
+        setError("You cannot revoke FOUNDER role from yourself.");
+        return;
+      }
+    }
+    
+    try {
+      setRoleLoading(true);
+      setError(null);
+      setSuccess(null);
+
+      const expiresAt = roleExpiresAt ? new Date(roleExpiresAt).toISOString() : null;
+      await adminUpdateUserRole(user.id, { 
+        role: newRole, 
+        action: 'assign',
+        expiresAt 
+      });
+      
+      setSuccess("Role assigned successfully");
+      setNewRole("");
+      setRoleExpiresAt("");
+      
+      // Refetch user to get updated roles
+      const fullDetail = await api.get(`/admin/users/${user.id}`);
+      if (fullDetail && fullDetail.user) {
+        setUser(fullDetail.user);
+        if (Array.isArray(fullDetail.user.roles) && fullDetail.user.roles.length > 0) {
+          const rolesArray = fullDetail.user.roles.map(r => 
+            typeof r === 'string' ? { role: r, expiresAt: null } : r
+          );
+          setUserRoles(rolesArray);
+        } else if (fullDetail.user.role) {
+          setUserRoles([{ role: fullDetail.user.role, expiresAt: null }]);
+        }
+        setRole(fullDetail.user.role || "");
+      }
+      
+      if (onUserUpdated) onUserUpdated();
+    } catch (err) {
+      console.error("Error assigning role:", err);
+      setError(err?.message || "Unable to assign role.");
+    } finally {
+      setRoleLoading(false);
+    }
+  };
+
+  // Handle role revocation
+  const handleRevokeRole = async (roleToRevoke) => {
+    if (!user || !roleToRevoke) return;
+    
+    // Prevent revoking FOUNDER from self
+    const isSelf = currentUser && user.id === currentUser.id;
+    if (isSelf && roleToRevoke === 'FOUNDER') {
+      setError("You cannot revoke FOUNDER role from yourself.");
+      return;
+    }
+    
+    // Check if trying to revoke FOUNDER from any founder
+    const isFounder = roleToRevoke === 'FOUNDER';
+    if (isFounder) {
+      const confirmMsg = isSelf 
+        ? "You cannot revoke FOUNDER role from yourself."
+        : "Warning: You are about to revoke FOUNDER role. This action should be performed with caution. Continue?";
+      
+      if (!isSelf && !confirm(confirmMsg)) {
+        return;
+      }
+      if (isSelf) {
+        setError("You cannot revoke FOUNDER role from yourself.");
+        return;
+      }
+    }
+    
+    try {
+      setRoleLoading(true);
+      setError(null);
+      setSuccess(null);
+
+      // Note: Backend may not have a dedicated revoke endpoint yet
+      // For now, we'll show an error message indicating this needs backend support
+      // In the future, this would call: await adminUpdateUserRole(user.id, { role: roleToRevoke, action: 'revoke' });
+      throw new Error('Role revocation endpoint not yet available. Please use role assignment to change roles.');
+      
+      // When backend supports it, uncomment:
+      // await adminUpdateUserRole(user.id, { role: roleToRevoke, action: 'revoke' });
+      // setSuccess("Role revoked successfully");
+      // ... refetch user ...
+    } catch (err) {
+      console.error("Error revoking role:", err);
+      setError(err?.message || "Unable to revoke role. Role revocation requires backend endpoint support.");
+    } finally {
+      setRoleLoading(false);
     }
   };
 
@@ -358,7 +507,7 @@ function AdminUserDetailPanel({ userId, onClose, onUserUpdated }) {
           <section className="admin-detail-section">
             <h3>Role & Status</h3>
             <div className="admin-detail-form-group">
-              <label>Role</label>
+              <label>Primary Role</label>
               <div className="admin-detail-form-row">
                 <select
                   value={role}
@@ -408,9 +557,101 @@ function AdminUserDetailPanel({ userId, onClose, onUserUpdated }) {
             </div>
           </section>
 
+          {/* Roles Management (Multi-Role Support) */}
+          <section className="admin-detail-section">
+            <h3>Roles Management</h3>
+            
+            {/* Current Roles */}
+            <div className="admin-detail-form-group">
+              <label>Current Roles</label>
+              {userRoles.length === 0 ? (
+                <p className="admin-detail-empty">No roles assigned</p>
+              ) : (
+                <div className="admin-detail-roles-list">
+                  {userRoles.map((roleItem, index) => {
+                    const roleName = typeof roleItem === 'string' ? roleItem : roleItem.role;
+                    const expiresAt = typeof roleItem === 'object' ? roleItem.expiresAt : null;
+                    const isSelf = currentUser && user.id === currentUser.id;
+                    const isFounder = roleName === 'FOUNDER';
+                    const canRevoke = !(isSelf && isFounder);
+                    
+                    return (
+                      <div key={index} className="admin-detail-role-chip">
+                        <span className="admin-detail-role-name">{roleName}</span>
+                        {expiresAt && (
+                          <span className="admin-detail-role-expiry">
+                            (expires: {formatDate(expiresAt)})
+                          </span>
+                        )}
+                        {!expiresAt && (
+                          <span className="admin-detail-role-expiry">(permanent)</span>
+                        )}
+                        <button
+                          onClick={() => handleRevokeRole(roleName)}
+                          disabled={!canRevoke || roleLoading}
+                          className="admin-detail-revoke-role-btn"
+                          title={!canRevoke ? "Cannot revoke FOUNDER role from yourself" : "Revoke role"}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            
+            {/* Assign New Role */}
+            <div className="admin-detail-form-group">
+              <label>Assign New Role</label>
+              <div className="admin-detail-form-row">
+                <select
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value)}
+                  disabled={roleLoading}
+                  className="admin-detail-select"
+                >
+                  <option value="">Select a role...</option>
+                  <option value="FOUNDER">Founder</option>
+                  <option value="CORE_TEAM">Core Team</option>
+                  <option value="ADMIN">Admin</option>
+                  <option value="MODERATOR">Moderator</option>
+                  <option value="CREATOR">Creator</option>
+                  <option value="STANDARD_USER">Standard User</option>
+                  <option value="SUSPENDED">Suspended</option>
+                  <option value="BANNED">Banned</option>
+                </select>
+                <input
+                  type="datetime-local"
+                  value={roleExpiresAt}
+                  onChange={(e) => setRoleExpiresAt(e.target.value)}
+                  disabled={roleLoading || !newRole}
+                  className="admin-detail-select"
+                  placeholder="Expiry (optional)"
+                  style={{ flex: '0 0 200px' }}
+                />
+                <button
+                  onClick={handleAssignRole}
+                  disabled={roleLoading || !newRole}
+                  className="admin-detail-save-btn"
+                >
+                  {roleLoading ? "Assigning..." : "Assign Role"}
+                </button>
+              </div>
+              <p className="admin-detail-note" style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Note: FOUNDER role cannot be revoked from yourself or other founders.
+              </p>
+            </div>
+          </section>
+
           {/* Feature Flags */}
           <section className="admin-detail-section">
-            <h3>Feature Flags</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ margin: 0 }}>Feature Flags</h3>
+            </div>
+            <p className="admin-detail-note" style={{ marginBottom: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+              Table flags override legacy flags. Changes are applied immediately.
+            </p>
             <div className="admin-detail-flags">
               {knownFeatureFlags.map((flag) => (
                 <div key={flag.key} className="admin-detail-flag-item">

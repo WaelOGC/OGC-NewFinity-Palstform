@@ -21,27 +21,92 @@
 }
 
 .ogc-dsb-link {
-  display: block;
-  padding: 8px 10px;
-  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 10px 14px;
+  border-radius: 8px;
   color: var(--text-primary);
   text-decoration: none;
-  opacity: 0.8;
+  opacity: 0.85;
   border: 1px solid transparent;
-  transition: all 0.18s ease-out;
+  border-left: 3px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  background: transparent;
+}
+
+/* Fix contrast - ensure readable text */
+[data-theme='dark'] .ogc-dsb-link {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme='light'] .ogc-dsb-link {
+  color: var(--text-primary);
+}
+
+.ogc-dsb-link-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.ogc-dsb-link-text {
+  flex: 1;
 }
 
 .ogc-dsb-link:hover {
   opacity: 1;
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 12px var(--accent-soft);
+  background: var(--plasma-panel-bg);
+  border-color: var(--plasma-panel-border);
+  box-shadow: 0 0 8px var(--plasma-glow-soft);
   transform: translateY(-1px);
 }
 
 .ogc-dsb-link-active {
   opacity: 1;
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 16px var(--accent-soft);
-  background: var(--accent-soft);
+  background: var(--plasma-panel-bg);
+  border-left-color: var(--plasma-teal);
+  border-color: var(--plasma-teal);
+  box-shadow: 0 0 12px var(--plasma-glow-medium),
+              0 2px 8px rgba(0, 255, 198, 0.15);
+  transform: translateY(-1px);
+  position: relative;
+}
+
+.ogc-dsb-link-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(
+    180deg,
+    var(--plasma-teal),
+    var(--plasma-violet)
+  );
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 8px var(--plasma-glow-medium);
+}
+
+.ogc-dsb-link-active .ogc-dsb-link-icon {
+  opacity: 1;
+  color: var(--plasma-teal);
+}
+
+[data-theme='dark'] .ogc-dsb-link-active {
+  color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ogc-dsb-link:hover,
+  .ogc-dsb-link-active {
+    transform: none;
+  }
 }
 

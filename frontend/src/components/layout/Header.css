@@ -79,26 +79,10 @@
   transform: translateY(-1px);
 }
 
-.logo-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1;
-}
-
-.logo-main {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--header-text);
-  letter-spacing: 0.05em;
-  text-shadow: 0 0 10px rgba(88, 100, 255, 0.3);
-}
-
-.logo-sub {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--header-brand-accent);
-  letter-spacing: 0.1em;
-  margin-top: 2px;
+/* Logo component styling - compact and aligned */
+.header-logo .ogc-logo {
+  height: 32px;
+  width: auto;
 }
 
 /* ============================================

@@ -22,13 +22,14 @@
 }
 
 .ogc-dashboard-logo {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--ogc-fg);
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
-.ogc-dashboard-logo span {
-  color: var(--accent-primary);
+.ogc-dashboard-logo .ogc-logo {
+  height: 32px;
+  width: auto;
 }
 
 .ogc-dashboard-topbar-right {

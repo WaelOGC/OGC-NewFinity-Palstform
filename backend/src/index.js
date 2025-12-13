@@ -52,6 +52,20 @@ app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(passport.initialize()); // Initialize Passport (we don't use passport.session())
 app.use(rateLimiter);
 
+// Auth route logging middleware (before routes)
+app.use('/api/v1/auth', (req, res, next) => {
+  const startTime = Date.now();
+  console.log(`[AUTH REQUEST] ${req.method} ${req.originalUrl}`);
+  
+  // Log response status when response finishes
+  res.on('finish', () => {
+    const duration = Date.now() - startTime;
+    console.log(`[AUTH RESPONSE] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${duration}ms)`);
+  });
+  
+  next();
+});
+
 // Routes
 app.use('/api/v1', routes);
 

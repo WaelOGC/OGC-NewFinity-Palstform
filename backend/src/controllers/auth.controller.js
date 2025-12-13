@@ -132,6 +132,7 @@ export async function register({ email, password, fullName, termsAccepted }, res
 
 export async function login({ email, password }, res, req = null) {
   try {
+    console.log('[AUTH LOGIN] Starting login attempt for:', email);
     let rows;
     try {
       [rows] = await pool.query(
@@ -249,8 +250,22 @@ export async function login({ email, password }, res, req = null) {
     // Use shared session creation helper (same logic for email/password and social login)
     const sessionResult = await createAuthSessionForUser(res, user, req);
     authLog(AUTH_EVENTS.LOGIN_SUCCESS, { userId: user.id, email });
+    console.log('[AUTH LOGIN] Login successful for:', email);
     return sessionResult;
   } catch (error) {
+    // Enhanced error logging
+    console.error('[AUTH LOGIN ERROR] Login failed for:', email);
+    console.error('[AUTH LOGIN ERROR] Error details:', {
+      message: error.message,
+      code: error.code,
+      statusCode: error.statusCode,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage,
+      stack: error.stack
+    });
+    console.error('[AUTH LOGIN ERROR] Full error object:');
+    console.error(error);
+    
     // Re-throw with status code if already set
     if (error.statusCode) {
       throw error;
@@ -263,12 +278,14 @@ export async function login({ email, password }, res, req = null) {
         const dbError = new Error('Database error occurred. Please try again later.');
         dbError.statusCode = 500;
         dbError.code = AUTH_ERROR.AUTH_SERVER_ERROR;
+        dbError.originalError = error; // Preserve original error
         throw dbError;
       }
       authLog(AUTH_EVENTS.LOGIN_FAILED, { email, error: error.message, code: error.code });
       const dbError = new Error(`Database error: ${error.message}`);
       dbError.statusCode = 500;
       dbError.code = AUTH_ERROR.AUTH_SERVER_ERROR;
+      dbError.originalError = error; // Preserve original error
       throw dbError;
     }
     throw error;
