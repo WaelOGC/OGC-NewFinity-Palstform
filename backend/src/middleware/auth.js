@@ -59,9 +59,17 @@ export async function requireAuth(req, res, next) {
     }
 
     // Attach user and session to request
+    // Load user roles if available from JWT or session
+    let userRole = decoded.role || 'STANDARD_USER';
+    let userRoles = decoded.roles || (decoded.role ? [decoded.role] : []);
+    
+    // Note: admin@ogc.local fallback is handled in requireAdmin middleware
+    // where we have access to full user data including email
+    
     req.user = { 
-      id: userId, 
-      role: decoded.role || 'STANDARD_USER' // Phase 5: Default to STANDARD_USER
+      id: userId,
+      role: userRole,
+      roles: userRoles,
     };
     req.session = { 
       id: session.id, 

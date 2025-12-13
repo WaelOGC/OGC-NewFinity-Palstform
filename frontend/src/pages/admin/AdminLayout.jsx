@@ -3,6 +3,7 @@ import { Outlet, useNavigate, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useTheme } from "../../context/ThemeContext.jsx";
 import { getAdminNavigation } from "../../utils/apiClient.js";
+import { hasAdminPermission, ADMIN_USERS_READ } from "../../utils/adminPermissions.js";
 import OGCLogo from "../../components/branding/OGCLogo.jsx";
 import "../../components/sidebar/dashboard-sidebar.css";
 import "../../components/admin/admin-layout.css";

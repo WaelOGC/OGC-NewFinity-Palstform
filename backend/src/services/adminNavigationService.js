@@ -10,6 +10,7 @@
 import { ADMIN_MODULES } from '../config/adminModuleRegistry.js';
 import { ADMIN_ROLES } from '../config/rolePermissions.js';
 import { hasAnyPermission } from './userService.js';
+import { hasPermission } from '../utils/permissions.js';
 
 /**
  * Check if user has admin access (role or permission)
@@ -51,14 +52,26 @@ function hasModulePermission(user, requiredPermissions) {
     return hasAdminAccess(user);
   }
 
-  // Check specific roles
+  // Check specific roles (legacy support)
   const userRole = (user?.role || '').toUpperCase();
-  const hasRequiredRole = requiredPermissions.some(perm => 
-    userRole.includes(perm.toUpperCase())
-  );
+  const userRoles = Array.isArray(user?.roles) ? user.roles.map(r => (r || '').toUpperCase()) : [];
+  const allUserRoles = [userRole, ...userRoles].filter(Boolean);
+  
+  const hasRequiredRole = requiredPermissions.some(perm => {
+    const permUpper = perm.toUpperCase();
+    return allUserRoles.some(role => role.includes(permUpper));
+  });
 
-  // Check specific permissions
-  const hasRequiredPermission = hasAnyPermission(user, requiredPermissions);
+  // Check specific permissions using new permission system
+  // Try each permission in the required list
+  const hasRequiredPermission = requiredPermissions.some(perm => {
+    // Use new hasPermission function for admin permissions
+    if (perm.startsWith('ADMIN_')) {
+      return hasPermission(user, perm);
+    }
+    // Fallback to old system for legacy permissions
+    return hasAnyPermission(user, [perm]);
+  });
 
   return hasRequiredRole || hasRequiredPermission;
 }

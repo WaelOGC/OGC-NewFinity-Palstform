@@ -8,7 +8,6 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import passport from 'passport';
-import { rateLimiter } from './middleware/rateLimit.js';
 import { errorHandler } from './middleware/error.js';
 import { requestId } from './middleware/requestId.js';
 import routes from './routes/index.js';
@@ -16,6 +15,7 @@ import { initEmailService } from './services/emailService.js';
 import { ensureDefaultAdmin } from './utils/ensureDefaultAdmin.js';
 import { ensurePhase5Migration } from './utils/ensurePhase5Migration.js';
 import { resolveUserSchema } from './utils/userSchemaResolver.js';
+import { checkPermissionRegistry } from './utils/permissionRegistryCheck.js';
 import pool from './db.js';
 
 // Import Passport providers configuration (registers all OAuth strategies)
@@ -53,7 +53,6 @@ app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(passport.initialize()); // Initialize Passport (we don't use passport.session())
-app.use(rateLimiter);
 
 // Auth route logging middleware (before routes)
 app.use('/api/v1/auth', (req, res, next) => {
@@ -189,6 +188,9 @@ const HOST = env.HOST;
       console.warn('[Backend] Failed to initialize user schema resolver:', err.message);
       console.warn('[Backend] Continuing with default schema (graceful degradation)');
     }
+    
+    // Run permission registry parity check (development only)
+    checkPermissionRegistry();
     
     app.listen(PORT, HOST, () => {
       const baseUrl = `http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`;

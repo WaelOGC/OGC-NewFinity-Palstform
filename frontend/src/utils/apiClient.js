@@ -100,6 +100,21 @@ const ALLOWED_ROUTES = {
   'POST /api/v1/admin/users/:userId/sessions/revoke-all': true,
   // Phase 7: Admin Audit Logs
   'GET /api/v1/admin/audit-logs': true,
+  // Admin Roles Management
+  'GET /api/v1/admin/roles': true,
+  // Phase D2: Admin Settings
+  'GET /api/v1/admin/settings': true,
+  'PUT /api/v1/admin/settings/:key': true,
+  // Phase E1: System Health
+  'GET /api/v1/admin/health': true,
+  // Phase E2: System Jobs
+  'GET /api/v1/admin/jobs': true,
+  'GET /api/v1/admin/jobs/:jobId': true,
+  'POST /api/v1/admin/jobs/:jobId/retry': true,
+  'POST /api/v1/admin/jobs/:jobId/cancel': true,
+  // Phase F1: Admin Sessions
+  'GET /api/v1/admin/sessions': true,
+  'POST /api/v1/admin/sessions/:sessionId/revoke': true,
   // Phase 9.2: Account Deletion
   'POST /api/v1/user/account/delete': true,
   // Phase 9.3: Data Export
@@ -254,6 +269,18 @@ export async function apiRequest(endpoint, options = {}) {
       // For security routes with sessionId, check if it matches the pattern
       if (url.includes('/security/sessions/') && !url.endsWith('/security/sessions') && !url.endsWith('/security/sessions/others')) {
         return allowedMethod === method && allowedRoute.includes('/security/sessions/');
+      }
+      // For admin settings routes with key parameter
+      if (url.includes('/admin/settings/') && !url.endsWith('/admin/settings')) {
+        return allowedMethod === method && allowedRoute.includes('/admin/settings/');
+      }
+      // For admin jobs routes with jobId parameter
+      if (url.includes('/admin/jobs/') && !url.endsWith('/admin/jobs')) {
+        return allowedMethod === method && allowedRoute.includes('/admin/jobs/');
+      }
+      // For admin sessions routes with sessionId parameter
+      if (url.includes('/admin/sessions/') && !url.endsWith('/admin/sessions')) {
+        return allowedMethod === method && allowedRoute.includes('/admin/sessions/');
       }
       return false;
     });
@@ -754,6 +781,290 @@ export async function adminRevokeAllUserSessions(userId) {
   });
   // data = { success: true }
   return data;
+}
+
+/**
+ * Get admin audit logs with pagination and filtering
+ * @param {Object} params - Query parameters
+ * @param {number} [params.page=1] - Page number
+ * @param {number} [params.limit=25] - Items per page (max 100)
+ * @param {string} [params.q] - Search query (optional)
+ * @param {number} [params.actorUserId] - Filter by actor user ID (optional)
+ * @param {string} [params.action] - Filter by action type (optional)
+ * @param {string} [params.status] - Filter by status (optional)
+ * @returns {Promise<Object>} Object with logs array and pagination metadata
+ */
+export async function getAdminAuditLogs(params = {}) {
+  const searchParams = new URLSearchParams();
+  
+  if (params.page) searchParams.set('page', params.page.toString());
+  if (params.limit) searchParams.set('limit', params.limit.toString());
+  if (params.q) searchParams.set('q', params.q);
+  if (params.actorUserId) searchParams.set('actorUserId', params.actorUserId.toString());
+  if (params.action) searchParams.set('action', params.action);
+  if (params.status) searchParams.set('status', params.status);
+  
+  const url = `/admin/audit-logs${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+  
+  const data = await apiRequest(url, {
+    method: 'GET',
+  });
+  
+  // Backend returns: { status: 'OK', code: 'ADMIN_AUDIT_LOGS_OK', data: { logs: [...], page, limit, total } }
+  // apiRequest unwraps to: { logs: [...], page, limit, total }
+  return data;
+}
+
+/**
+ * Get admin roles overview
+ */
+export async function getAdminRoles() {
+  const url = `/admin/roles`;
+  
+  const data = await apiRequest(url, {
+    method: 'GET',
+  });
+  
+  // Backend returns: { status: 'OK', code: 'ADMIN_ROLES_OK', data: { roles: [...] } }
+  // apiRequest unwraps to: { roles: [...] }
+  return data;
+}
+
+/**
+ * Admin Settings API Helpers (Phase D2)
+ */
+
+/**
+ * Get all platform settings
+ * @returns {Promise<Object>} Object with settings property: { settings: {...} }
+ */
+export async function getAdminSettings() {
+  const data = await apiRequest('/admin/settings', {
+    method: 'GET',
+  });
+  
+  // Backend returns: { status: 'OK', code: 'ADMIN_SETTINGS_OK', data: { settings: {...} } }
+  // apiRequest unwraps to: { settings: {...} }
+  return data;
+}
+
+/**
+ * Update a platform setting
+ * @param {string} key - Setting key (e.g., 'maintenance_mode')
+ * @param {any} value - New value (must match setting type)
+ * @param {string} [reason] - Optional reason for the change
+ * @returns {Promise<Object>} Updated setting object
+ */
+export async function updateAdminSetting(key, value, reason) {
+  const payload = { value };
+  if (reason) {
+    payload.reason = reason;
+  }
+  
+  const data = await apiRequest(`/admin/settings/${key}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  
+  // Backend returns: { status: 'OK', code: 'ADMIN_SETTING_UPDATED', data: { setting: {...} } }
+  // apiRequest unwraps to: { setting: {...} }
+  return data;
+}
+
+/**
+ * System Health API Helpers (Phase E1)
+ */
+
+/**
+ * Get system health status
+ * @returns {Promise<Object>} Health status object with status, timestamp, and services
+ */
+export async function getSystemHealth() {
+  try {
+    const data = await apiRequest('/admin/health', {
+      method: 'GET',
+    });
+    
+    // Backend returns: { status: 'OK', code: 'SYSTEM_HEALTH_OK', data: { status, timestamp, services } }
+    // apiRequest unwraps to: { status, timestamp, services }
+    return { ok: true, data };
+  } catch (error) {
+    // Return error-safe response
+    return {
+      ok: false,
+      error: error.message || 'Failed to fetch system health',
+      data: null,
+    };
+  }
+}
+
+/**
+ * Admin Sessions API Helpers (Phase F1)
+ */
+
+/**
+ * Get admin sessions list with filtering and pagination
+ * @param {Object} params - Query parameters
+ * @param {string} [params.status] - Filter by status (active, revoked, expired, all)
+ * @param {string} [params.q] - Search query (email/username)
+ * @param {number} [params.limit=25] - Maximum number of sessions to return
+ * @param {number} [params.offset=0] - Offset for pagination
+ * @returns {Promise<Object>} Object with { ok, data, error } where data contains { total, sessions }
+ */
+export async function getAdminSessions(params = {}) {
+  try {
+    const searchParams = new URLSearchParams();
+    if (params.status) searchParams.set('status', params.status);
+    if (params.q) searchParams.set('q', params.q);
+    if (params.limit != null) searchParams.set('limit', params.limit.toString());
+    if (params.offset != null) searchParams.set('offset', params.offset.toString());
+
+    const url = `/admin/sessions${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    const data = await apiRequest(url, { method: 'GET' });
+
+    // Backend returns: { status: 'OK', code: 'ADMIN_SESSIONS_LIST_OK', data: { total, sessions } }
+    // apiRequest unwraps to: { total, sessions }
+    return { ok: true, data };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error.message || 'Failed to fetch admin sessions',
+      data: null,
+    };
+  }
+}
+
+/**
+ * Revoke an admin session (force logout)
+ * @param {string|number} sessionId - Session ID to revoke
+ * @param {string} [reason] - Optional reason for revocation
+ * @param {boolean} [confirmSelf=false] - Confirm flag if revoking own session
+ * @returns {Promise<Object>} Object with { ok, data, error } where data contains { revoked }
+ */
+export async function revokeAdminSession(sessionId, reason, confirmSelf = false) {
+  try {
+    const payload = {};
+    if (reason) payload.reason = reason;
+    if (confirmSelf) payload.confirmSelf = true;
+
+    const data = await apiRequest(`/admin/sessions/${sessionId}/revoke`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    // Backend returns: { status: 'OK', code: 'ADMIN_SESSION_REVOKED', data: { revoked } }
+    // apiRequest unwraps to: { revoked }
+    return { ok: true, data };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error.message || 'Failed to revoke session',
+      data: null,
+    };
+  }
+}
+
+/**
+ * System Jobs API Helpers (Phase E2)
+ */
+
+/**
+ * Get system jobs list with filtering and pagination
+ * @param {Object} params - Query parameters
+ * @param {string} [params.status] - Filter by status (queued, running, completed, failed, canceled)
+ * @param {string} [params.q] - Search query (optional)
+ * @param {number} [params.limit=25] - Maximum number of jobs to return
+ * @param {number} [params.offset=0] - Offset for pagination
+ * @returns {Promise<Object>} Object with { ok, data, error } where data contains { configured, jobs, total }
+ */
+export async function getSystemJobs(params = {}) {
+  try {
+    const searchParams = new URLSearchParams();
+    if (params.status) searchParams.set('status', params.status);
+    if (params.q) searchParams.set('q', params.q);
+    if (params.limit != null) searchParams.set('limit', params.limit.toString());
+    if (params.offset != null) searchParams.set('offset', params.offset.toString());
+
+    const url = `/admin/jobs${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    const data = await apiRequest(url, { method: 'GET' });
+
+    // Backend returns: { status: 'OK', code: 'SYSTEM_JOBS_LIST_OK', data: { configured, total, jobs } }
+    // apiRequest unwraps to: { configured, total, jobs }
+    return { ok: true, data };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error.message || 'Failed to fetch system jobs',
+      data: null,
+    };
+  }
+}
+
+/**
+ * Get system job details by ID
+ * @param {string} jobId - Job ID
+ * @returns {Promise<Object>} Object with { ok, data, error } where data contains { configured, job }
+ */
+export async function getSystemJob(jobId) {
+  try {
+    const data = await apiRequest(`/admin/jobs/${jobId}`, { method: 'GET' });
+
+    // Backend returns: { status: 'OK', code: 'SYSTEM_JOB_OK', data: { configured, job } }
+    // apiRequest unwraps to: { configured, job }
+    return { ok: true, data };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error.message || 'Failed to fetch job details',
+      data: null,
+    };
+  }
+}
+
+/**
+ * Retry a failed job
+ * @param {string} jobId - Job ID to retry
+ * @returns {Promise<Object>} Object with { ok, data, error } where data contains { configured, result }
+ */
+export async function retrySystemJob(jobId) {
+  try {
+    const data = await apiRequest(`/admin/jobs/${jobId}/retry`, {
+      method: 'POST',
+    });
+
+    // Backend returns: { status: 'OK', code: 'SYSTEM_JOB_RETRY_OK', data: { configured, result } }
+    // apiRequest unwraps to: { configured, result }
+    return { ok: true, data };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error.message || 'Failed to retry job',
+      data: null,
+    };
+  }
+}
+
+/**
+ * Cancel a queued or running job
+ * @param {string} jobId - Job ID to cancel
+ * @returns {Promise<Object>} Object with { ok, data, error } where data contains { configured, result }
+ */
+export async function cancelSystemJob(jobId) {
+  try {
+    const data = await apiRequest(`/admin/jobs/${jobId}/cancel`, {
+      method: 'POST',
+    });
+
+    // Backend returns: { status: 'OK', code: 'SYSTEM_JOB_CANCEL_OK', data: { configured, result } }
+    // apiRequest unwraps to: { configured, result }
+    return { ok: true, data };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error.message || 'Failed to cancel job',
+      data: null,
+    };
+  }
 }
 
 /**

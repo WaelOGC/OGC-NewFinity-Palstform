@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext.jsx";
+import { hasAdminPermission, ADMIN_USERS_READ } from "../../utils/adminPermissions.js";
 import AdminNotAuthorized from "./AdminNotAuthorized.jsx";
 
 /**
@@ -23,11 +25,15 @@ function normalizeAdminUser(u) {
 function AdminUserDetailPage() {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [user, setUser] = useState(null);
   const [degradedMode, setDegradedMode] = useState(false);
+  
+  // Check if user has permission to view user details
+  const canViewUserDetails = hasAdminPermission(currentUser, ADMIN_USERS_READ);
 
   const fetchUserDetail = async () => {
     if (!userId) {

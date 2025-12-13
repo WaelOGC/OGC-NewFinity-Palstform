@@ -132,6 +132,7 @@ The auth system requires SQL schema files to be run. Recommended order:
 1. **Base User Table** (`user-schema.sql`) - Creates the initial User table
 2. **Activation & Terms** (`user-activation-schema.sql`) - Adds activation and terms acceptance columns
 3. **Admin Users Enhancements** (`admin-users-last-login-and-roles.sql`) - Adds lastLoginAt, ensures status/role columns exist (optional, safe to run anytime)
+4. **Admin Audit Logs** (`admin-audit-logs-schema.sql`) - Creates AdminAuditLog table for audit trail (optional, safe to run anytime)
 
 ### Step 1: Create Base User Table
 
@@ -168,15 +169,347 @@ mysql -u <USER> -p -h <HOST> <DATABASE> < backend/sql/user-activation-schema.sql
 mysql -u root -p -h localhost ogc_newfinity < backend/sql/user-activation-schema.sql
 ```
 
+### Step 4: Create Admin Audit Logs Table (Optional)
+
+Run the admin audit logs schema to enable audit trail logging:
+
+```bash
+mysql -u <USER> -p -h <HOST> <DATABASE> < backend/sql/admin-audit-logs-schema.sql
+```
+
+**Example:**
+```bash
+mysql -u root -p -h localhost ogc_newfinity < backend/sql/admin-audit-logs-schema.sql
+```
+
 This migration:
-- Adds `status` column (VARCHAR(50), NOT NULL, default 'pending_verification')
-- Adds `termsAccepted` column (TINYINT(1), NOT NULL, default 0)
-- Adds `termsAcceptedAt` column (TIMESTAMP, nullable)
-- Adds `termsVersion` column (VARCHAR(20), nullable)
-- Adds `termsSource` column (VARCHAR(50), nullable)
-- Creates `idx_user_status` index on `status`
-- Creates `ActivationToken` table for email verification
-- Updates existing users to 'active' status (if any)
+- Creates the `AdminAuditLog` table for audit trail logging
+- Includes basic indexes for performance
+- Safe to run multiple times
+
+### Step 5: Add Admin Audit Logs Indexes (Optional, Recommended)
+
+For optimal query performance on audit logs, run the index migration:
+
+```bash
+mysql -u <USER> -p -h <HOST> <DATABASE> < backend/sql/admin-audit-logs-indexes.sql
+```
+
+**Example:**
+```bash
+mysql -u root -p -h localhost ogc_newfinity < backend/sql/admin-audit-logs-indexes.sql
+```
+
+This migration:
+- Ensures indexes exist for efficient audit log queries (pagination, filtering by actor, action, status)
+- Safe to run multiple times - checks for existing indexes before creating
+- Exits gracefully if AdminAuditLog table doesn't exist
+
+**Verification:**
+```sql
+-- Check indexes on AdminAuditLog table
+SHOW INDEX FROM AdminAuditLog;
+```
+
+### Step 6: Create Audit Logs Table (A1.3 - Admin User Status Changes)
+
+Run the audit logs schema to enable A1.3 audit logging for admin user status changes:
+
+```bash
+mysql -u <USER> -p -h <HOST> <DATABASE> < backend/sql/audit-logs-schema.sql
+```
+
+**Example:**
+```bash
+mysql -u root -p -h localhost ogc_newfinity < backend/sql/audit-logs-schema.sql
+```
+
+This migration:
+- Creates the `audit_logs` table for A1.3 audit logging
+- Includes indexes for efficient queries: (event, created_at), (actor_user_id, created_at), (target_user_id, created_at)
+- Safe to run multiple times - checks for existing table before creating
+
+**Table Structure:**
+- `id` - BIGINT AUTO_INCREMENT PRIMARY KEY
+- `event` - VARCHAR(100) NOT NULL (e.g., 'ADMIN_USER_STATUS_CHANGE')
+- `actor_user_id` - BIGINT NULL (admin performing action)
+- `target_user_id` - BIGINT NULL (user whose status is being changed)
+- `meta_json` - JSON NULL (stores fromStatus, toStatus, reason)
+- `ip` - VARCHAR(64) NULL (IP address of request)
+- `user_agent` - VARCHAR(255) NULL (user agent string)
+- `created_at` - DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+
+**Verification:**
+```sql
+-- Check audit_logs table structure
+DESCRIBE audit_logs;
+
+-- Check indexes
+SHOW INDEX FROM audit_logs;
+```
+
+**A1.3 Audit Logging Features:**
+- ✅ Event: `ADMIN_USER_STATUS_CHANGE` (defined in `backend/src/constants/auditEvents.js`)
+  - Logs admin user account status changes (ACTIVE, SUSPENDED, BANNED)
+  - Captures: `fromStatus`, `toStatus`, `reason` in `meta_json`
+  - Best-effort logging: never throws, non-blocking
+  - Wired into endpoints: `PUT /api/v1/admin/users/:userId/status` and `PATCH /api/v1/admin/users/:userId/toggle-status`
+
+**A2.3 Audit Logging Features:**
+- ✅ Event: `ADMIN_USER_ROLES_CHANGE` (defined in `backend/src/constants/auditEvents.js`)
+  - Logs admin user role assignment changes (founder, admin, support, viewer)
+  - Captures: `rolesBefore`, `rolesAfter`, `reason` in `meta_json`
+  - Role values are normalized to lowercase before logging (explicit values logged even if same role)
+  - Best-effort logging: never throws, non-blocking
+  - Wired into endpoint: `PATCH /api/v1/admin/users/:userId/role`
+
+**A3 Bulk User Status Actions:**
+- ✅ Endpoint: `POST /api/v1/admin/users/bulk-status`
+- ✅ Request body: `{ "action": "suspend", "userIds": [12, 18, 44], "reason": "Spam abuse" }`
+- ✅ Supported actions: `activate` → ACTIVE, `suspend` → SUSPENDED
+- ✅ Batch size limit: Maximum 50 users per request
+- ✅ Rate limiting: 5 requests per minute per admin (strict)
+- ✅ Safety rules:
+  - Rejects self-inclusion (actor.id must not appear in userIds)
+  - Uses `assertCanModifyUser()` guard for each target user
+  - Skips users that fail guard validation
+  - Continues processing remaining users even if some updates fail
+- ✅ Audit logging: One `ADMIN_USER_STATUS_CHANGE` event per successfully updated user
+- ✅ Response structure: Returns summary (requested/updated/skipped) and per-user results
+- ✅ Defensive behavior: Invalid user IDs are skipped, not fatal; batch continues on individual failures
+
+**Note:** Audit logging is defensive and non-blocking. If the `audit_logs` table doesn't exist or insert fails, the error is logged to console with `[AuditLog]` prefix, but the main request flow continues normally.
+
+**C2 Audit Logs CSV Export:**
+- ✅ Endpoint: `GET /api/v1/admin/audit-logs/export.csv`
+- ✅ Permission: `PERMISSIONS.ADMIN_AUDIT_READ` (required)
+- ✅ Rate limiting: 3 exports per minute per admin user (strict)
+- ✅ Filters (all optional):
+  - `q`: Search query (searches `event` and `meta_json` as text)
+  - `event`: Exact event name filter
+  - `actorUserId`: Filter by actor user ID (integer, must be > 0)
+  - `targetUserId`: Filter by target user ID (integer, must be > 0)
+  - `dateFrom`: ISO date string (inclusive start date)
+  - `dateTo`: ISO date string (inclusive end date)
+  - `limit`: Maximum rows to export (default: 5000, hard max: 20000)
+- ✅ CSV columns (exact order): `id`, `created_at`, `event`, `actor_user_id`, `target_user_id`, `ip`, `user_agent`, `meta_json`
+- ✅ CSV safety: Proper escaping for commas, quotes, and newlines; CRLF replaced with spaces
+- ✅ Defensive: Returns CSV with headers only if no rows found; validates all inputs; never crashes on empty table
+- ✅ Example request: `/api/v1/admin/audit-logs/export.csv?event=ADMIN_USER_STATUS_CHANGE&dateFrom=2025-12-01&dateTo=2025-12-31`
+- ✅ Response: `Content-Type: text/csv` with `Content-Disposition: attachment; filename="audit-logs-YYYY-MM-DD.csv"`
+
+**C1 Audit Log Retention Policy:**
+- ✅ Default retention period: 180 days (6 months)
+- ✅ Configuration: `backend/src/config/auditRetention.js` (single source of truth)
+- ✅ Cleanup service: `backend/src/services/auditLogRetentionService.js`
+  - Function: `cleanupExpiredAuditLogs()`
+  - Behavior: Deletes audit logs older than retention period
+  - Safety: Never throws, uses parameterized SQL, only affects `audit_logs` table
+  - Returns: `{ ok: boolean, deletedCount?: number, error?: string }`
+- ✅ Manual cleanup script: `backend/src/scripts/cleanupAuditLogs.js`
+  - Usage: `node backend/src/scripts/cleanupAuditLogs.js`
+  - Logs: Start, retention days, deleted count, completion
+  - Exit codes: 0 on success, 1 on failure
+- ✅ How to change retention period:
+  1. Edit `backend/src/config/auditRetention.js`
+  2. Update `AUDIT_LOG_RETENTION_DAYS` constant
+  3. Save and redeploy (no restart required for manual script execution)
+- ✅ Recommended scheduling:
+  - **System Cron (Linux/Mac):** `0 2 * * * cd /path/to/project && node backend/src/scripts/cleanupAuditLogs.js`
+  - **PM2 Cron:** Add to ecosystem.config.js with `cron_restart: "0 2 * * *"`
+  - **Windows Task Scheduler:** Daily task at 2:00 AM running the cleanup script
+  - Note: Script does NOT auto-schedule - must configure scheduling manually
+- ✅ Safety rules:
+  - Cleanup must NOT run during request handling (script runs independently)
+  - No table locking
+  - No cascading deletes
+  - Only affects `audit_logs` table
+  - Uses parameterized SQL (injection-safe)
+  - Logs failures without crashing
+
+**D1 Global Settings Store:**
+- ✅ Database table: `platform_settings` (schema in `backend/sql/platform-settings-schema.sql`)
+  - Columns: `id`, `key_name` (UNIQUE), `value_type`, `value_json`, `updated_by_user_id`, `updated_at`, `created_at`
+  - Apply: `mysql -u <USER> -p -h <HOST> <DATABASE> < backend/sql/platform-settings-schema.sql`
+- ✅ Settings registry: `backend/src/constants/platformSettings.js`
+  - Defines allowed keys and their types: `maintenance_mode` (boolean), `maintenance_message` (string), `feature_signup_enabled` (boolean), `rate_limit_multiplier` (number), `security_force_2fa_admins` (boolean)
+  - Only keys in registry can be read/written via API
+- ✅ Service: `backend/src/services/platformSettingsService.js`
+  - `getAllPlatformSettings()` - Returns all settings with DB values merged over defaults
+  - `getPlatformSetting(key)` - Returns single setting value (default if missing)
+  - `setPlatformSetting({ key, value, actorUserId })` - Updates setting with validation
+- ✅ Endpoints:
+  - `GET /api/v1/admin/settings` - Get all settings (requires `ADMIN_SETTINGS_READ`)
+  - `PUT /api/v1/admin/settings/:key` - Update setting (requires `ADMIN_SETTINGS_WRITE`, rate limited: 20/min)
+  - Request body: `{ "value": true, "reason": "Emergency maintenance" }` (reason optional)
+- ✅ Permissions:
+  - `ADMIN_SETTINGS_READ` - Read access to platform settings
+  - `ADMIN_SETTINGS_WRITE` - Write access to platform settings
+- ✅ Audit logging:
+  - Event: `ADMIN_SETTINGS_CHANGE` (defined in `backend/src/constants/auditEvents.js`)
+  - Logger: `logAdminSettingsChange()` in `backend/src/utils/auditLogger.js`
+  - Stores in `meta_json`: `key`, `valueBefore`, `valueAfter`, `reason`
+  - Best-effort, non-blocking (never throws)
+- ✅ Validation rules:
+  - Boolean: must be boolean type
+  - Number: must be finite number
+  - String: must be string (trimmed, max 2000 chars)
+  - JSON: must be object or array
+- ✅ Defensive behavior:
+  - Unknown keys rejected with clear error
+  - Type validation with descriptive errors
+  - Defaults returned even if DB empty
+  - Never throws - all errors returned in result objects
+- ✅ Example calls:
+  ```bash
+  # Get all settings
+  GET /api/v1/admin/settings
+  
+  # Enable maintenance mode
+  PUT /api/v1/admin/settings/maintenance_mode
+  { "value": true, "reason": "Emergency maintenance" }
+  
+  # Update maintenance message
+  PUT /api/v1/admin/settings/maintenance_message
+  { "value": "System maintenance in progress. Expected downtime: 2 hours." }
+  ```
+
+### Admin User Write Permissions
+
+The `ADMIN_USERS_WRITE` permission exists for user status modification operations. Only founder and admin roles have this permission. The `assertCanModifyUser()` guard helper blocks self-modification attempts (users cannot modify their own account through admin actions).
+
+### Permission Registry (Authoritative)
+
+**Phase B1 Implementation:** The backend is now the single source of truth for all permissions.
+
+**Authoritative Registry:**
+- **File:** `backend/src/constants/permissions.js`
+- **Export:** `PERMISSIONS` (frozen object)
+- **Rules:**
+  - All permissions must be defined in this registry
+  - No permission strings may be defined elsewhere
+  - Registry is frozen (immutable)
+  - Backend is authoritative; frontend can only consume
+
+**Defined Permissions:**
+- `ADMIN_USERS_READ` - Read access to user management
+- `ADMIN_USERS_WRITE` - Write access to user management
+- `ADMIN_ROLES_READ` - Read access to roles management
+- `ADMIN_ROLES_WRITE` - Write access to roles management
+- `ADMIN_AUDIT_READ` - Read access to audit logs
+- `ADMIN_SETTINGS_READ` - Read access to platform settings
+- `ADMIN_SETTINGS_WRITE` - Write access to platform settings
+- `SYSTEM_HEALTH_READ` - Read access to system health
+
+**Role → Permission Mapping:**
+- **File:** `backend/src/constants/rolePermissions.js`
+- **Export:** `ROLE_PERMISSIONS` (frozen object)
+- **Rules:**
+  - `null` means unrestricted (founder only)
+  - All other roles must be explicit arrays
+  - No inheritance magic
+  - Unknown roles = no permissions
+
+**Role Permissions:**
+- `founder`: `null` (all permissions)
+- `admin`: `[ADMIN_USERS_READ, ADMIN_USERS_WRITE, ADMIN_ROLES_READ, ADMIN_AUDIT_READ]`
+- `support`: `[ADMIN_USERS_READ]`
+- `viewer`: `[ADMIN_USERS_READ]`
+
+**Permission Resolver:**
+- **File:** `backend/src/utils/permissions.js`
+- **Function:** `hasPermission(user, permission)`
+- **Behavior:**
+  - Supports both `user.role` (string) and `user.roles` (array)
+  - Founder (null) bypasses all checks
+  - Unknown roles = no permissions
+  - No throws — returns booleans only
+  - Backward-compatible reads
+
+**Runtime Warning (Development Only):**
+- On backend startup, a parity check runs automatically
+- Collects all permissions referenced in code
+- Compares against `PERMISSIONS` registry
+- Logs warnings for unknown permissions (does not crash)
+- Prevents silent drift where permissions are used but not registered
+
+**Example Warning:**
+```
+[PermissionRegistry] ⚠️  Unknown permissions referenced in code:
+[PermissionRegistry]   - ADMIN_UNKNOWN_PERMISSION
+[PermissionRegistry] Add these to backend/src/constants/permissions.js
+```
+
+**Backward Compatibility:**
+- `backend/src/constants/adminPermissions.js` is deprecated but maintained
+- Re-exports from authoritative registry for legacy code
+- New code should import from `constants/permissions.js`
+
+### Role Editing (Founder-Only) - Phase B2
+
+**Phase B2 Implementation:** Founder-only role permission editing with hard safety rules.
+
+**Endpoint:**
+- **PUT** `/api/v1/admin/roles/:roleName`
+- **Access:** Founder role only
+- **Request Body:**
+  ```json
+  {
+    "permissions": ["ADMIN_USERS_READ", "ADMIN_USERS_WRITE", "ADMIN_AUDIT_READ"],
+    "reason": "Expanded admin scope"
+  }
+  ```
+
+**Founder-Only Guard:**
+- **File:** `backend/src/utils/founderGuard.js`
+- **Function:** `assertFounder(actor)`
+- **Behavior:**
+  - Returns `{ ok: boolean, code?, reason? }` (never throws)
+  - Checks `actor.role === 'founder'`
+  - Used by all role-editing endpoints
+
+**Critical Permissions (Non-Removable):**
+- **File:** `backend/src/constants/criticalPermissions.js`
+- **Export:** `CRITICAL_PERMISSIONS` (frozen array)
+- **Permissions:**
+  - `ADMIN_USERS_READ`
+  - `ADMIN_USERS_WRITE`
+  - `ADMIN_ROLES_READ`
+- **Rule:** Every critical permission must exist in at least one role
+- **Protection:** Prevents system lockout by ensuring core permissions remain accessible
+
+**Safety Rules (Hard Requirements):**
+1. **Founder role cannot be edited** - `founder` role is immutable
+2. **Critical permission coverage** - All critical permissions must exist in at least one role
+3. **Valid permissions only** - All permissions must be from `PERMISSIONS` registry
+4. **No duplicates** - Permission arrays must be unique
+5. **Input normalization** - Permissions are trimmed and deduplicated
+
+**Error Codes:**
+- `FOUNDER_ONLY` - Non-founder attempted to edit roles
+- `ROLE_NOT_FOUND` - Role does not exist
+- `INVALID_PERMISSION` - Invalid or duplicate permissions
+- `CRITICAL_PERMISSION_REMOVAL_BLOCKED` - Would remove last instance of critical permission
+
+**Persistence Model:**
+- **Current:** In-memory updates (lost on server restart)
+- **Source:** `backend/src/constants/rolePermissions.js` (frozen config)
+- **Service:** `backend/src/services/rolePermissionsService.js`
+- **Note:** Updates are applied to mutable in-memory copy
+- **Future:** Persistence to database or config file should be added
+- **Assumption:** No `role_definition` table exists; using config-based approach
+
+**Audit Logging Hook:**
+- **Status:** Placeholder for Phase C
+- **TODO:** `ADMIN_ROLE_DEFINITION_CHANGE` audit event
+- **Location:** After successful role update in `updateAdminRole` controller
+
+**Defensive Requirements:**
+- ✅ No throws - all guards return result objects
+- ✅ No partial updates - all-or-nothing validation
+- ✅ Backend remains authoritative
+- ✅ Founder role immutable
+- ✅ Critical permissions protected
 
 ### Important Notes
 

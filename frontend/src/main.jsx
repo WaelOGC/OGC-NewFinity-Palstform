@@ -32,6 +32,11 @@ import AdminHome from './pages/admin/AdminHome.jsx';
 import AdminUsersPage from './pages/admin/AdminUsersPage.jsx';
 import AdminUserDetailPage from './pages/admin/AdminUserDetailPage.jsx';
 import AdminAuditLogsPage from './pages/admin/AdminAuditLogsPage.jsx';
+import AdminRolesPage from './pages/admin/AdminRolesPage.jsx';
+import AdminSettingsPage from './pages/admin/AdminSettingsPage.jsx';
+import AdminSystemHealthPage from './pages/admin/AdminSystemHealthPage.jsx';
+import AdminSystemJobsPage from './pages/admin/AdminSystemJobsPage.jsx';
+import AdminSessionsPage from './pages/admin/AdminSessionsPage.jsx';
 import InternalRouteGuard from './components/InternalRouteGuard.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AdminRouteGuard from './components/AdminRouteGuard.jsx';
@@ -134,6 +139,11 @@ const router = createBrowserRouter([
           { path: 'users', element: <AdminUsersPage /> },
           { path: 'users/:userId', element: <AdminUserDetailPage /> },
           { path: 'audit-logs', element: <AdminAuditLogsPage /> },
+          { path: 'roles', element: <AdminRolesPage /> },
+          { path: 'settings', element: <AdminSettingsPage /> },
+          { path: 'health', element: <AdminSystemHealthPage /> },
+          { path: 'jobs', element: <AdminSystemJobsPage /> },
+          { path: 'sessions', element: <AdminSessionsPage /> },
         ],
       },
     ],

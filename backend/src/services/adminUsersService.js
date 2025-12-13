@@ -8,6 +8,58 @@
 
 import pool from '../db.js';
 import { getUserSchema } from '../utils/userSchemaResolver.js';
+import { USER_STATUS, isValidUserStatus } from '../constants/userStatus.js';
+
+/**
+ * Normalize user status from database with schema-drift tolerance
+ * 
+ * Rules:
+ * - Prefer `status` column value
+ * - Fallback to `accountStatus` column value
+ * - If neither exists or both are null, default to ACTIVE
+ * - Invalid stored values → treated as ACTIVE (defensive behavior)
+ * 
+ * @param {string|null|undefined} statusValue - Value from `status` column
+ * @param {string|null|undefined} accountStatusValue - Value from `accountStatus` column
+ * @returns {string} Normalized status: ACTIVE, SUSPENDED, or BANNED
+ */
+function normalizeUserStatus(statusValue, accountStatusValue) {
+  // Prefer status column, fallback to accountStatus
+  const rawValue = statusValue || accountStatusValue;
+  
+  // If no value exists, default to ACTIVE
+  if (!rawValue || typeof rawValue !== 'string') {
+    return USER_STATUS.ACTIVE;
+  }
+  
+  const trimmed = rawValue.trim();
+  if (!trimmed) {
+    return USER_STATUS.ACTIVE;
+  }
+  
+  const upper = trimmed.toUpperCase();
+  
+  // Check if it's a valid canonical status
+  if (isValidUserStatus(upper)) {
+    return upper;
+  }
+  
+  // Map legacy/common values to canonical statuses
+  // Invalid stored values → treated as ACTIVE (defensive behavior)
+  const legacyMap = {
+    'PENDING': USER_STATUS.ACTIVE, // Treat pending as active for admin purposes
+    'PENDING_VERIFICATION': USER_STATUS.ACTIVE,
+    'DISABLED': USER_STATUS.SUSPENDED, // Map disabled to suspended
+    'DELETED': USER_STATUS.BANNED, // Map deleted to banned
+  };
+  
+  if (legacyMap[upper]) {
+    return legacyMap[upper];
+  }
+  
+  // Unknown/invalid value → default to ACTIVE (defensive)
+  return USER_STATUS.ACTIVE;
+}
 
 /**
  * Get admin users list with pagination and search
@@ -119,11 +171,20 @@ export async function getAdminUsers({ page = 1, limit = 25, q = '' } = {}) {
         'COALESCE(authProvider, provider, NULL) as provider',
       ];
       
-      // Add status column if available
+      // Add status columns if available (prefer status, fallback to accountStatus)
+      // We'll read both and normalize in code for schema-drift tolerance
       if (schema?.columns?.status) {
-        selectParts.push(`\`${schema.columns.status}\` as accountStatus`);
+        selectParts.push(`\`${schema.columns.status}\` as statusRaw`);
       } else {
-        selectParts.push('NULL as accountStatus');
+        selectParts.push('NULL as statusRaw');
+      }
+      // Also try accountStatus as fallback
+      if (schema?.columns?.status === 'accountStatus' || schema?.columns?.status === 'account_status') {
+        // If status column IS accountStatus, don't duplicate
+        selectParts.push('NULL as accountStatusRaw');
+      } else {
+        // Try to read accountStatus separately if status column exists but is different
+        selectParts.push('COALESCE(accountStatus, account_status, NULL) as accountStatusRaw');
       }
       
       // Add role column if available
@@ -133,11 +194,11 @@ export async function getAdminUsers({ page = 1, limit = 25, q = '' } = {}) {
         selectParts.push('NULL as role');
       }
       
-      // Add lastLogin column if available
+      // Add lastLogin column if available, otherwise fallback to updatedAt
       if (schema?.columns?.lastLogin) {
         selectParts.push(`\`${schema.columns.lastLogin}\` as lastLoginAt`);
       } else {
-        selectParts.push('NULL as lastLoginAt');
+        selectParts.push('COALESCE(updatedAt, NULL) as lastLoginAt');
       }
       
       selectParts.push('createdAt');
@@ -189,7 +250,7 @@ export async function getAdminUsers({ page = 1, limit = 25, q = '' } = {}) {
         displayName: null,
         avatarUrl: null,
         provider: null,
-        accountStatus: null,
+        accountStatus: USER_STATUS.ACTIVE, // Default to ACTIVE if no status available
         roles: [],
         lastLoginAt: null,
         createdAt: row.createdAt || null,
@@ -201,10 +262,12 @@ export async function getAdminUsers({ page = 1, limit = 25, q = '' } = {}) {
         user.displayName = row.displayName || null;
         user.avatarUrl = row.avatarUrl || null;
         user.provider = row.provider || null;
-        user.accountStatus = row.accountStatus || null;
+        // Normalize status: prefer statusRaw, fallback to accountStatusRaw, default to ACTIVE
+        user.accountStatus = normalizeUserStatus(row.statusRaw, row.accountStatusRaw);
         user.lastLoginAt = row.lastLoginAt || null;
         
         // Populate roles array from role field (convert single role to array)
+        // Always return array (never null)
         if (row.role) {
           user.roles = Array.isArray(row.role) ? row.role : [row.role];
         } else {
@@ -277,11 +340,20 @@ export async function getAdminUserDetail(userId) {
         'COALESCE(authProvider, provider, NULL) as provider',
       ];
       
-      // Add status column if available
+      // Add status columns if available (prefer status, fallback to accountStatus)
+      // We'll read both and normalize in code for schema-drift tolerance
       if (schema?.columns?.status) {
-        selectParts.push(`\`${schema.columns.status}\` as accountStatus`);
+        selectParts.push(`\`${schema.columns.status}\` as statusRaw`);
       } else {
-        selectParts.push('NULL as accountStatus');
+        selectParts.push('NULL as statusRaw');
+      }
+      // Also try accountStatus as fallback
+      if (schema?.columns?.status === 'accountStatus' || schema?.columns?.status === 'account_status') {
+        // If status column IS accountStatus, don't duplicate
+        selectParts.push('NULL as accountStatusRaw');
+      } else {
+        // Try to read accountStatus separately if status column exists but is different
+        selectParts.push('COALESCE(accountStatus, account_status, NULL) as accountStatusRaw');
       }
       
       // Add role column if available
@@ -291,11 +363,11 @@ export async function getAdminUserDetail(userId) {
         selectParts.push('NULL as role');
       }
       
-      // Add lastLogin column if available
+      // Add lastLogin column if available, otherwise fallback to updatedAt
       if (schema?.columns?.lastLogin) {
         selectParts.push(`\`${schema.columns.lastLogin}\` as lastLoginAt`);
       } else {
-        selectParts.push('NULL as lastLoginAt');
+        selectParts.push('COALESCE(updatedAt, NULL) as lastLoginAt');
       }
       
       selectParts.push('createdAt');
@@ -316,9 +388,10 @@ export async function getAdminUserDetail(userId) {
           displayName: row.displayName || null,
           avatarUrl: row.avatarUrl || null,
           provider: row.provider || null,
-          accountStatus: row.accountStatus || null,
+          // Normalize status: prefer statusRaw, fallback to accountStatusRaw, default to ACTIVE
+          accountStatus: normalizeUserStatus(row.statusRaw, row.accountStatusRaw),
           lastLoginAt: row.lastLoginAt || null,
-          roles: row.role ? (Array.isArray(row.role) ? row.role : [row.role]) : [],
+          roles: row.role ? (Array.isArray(row.role) ? row.role : [row.role]) : [], // Always array, never null
           createdAt: row.createdAt || null,
         };
       }
@@ -343,7 +416,7 @@ export async function getAdminUserDetail(userId) {
               displayName: null,
               avatarUrl: null,
               provider: null,
-              accountStatus: null,
+              accountStatus: USER_STATUS.ACTIVE, // Default to ACTIVE if no status available
               lastLoginAt: null,
               roles: [],
               createdAt: row.createdAt || null,

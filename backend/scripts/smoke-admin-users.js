@@ -85,10 +85,10 @@ async function showSchemaInfo() {
       
       if (schema) {
         const cols = schema.columns;
-        const lastLogin = cols.lastLogin || 'not found';
+        const lastLogin = cols.lastLogin || 'not found (will use updatedAt fallback)';
         const status = cols.status || 'not found';
         const role = cols.role || 'not found';
-        log(`schema: table=${schema.table} lastLogin=${lastLogin} status=${status} role=${role}`, 'blue');
+        log(`Detected: table=${schema.table} lastLogin=${lastLogin} status=${status} role=${role}`, 'blue');
       } else {
         log(`schema: not resolved`, 'yellow');
       }
@@ -171,10 +171,10 @@ async function testListUsers() {
       // Show first user's lastLoginAt and roles if available
       if (result.data.data.users.length > 0) {
         const firstUser = result.data.data.users[0];
-        const lastLoginAt = firstUser.lastLoginAt || 'Never';
+        const lastLoginAt = firstUser.lastLoginAt ? (typeof firstUser.lastLoginAt === 'string' ? firstUser.lastLoginAt : new Date(firstUser.lastLoginAt).toISOString()) : 'null';
         const roles = (firstUser.roles || []).length > 0 ? `[${firstUser.roles.join(', ')}]` : '[]';
-        const status = firstUser.accountStatus || 'Unknown';
-        log(`user[0]: lastLoginAt=${lastLoginAt} roles=${roles} status=${status}`, 'green');
+        const status = firstUser.accountStatus || 'null';
+        log(`user[0]: lastLoginAt=${lastLoginAt} roles=${roles} accountStatus=${status}`, 'green');
       }
     }
   }
@@ -207,9 +207,10 @@ async function testUserDetails(userId = 1) {
       log(`User ID: ${user.id}`, 'green');
       log(`Email: ${user.email || 'N/A'}`, 'green');
       log(`Display Name: ${user.displayName || 'N/A'}`, 'yellow');
-      log(`Roles: [${(user.roles || []).join(', ') || 'none'}]`, 'yellow');
-      log(`Account Status: ${user.accountStatus || 'Unknown'}`, 'yellow');
-      log(`Last Login: ${user.lastLoginAt || 'Never'}`, 'yellow');
+      const roles = (user.roles || []).length > 0 ? `[${user.roles.join(', ')}]` : '[]';
+      const status = user.accountStatus || 'null';
+      const lastLoginAt = user.lastLoginAt ? (typeof user.lastLoginAt === 'string' ? user.lastLoginAt : new Date(user.lastLoginAt).toISOString()) : 'null';
+      log(`roles=${roles} accountStatus=${status} lastLoginAt=${lastLoginAt}`, 'green');
     }
   }
 
@@ -242,6 +243,23 @@ async function testAdminNavigation() {
       log(`Navigation groups: ${groups.length}`, 'green');
       log(`Show planned: ${result.data.data.meta?.showPlanned || false}`, 'yellow');
       
+      // Check if users-management module is present (should be for founder/admin/support/viewer roles)
+      let foundUsersManagement = false;
+      groups.forEach(group => {
+        group.items.forEach(item => {
+          if (item.id === 'users-management' || item.uiRoute === '/admin/users') {
+            foundUsersManagement = true;
+            log(`✅ Found users-management module: ${item.label} -> ${item.uiRoute}`, 'green');
+          }
+        });
+      });
+      
+      if (!foundUsersManagement) {
+        log(`⚠️  users-management module not found in navigation (may be filtered by permissions)`, 'yellow');
+        log(`   Note: To test different roles, change the logged-in user's role in the database`, 'yellow');
+        log(`   Example: UPDATE User SET role = 'ADMIN' WHERE email = 'admin@ogc.local';`, 'yellow');
+      }
+      
       if (groups.length > 0) {
         const firstGroup = groups[0];
         log(`First group: ${firstGroup.groupLabel} (${firstGroup.items.length} items)`, 'green');
@@ -254,6 +272,69 @@ async function testAdminNavigation() {
   }
 
   const success = result.status === 200 && result.data?.status === 'OK';
+  return success;
+}
+
+async function testAuditLogs() {
+  log(`\n=== Testing GET /api/v1/admin/audit-logs ===`, 'blue');
+  
+  // First call - should be cache MISS
+  const result1 = await makeRequest('GET', '/api/v1/admin/audit-logs?page=1&limit=5');
+  
+  if (result1.error) {
+    log(`❌ Request failed: ${result1.error}`, 'red');
+    return false;
+  }
+
+  log(`Status: ${result1.status} ${result1.statusText}`, result1.status === 200 ? 'green' : 'red');
+  log(`X-Request-Id: ${result1.headers['x-request-id'] || 'not present'}`, 'yellow');
+  log(`X-Admin-Mode: ${result1.headers['x-admin-mode'] || 'not present'}`, 'yellow');
+  const cacheStatus1 = result1.headers['x-cache'] || 'not present';
+  log(`X-Cache (first call): ${cacheStatus1}`, cacheStatus1 === 'MISS' ? 'green' : cacheStatus1 === 'HIT' ? 'yellow' : 'yellow');
+
+  // Second call immediately - should be cache HIT
+  const result2 = await makeRequest('GET', '/api/v1/admin/audit-logs?page=1&limit=5');
+  const cacheStatus2 = result2.headers['x-cache'] || 'not present';
+  log(`X-Cache (second call): ${cacheStatus2}`, cacheStatus2 === 'HIT' ? 'green' : 'yellow');
+
+  if (result1.data) {
+    log(`Response status: ${result1.data.status}`, result1.data.status === 'OK' ? 'green' : 'red');
+    log(`Response code: ${result1.data.code || 'N/A'}`, 'yellow');
+    
+    if (result1.data.data) {
+      const data = result1.data.data;
+      const page = data.page || 'N/A';
+      const limit = data.limit || 'N/A';
+      const total = data.total || 0;
+      const rows = data.logs || [];
+      const rowCount = rows.length;
+      const firstRowId = rowCount > 0 && rows[0]?.id ? rows[0].id : 'N/A';
+      
+      log(`auditLogs: page=${page} limit=${limit} total=${total} rows=${rowCount} firstId=${firstRowId}`, 'green');
+    }
+  }
+
+  // Rate limit test - make 5 quick calls (should all succeed)
+  log(`\n=== Testing rate limit (5 quick calls) ===`, 'blue');
+  const rateLimitResults = [];
+  for (let i = 0; i < 5; i++) {
+    const rateResult = await makeRequest('GET', '/api/v1/admin/audit-logs?page=1&limit=5');
+    rateLimitResults.push({
+      status: rateResult.status,
+      rateLimited: rateResult.status === 429 || rateResult.data?.code === 'RATE_LIMITED',
+    });
+    // Small delay to avoid overwhelming
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  
+  const rateLimitFailures = rateLimitResults.filter(r => r.rateLimited).length;
+  if (rateLimitFailures === 0) {
+    log(`✅ All 5 calls succeeded (rate limit not exceeded)`, 'green');
+  } else {
+    log(`⚠️  ${rateLimitFailures} of 5 calls were rate limited`, 'yellow');
+  }
+
+  const success = result1.status === 200 && result1.data?.status === 'OK';
   return success;
 }
 
@@ -278,6 +359,7 @@ async function runTests() {
     listUsers: false,
     userDetails: false,
     navigation: false,
+    auditLogs: false,
   };
 
   // Test list users
@@ -293,14 +375,18 @@ async function runTests() {
   // Test navigation
   results.navigation = await testAdminNavigation();
 
+  // Test audit logs
+  results.auditLogs = await testAuditLogs();
+
   // Summary
   log('\n' + '='.repeat(50), 'blue');
   log('Test Results Summary:', 'blue');
   log(`  List Users: ${results.listUsers ? '✅ PASS' : '❌ FAIL'}`, results.listUsers ? 'green' : 'red');
   log(`  User Details: ${results.userDetails ? '✅ PASS' : '❌ FAIL'}`, results.userDetails ? 'green' : 'red');
   log(`  Navigation: ${results.navigation ? '✅ PASS' : '❌ FAIL'}`, results.navigation ? 'green' : 'red');
+  log(`  Audit Logs: ${results.auditLogs ? '✅ PASS' : '❌ FAIL'}`, results.auditLogs ? 'green' : 'red');
   
-  const allPassed = results.listUsers && results.userDetails && results.navigation;
+  const allPassed = results.listUsers && results.userDetails && results.navigation && results.auditLogs;
   if (allPassed) {
     log('\n✅ All tests passed!', 'green');
     process.exit(0);

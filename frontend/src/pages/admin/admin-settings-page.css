@@ -1,0 +1,344 @@
+/* Admin Settings Page Styles */
+
+.admin-settings-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.admin-settings-header {
+  margin-bottom: 1.5rem;
+}
+
+.admin-settings-header h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.admin-settings-subtitle {
+  color: var(--text-secondary, #666);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* Read-only Banner */
+.admin-settings-readonly-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 2rem;
+  border-radius: 12px;
+  background: var(--plasma-panel-bg);
+  border: 1px solid var(--plasma-panel-border);
+}
+
+.admin-settings-readonly-banner-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.admin-settings-readonly-banner-content {
+  flex: 1;
+}
+
+.admin-settings-readonly-banner-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.admin-settings-readonly-banner-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #666);
+  margin: 0;
+}
+
+/* Error Banner */
+.admin-settings-error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 2rem;
+  border-radius: 12px;
+  background: #fee;
+  border: 1px solid #fcc;
+}
+
+.admin-settings-error-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.admin-settings-error-content {
+  flex: 1;
+}
+
+.admin-settings-error-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: #c00;
+}
+
+.admin-settings-error-message {
+  font-size: 0.875rem;
+  color: #800;
+  margin: 0 0 0.5rem 0;
+}
+
+/* Loading State */
+.admin-settings-loading {
+  padding: 3rem 2rem;
+  text-align: center;
+  color: var(--text-secondary, #666);
+}
+
+/* Settings Content */
+.admin-settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Settings Section */
+.admin-settings-section {
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: var(--plasma-panel-bg);
+  border: 1px solid var(--plasma-panel-border);
+}
+
+.admin-settings-section-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--plasma-panel-border);
+}
+
+.admin-settings-section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.admin-settings-section-description {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #666);
+  margin: 0;
+}
+
+/* Settings Controls */
+.admin-settings-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.admin-settings-control-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  padding: 1rem 0;
+}
+
+.admin-settings-control-label-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-settings-control-label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin: 0 0 0.25rem 0;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.admin-settings-control-description {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #666);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.admin-settings-control-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Toggle Switch */
+.admin-settings-toggle {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.admin-settings-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.admin-settings-toggle-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  border-radius: 24px;
+  transition: 0.3s;
+}
+
+.admin-settings-toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+.admin-settings-toggle input:checked + .admin-settings-toggle-slider {
+  background-color: var(--primary, #0066cc);
+}
+
+.admin-settings-toggle input:checked + .admin-settings-toggle-slider:before {
+  transform: translateX(24px);
+}
+
+.admin-settings-toggle input:disabled + .admin-settings-toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-settings-toggle input:disabled {
+  cursor: not-allowed;
+}
+
+/* Dirty Indicator */
+.admin-settings-dirty-indicator {
+  color: var(--primary, #0066cc);
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+/* Validation Error */
+.admin-settings-validation-error {
+  font-size: 0.75rem;
+  color: #c00;
+  margin-top: 0.25rem;
+}
+
+/* Action Buttons */
+.admin-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--plasma-panel-border);
+}
+
+/* Modal */
+.admin-settings-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.admin-settings-modal {
+  background: var(--plasma-panel-bg, #fff);
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.admin-settings-modal-header {
+  margin-bottom: 1rem;
+}
+
+.admin-settings-modal-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.admin-settings-modal-body {
+  margin-bottom: 1.5rem;
+}
+
+.admin-settings-modal-body p {
+  margin: 0 0 1rem 0;
+  color: var(--text-secondary, #666);
+}
+
+.admin-settings-modal-reason {
+  margin-top: 1rem;
+}
+
+.admin-settings-modal-reason-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.admin-settings-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-settings-page {
+    padding: 1rem;
+  }
+
+  .admin-settings-control-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .admin-settings-control-input-group {
+    width: 100%;
+  }
+
+  .admin-settings-actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-settings-actions .plasma-button {
+    width: 100%;
+  }
+}

@@ -7,6 +7,7 @@ import { logUserActivity } from '../services/activityService.js';
 import env from '../config/env.js';
 import { normalizeAccountStatus, ACCOUNT_STATUS, canUserLogin } from './accountStatus.js';
 import { getUserSchema } from './userSchemaResolver.js';
+import { writeAdminAuditLog } from './auditLogger.js';
 
 // Helper to convert time string to milliseconds
 function parseExpiresIn(expiresIn) {
@@ -181,35 +182,51 @@ export async function createAuthSessionForUser(res, user, req = null) {
       }
 
       // Update lastLoginAt timestamp (schema-drift tolerant - won't crash if column missing)
+      // Falls back to updatedAt if lastLogin column doesn't exist
       try {
         const schema = getUserSchema();
         const requestId = req?.requestId || 'n/a';
         
-        if (!schema || !schema.table || !schema.columns.lastLogin) {
-          // Schema resolver didn't find lastLogin column
-          console.warn(`[AUTH] last login column not found; skipping update requestId=${requestId}`);
+        if (!schema || !schema.table) {
+          // Schema not initialized - fallback to updatedAt
+          await pool.query(
+            `UPDATE \`User\` SET \`updatedAt\` = NOW() WHERE id = ?`,
+            [user.id]
+          );
+          console.log(`[AUTH] last login updated userId=${user.id} via=updatedAt requestId=${requestId}`);
         } else {
           const tableName = schema.table;
           const lastLoginColumn = schema.columns.lastLogin;
           
-          await pool.query(
-            `UPDATE \`${tableName}\` SET \`${lastLoginColumn}\` = NOW() WHERE id = ?`,
-            [user.id]
-          );
-          // Log successful update (safe - no secrets)
-          console.log(`[AUTH] lastLoginAt updated for userId=${user.id} requestId=${requestId}`);
+          if (lastLoginColumn) {
+            // Update lastLogin column if found
+            await pool.query(
+              `UPDATE \`${tableName}\` SET \`${lastLoginColumn}\` = NOW() WHERE id = ?`,
+              [user.id]
+            );
+            console.log(`[AUTH] last login updated userId=${user.id} via=${lastLoginColumn} requestId=${requestId}`);
+          } else {
+            // Fallback: update updatedAt if lastLogin column not found
+            await pool.query(
+              `UPDATE \`${tableName}\` SET \`updatedAt\` = NOW() WHERE id = ?`,
+              [user.id]
+            );
+            console.log(`[AUTH] last login updated userId=${user.id} via=updatedAt requestId=${requestId}`);
+          }
         }
       } catch (lastLoginError) {
-        // Don't fail login if lastLoginAt column doesn't exist or update fails
-        // Log a warning if it's a schema error (column missing)
+        // Don't fail login if update fails
+        // Log a safe error reason (no secrets/tokens/sql)
         const requestId = req?.requestId || 'n/a';
         let safeReason = 'unknown error';
         if (lastLoginError.code === 'ER_BAD_FIELD_ERROR' || lastLoginError.message?.includes('Unknown column')) {
           safeReason = 'column not found';
+        } else if (lastLoginError.code) {
+          safeReason = `db error ${lastLoginError.code}`;
         } else {
-          safeReason = lastLoginError.message || 'unknown error';
+          safeReason = 'update failed';
         }
-        console.warn(`[AUTH] lastLoginAt update skipped: ${safeReason} requestId=${requestId}`);
+        console.log(`[AUTH] last login update skipped reason=${safeReason} requestId=${requestId}`);
         // Continue with login even if lastLoginAt update fails
       }
 
@@ -237,6 +254,27 @@ export async function createAuthSessionForUser(res, user, req = null) {
   if (res) {
     res.cookie(env.JWT_COOKIE_ACCESS_NAME, accessToken, getCookieOptions(parseExpiresIn(env.JWT_ACCESS_EXPIRES_IN)));
     res.cookie(env.JWT_COOKIE_REFRESH_NAME, refreshToken, getCookieOptions(parseExpiresIn(env.JWT_REFRESH_EXPIRES_IN)));
+  }
+
+  // Log admin login success (only for admin/founder users)
+  if (req && user) {
+    const userRole = (user.role || '').toUpperCase();
+    const isAdmin = userRole === 'ADMIN' || userRole === 'FOUNDER' || userRole.includes('ADMIN') || userRole.includes('FOUNDER');
+    
+    if (isAdmin) {
+      try {
+        await writeAdminAuditLog({
+          req,
+          actorUserId: user.id,
+          actorEmail: user.email,
+          action: 'ADMIN_LOGIN_SUCCESS',
+          status: 'SUCCESS',
+          message: 'Admin user logged in successfully',
+        });
+      } catch (auditError) {
+        // Silently fail - audit logging should not break login
+      }
+    }
   }
 
   return { access: accessToken, refresh: refreshToken };

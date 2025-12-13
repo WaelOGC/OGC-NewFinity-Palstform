@@ -33,7 +33,7 @@ export async function requireAdmin(req, res, next) {
     const { getUserWithAccessData, hasAnyRole, hasAnyPermission } = await import('../services/userService.js');
     
     let user = req.currentUser || req.user;
-    if (!user.role && !user.effectivePermissions) {
+    if (!user.role && !user.roles && !user.effectivePermissions) {
       user = await getUserWithAccessData(req.user.id);
       if (!user) {
         return fail(res, {
@@ -43,13 +43,32 @@ export async function requireAdmin(req, res, next) {
         }, 401);
       }
     }
+    
+    // Admin email fallback: If user email is admin@ogc.local and no role is set,
+    // assign founder role in-memory (do NOT write to DB)
+    const ADMIN_EMAIL = 'admin@ogc.local';
+    if (user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+      if ((!user.role || user.role === 'STANDARD_USER') && (!user.roles || user.roles.length === 0)) {
+        user.role = 'FOUNDER';
+        user.roles = ['FOUNDER'];
+      }
+    }
 
     // Check if user has admin role (role containing ADMIN case-insensitive) OR admin permission
-    const userRole = user?.role || '';
-    const roleUpper = (userRole || '').toUpperCase();
+    // Support both user.role (string) and user.roles (array)
+    const userRoles = [];
+    if (user?.role) {
+      userRoles.push(user.role);
+    }
+    if (Array.isArray(user?.roles)) {
+      userRoles.push(...user.roles);
+    }
+    
+    const roleUpper = userRoles.map(r => (r || '').toUpperCase());
     const hasAdminRole = 
-      ADMIN_ROLES.some(adminRole => roleUpper.includes(adminRole.toUpperCase())) ||
-      roleUpper.includes('ADMIN');
+      ADMIN_ROLES.some(adminRole => roleUpper.some(r => r.includes(adminRole.toUpperCase()))) ||
+      roleUpper.some(r => r.includes('ADMIN')) ||
+      roleUpper.includes('FOUNDER');
     
     const hasAdminPermission = hasAnyPermission(user, ['VIEW_ADMIN_DASHBOARD', 'MANAGE_USERS']);
 

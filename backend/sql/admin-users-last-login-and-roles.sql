@@ -92,6 +92,31 @@ CALL apply_migration_to_table('User');
 DROP PROCEDURE IF EXISTS apply_migration_to_table;
 
 -- ============================================================================
+-- VERIFICATION: Print evidence of table and columns
+-- ============================================================================
+SELECT 
+    'VERIFICATION: Table Detection' as check_type,
+    TABLE_NAME as table_name,
+    'EXISTS' as status
+FROM INFORMATION_SCHEMA.TABLES 
+WHERE TABLE_SCHEMA = @dbname 
+    AND TABLE_NAME IN ('users', 'User')
+ORDER BY CASE TABLE_NAME WHEN 'users' THEN 1 WHEN 'User' THEN 2 END;
+
+SELECT 
+    'VERIFICATION: Column Detection' as check_type,
+    TABLE_NAME as table_name,
+    COLUMN_NAME as column_name,
+    DATA_TYPE as data_type,
+    IS_NULLABLE as is_nullable,
+    'EXISTS' as status
+FROM INFORMATION_SCHEMA.COLUMNS 
+WHERE TABLE_SCHEMA = @dbname 
+    AND TABLE_NAME IN ('users', 'User')
+    AND COLUMN_NAME IN ('lastLoginAt', 'status', 'role')
+ORDER BY TABLE_NAME, COLUMN_NAME;
+
+-- ============================================================================
 -- MIGRATION COMPLETE
 -- ============================================================================
 -- 

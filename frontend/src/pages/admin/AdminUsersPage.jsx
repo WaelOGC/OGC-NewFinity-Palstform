@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext.jsx";
 import { fetchAdminUsers } from "../../utils/apiClient.js";
+import { hasAdminPermission, ADMIN_USERS_READ } from "../../utils/adminPermissions.js";
 import UserDetailDrawer from "../../components/admin/UserDetailDrawer.jsx";
 import "../../styles/plasmaAdminUI.css";
 import "./admin-users-page.css";
@@ -26,11 +28,15 @@ function normalizeAdminUser(u) {
 function AdminUsersPage() {
   const navigate = useNavigate();
   const { userId } = useParams();
+  const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [empty, setEmpty] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 25, total: 0 });
+  
+  // Check if user has permission to view users
+  const canViewUsers = hasAdminPermission(user, ADMIN_USERS_READ);
   
   // Filters
   const [search, setSearch] = useState("");
@@ -650,16 +656,18 @@ function AdminUsersPage() {
                           <td>
                             <button
                               onClick={(e) => viewUserDetails(user.id, e)}
+                              disabled={!canViewUsers}
                               style={{
                                 padding: '0.25rem 0.5rem',
-                                backgroundColor: 'transparent',
+                                backgroundColor: canViewUsers ? 'transparent' : 'var(--bg-disabled, #f5f5f5)',
                                 border: '1px solid var(--border-color, #ddd)',
                                 borderRadius: '4px',
-                                cursor: 'pointer',
+                                cursor: canViewUsers ? 'pointer' : 'not-allowed',
                                 fontSize: '0.875rem',
-                                color: 'var(--text-primary, #333)'
+                                color: canViewUsers ? 'var(--text-primary, #333)' : 'var(--text-disabled, #999)',
+                                opacity: canViewUsers ? 1 : 0.6,
                               }}
-                              title="View user details"
+                              title={canViewUsers ? "View user details" : "You do not have permission to view user details"}
                             >
                               View
                             </button>
